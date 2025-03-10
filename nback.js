@@ -1,3 +1,4 @@
+
 const gameState = {
     isPlaying: false,
     nBackLevel: 1,
@@ -21,7 +22,14 @@ const gameState = {
     currentIsSceneTarget: false,
     currentIsLocationTarget: false,
     inResponseWindow: false,
-    canRespond: true
+    canRespond: true,
+
+    // --- 간섭 관련 설정 추가 ---
+    interferenceChance: 0.125, // 간섭 발생 확률 (12.5%)
+    interferenceType: "none", // 간섭 유형 ("none", "previous", "cyclic") - "next"는 복잡도 증가로 인해 일단 제외
+    cyclicInterferenceNBackLevel: 2, // 순환 간섭 시 사용할 N-back 레벨 (기본 N-back 레벨과 다를 수 있음)
+    nextStimulusInfo: null // "next" 간섭 유형을 위한 다음 자극 정보 임시 저장 변수 (일단 사용하지 않음)
+    // --- 간섭 관련 설정 끝 ---
 };
 
 // --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
@@ -31,17 +39,6 @@ const panelColor = 0x666666;    // 패널(액자) 색상 (dark gray - 변경됨)
 const imageScale = 1.0;         // 이미지 크기 비율 (1.0: 원래 크기, 0.5: 절반 크기)
 const randomizeStimulusColor = true; // 게임 시작 시 이미지에 랜덤 색상 입히기 여부 (true: 랜덤 색상 입힘, false: 색상 입히지 않음)
 // --- 커스터마이징 옵션 끝 ---
-
-
-
-
-
-
-
-
-
-
-
 
 // Three.js Scene, Camera, Renderer 설정
 const scene = new THREE.Scene();
@@ -263,22 +260,30 @@ const imageLoader = new THREE.TextureLoader();
 const imageTextures = []; // 이미지 텍스처를 저장할 배열 -> 이제 텍스처와 색상 정보를 함께 저장할 배열로 변경
 
 // 랜덤 색상 생성 함수
+// --- 수정된 랜덤 색상 팔레트 ---
+const distinctColors = [
+    new THREE.Color(0.8, 0.2, 0.2), // Red (약간 어두운 빨강)
+    new THREE.Color(0.2, 0.6, 0.8), // Cyan (청록색)
+    new THREE.Color(0.3, 0.7, 0.3), // Green (녹색)
+    new THREE.Color(0.9, 0.5, 0.1), // Orange (주황색)
+    new THREE.Color(0.6, 0.3, 0.7), // Purple (보라색)
+    new THREE.Color(0.2, 0.4, 0.9), // Blue (파랑)
+    new THREE.Color(0.7, 0.7, 0.2)  // Yellow-Green (연두색)
+];
+
+// 랜덤 색상 생성 함수 (수정됨: 팔레트 사용)
 function getRandomColor() {
-    const r = Math.random();
-    const g = Math.random();
-    const b = Math.random();
-    return new THREE.Color(r, g, b);
+    return distinctColors[Math.floor(Math.random() * distinctColors.length)];
 }
 
 // 이미지 파일 이름 목록 (images 폴더 안의 이미지 파일 이름들을 여기에 추가)
 const imageFilenames = [];
 for (let i = 1; i <= 101; i++) {
-    // 수정된 부분: padStart(3, '0') 를 사용하여 3자리 숫자 (앞에 0 채움) 로 포맷팅
     const filename = `image${String(i).padStart(3, '0')}.png`;
     imageFilenames.push(filename);
 }
+console.log("imageFilenames 배열 길이:", imageFilenames.length);
 
-console.log("imageFilenames 배열 길이:", imageFilenames.length); // 추가
 
 imageFilenames.forEach((filename) => {
     const texture = imageLoader.load(`images/${filename}`);
@@ -288,7 +293,9 @@ imageFilenames.forEach((filename) => {
     }
     imageTextures.push({ texture: texture, color: color }); // 텍스처와 색상 정보를 함께 배열에 저장
 });
-console.log("imageTextures 배열 길이:", imageTextures.length);   // 추가
+
+
+console.log("imageTextures 배열 길이:", imageTextures.length);
 
 
 // 자극 이미지 생성 함수
@@ -360,14 +367,80 @@ function showMissedTargetFeedback(indicator) {
     indicator.classList.add('missed');
 }
 
-// 자극 제시 함수 (이미지 인덱스, 패널 인덱스) (기존과 동일)
+// --- 간섭 적용 함수 ---
+function introduceInterference(currentImageIndex, currentPanelIndex) {
+    if (gameState.interferenceType === "none") {
+        return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex }; // 간섭 없음
+    }
+
+    if (Math.random() < gameState.interferenceChance) {
+        let interferedImageIndex = currentImageIndex;
+        let interferedPanelIndex = currentPanelIndex;
+
+        if (gameState.interferenceType === "previous" && gameState.currentStimulus > 0) {
+            // 한 트라이얼 이전 간섭
+            const previousImageIndex = gameState.sceneHistory[gameState.currentStimulus - 1];
+            const previousPanelIndex = gameState.locationHistory[gameState.currentStimulus - 1];
+
+            const type = Math.random(); // 이미지 또는 위치 중 어떤 것을 간섭할지 랜덤 결정
+
+            if (type < 0.5) {
+                // 이미지 간섭
+                interferedImageIndex = previousImageIndex;
+                // 위치는 그대로 유지 (또는 필요에 따라 위치도 약간 변경 가능)
+            } else {
+                // 위치 간섭
+                interferedPanelIndex = previousPanelIndex;
+                // 이미지는 그대로 유지
+            }
+
+            console.log("간섭 적용 (이전):", "type=", type < 0.5 ? "image" : "location");
+
+
+        } else if (gameState.interferenceType === "cyclic" && gameState.currentStimulus >= gameState.cyclicInterferenceNBackLevel) {
+            // 순환 간섭 (N-back 이전)
+            const cyclicNBackLevel = gameState.cyclicInterferenceNBackLevel;
+            const cyclicImageIndex = gameState.sceneHistory[gameState.currentStimulus - cyclicNBackLevel];
+            const cyclicPanelIndex = gameState.locationHistory[gameState.currentStimulus - cyclicNBackLevel];
+
+             const type = Math.random(); // 이미지 또는 위치 중 어떤 것을 간섭할지 랜덤 결정
+
+            if (type < 0.5) {
+                // 이미지 간섭
+                interferedImageIndex = cyclicImageIndex;
+                // 위치는 그대로 유지
+            } else {
+                // 위치 간섭
+                interferedPanelIndex = cyclicPanelIndex;
+                // 이미지는 그대로 유지
+            }
+             console.log("간섭 적용 (순환, N=" + cyclicNBackLevel + "):", "type=", type < 0.5 ? "image" : "location");
+        }
+
+        return { imageIndex: interferedImageIndex, panelIndex: interferedPanelIndex };
+    }
+
+    return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex }; // 간섭 미발생
+}
+
+
+// 자극 제시 함수 (수정됨: 간섭 적용)
 function showStimulus(imageIndex, panelIndex) {
     resetIndicators();
 
     const panel = panels[panelIndex];
 
-    console.log("showStimulus() - imageIndex:", imageIndex); // **추가**
+    console.log("showStimulus() - imageIndex (before interference):", imageIndex, "panelIndex:", panelIndex); // **추가**
+
+    // --- 간섭 적용 ---
+    const interferenceResult = introduceInterference(imageIndex, panelIndex);
+    imageIndex = interferenceResult.imageIndex;
+    panelIndex = interferenceResult.panelIndex;
+    // --- 간섭 적용 끝 ---
+
+    console.log("showStimulus() - imageIndex (after interference):", imageIndex, "panelIndex:", panelIndex); // **추가**
     createStimulusImage(imageIndex, panel);
+
 
     gameState.sceneHistory.push(imageIndex);
     gameState.locationHistory.push(panelIndex);
@@ -411,7 +484,7 @@ function showStimulus(imageIndex, panelIndex) {
                 setTimeout(() => {
                     generateNextStimulus();
                 }, 500);
-            }, 1500);
+            }, 2500); // 반응 시간 2.5초 (늘림)
         }, 1000);
     } else {
         gameState.currentTimer = setTimeout(() => {
@@ -436,12 +509,12 @@ function showStimulus(imageIndex, panelIndex) {
                 setTimeout(() => {
                     endBlock();
                 }, 500);
-            }, 1500);
+            }, 2500); // 반응 시간 2.5초 (늘림)
         }, 1000);
     }
 }
 
-// 다음 자극 생성 및 제시 함수 (기존과 동일)
+// 다음 자극 생성 및 제시 함수 (기존 코드와 거의 동일)
 function generateNextStimulus() {
     if (!gameState.isPlaying) return;
 
@@ -465,20 +538,17 @@ function generateNextStimulus() {
             panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
         } else if (shouldBeSceneTarget) {
             imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
-
             do {
                 panelIndex = Math.floor(Math.random() * panels.length);
             } while (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
         } else if (shouldBeLocationTarget) {
             panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
-
             do {
                 imageIndex = Math.floor(Math.random() * imageTextures.length);
             } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]);
         } else {
             imageIndex = Math.floor(Math.random() * imageTextures.length);
             panelIndex = Math.floor(Math.random() * panels.length);
-
             while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel] ||
                    panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]) {
                 if (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]) {
@@ -494,7 +564,7 @@ function generateNextStimulus() {
         panelIndex = Math.floor(Math.random() * panels.length);
     }
 
-    console.log("generateNextStimulus() - imageIndex:", imageIndex); // **추가**
+    console.log("generateNextStimulus() - imageIndex:", imageIndex, "panelIndex:", panelIndex);
     showStimulus(imageIndex, panelIndex);
 }
 
@@ -565,7 +635,7 @@ function startBlock() {
     gameState.sceneTargets = 0;
     gameState.locationTargets = 0;
     gameState.bothTargets = 0;
-    gameState.sceneResponses = 0;
+    gameState.sceneResponses = 0,
     gameState.locationResponses = 0;
     gameState.sceneErrors = 0;
     gameState.locationErrors = 0;
@@ -727,3 +797,4 @@ function animate() {
 }
 
 animate();
+
