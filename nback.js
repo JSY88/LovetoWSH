@@ -27,10 +27,73 @@ const gameState = {
 // --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
 const wallColor = 0xd0d0d0;     // 벽 색상 (light gray)
 const floorColor = 0xbb8a52;    // 바닥 색상 (나무 색상)
-const panelColor = 0xe0e0e0;    // 패널(액자) 색상 (light gray)
+const panelColor = 0x666666;    // 패널(액자) 색상 (dark gray - 변경됨)
 const imageScale = 1.0;         // 이미지 크기 비율 (1.0: 원래 크기, 0.5: 절반 크기)
 const randomizeStimulusColor = true; // 게임 시작 시 이미지에 랜덤 색상 입히기 여부 (true: 랜덤 색상 입힘, false: 색상 입히지 않음)
 // --- 커스터마이징 옵션 끝 ---
+
+// "좋은" 색상 팔레트 정의 (보기 좋고 구별하기 쉬운 색상들)
+const goodColors = [
+    0xFF0000, // Red
+    0x00FF00, // Green
+    0x0000FF, // Blue
+    0xFFFF00, // Yellow
+    0xFF00FF, // Magenta
+    0x00FFFF, // Cyan
+    0xFFA500, // Orange
+    0x800080, // Purple
+];
+
+// 랜덤 색상 생성 함수 (기존 함수 이름 변경)
+function generateTrulyRandomColor() {
+    const r = Math.random();
+    const g = Math.random();
+    const b = Math.random();
+    return new THREE.Color(r, g, b);
+}
+
+// 색상 거리 계산 함수 (RGB 채널별 차이의 합)
+function getColorDistance(color1, color2) {
+    const rDiff = Math.abs(color1.r - color2.r);
+    const gDiff = Math.abs(color1.g - color2.g);
+    const bDiff = Math.abs(color1.b - color2.b);
+    return rDiff + gDiff + bDiff;
+}
+
+// "좋은" 색상 팔레트에서 랜덤 색상 선택 함수 (액자 색상과 유사하지 않도록 보정)
+function getRandomColorFromPalette() {
+    const panelThreeColor = new THREE.Color(panelColor); // 액자 색상을 Three.Color 객체로 변환
+    let selectedColor = null;
+    let attempts = 0;
+    const maxAttempts = 10; // 최대 시도 횟수 제한 (무한 루프 방지)
+    const minColorDistance = 0.5; // 최소 색상 거리 기준 (조절 가능)
+
+    while (attempts < maxAttempts) {
+        const randomIndex = Math.floor(Math.random() * goodColors.length);
+        selectedColor = new THREE.Color(goodColors[randomIndex]);
+        const distance = getColorDistance(selectedColor, panelThreeColor);
+
+        if (distance >= minColorDistance) {
+            // 선택된 색상이 액자 색상과 충분히 다르면 반환
+            return selectedColor;
+        }
+        attempts++;
+    }
+
+    // 최대 시도 횟수 초과 시, 팔레트에서 그냥 랜덤 색상 반환 (최악의 경우 대비)
+    console.warn("Could not find sufficiently different color after", maxAttempts, "attempts. Returning fallback color.");
+    return selectedColor || new THREE.Color(goodColors[0]); // 기본 색상 (빨간색) 또는 마지막 시도 색상 반환
+}
+
+
+// 랜덤 색상 선택 함수 (커스터마이징 옵션에 따라 팔레트 또는 완전 랜덤 색상 사용)
+function getRandomColor() {
+    if (randomizeStimulusColor) {
+        return getRandomColorFromPalette(); // "좋은" 색상 팔레트에서 선택 (액자 색상 고려)
+    } else {
+        return null; // 색상 입히지 않음 (null 반환)
+    }
+}
 
 
 // Three.js Scene, Camera, Renderer 설정
