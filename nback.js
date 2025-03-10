@@ -32,94 +32,44 @@ const imageScale = 1.0;         // 이미지 크기 비율 (1.0: 원래 크기, 
 const randomizeStimulusColor = true; // 게임 시작 시 이미지에 랜덤 색상 입히기 여부 (true: 랜덤 색상 입힘, false: 색상 입히지 않음)
 // --- 커스터마이징 옵션 끝 ---
 
-// "좋은" 색상 팔레트 정의 (보기 좋고 구별하기 쉬운 색상들)
-const goodColors = [
-    0xFF0000, // Red
-    0x00FF00, // Green
-    0x0000FF, // Blue
-    0xFFFF00, // Yellow
-    0xFF00FF, // Magenta
-    0x00FFFF, // Cyan
-    0xFFA500, // Orange
-    0x800080, // Purple
-];
-
-// 랜덤 색상 생성 함수 (기존 함수 이름 변경)
-function generateTrulyRandomColor() {
-    const r = Math.random();
-    const g = Math.random();
-    const b = Math.random();
-    return new THREE.Color(r, g, b);
-}
-
-// 색상 거리 계산 함수 (RGB 채널별 차이의 합)
-function getColorDistance(color1, color2) {
-    const rDiff = Math.abs(color1.r - color2.r);
-    const gDiff = Math.abs(color1.g - color2.g);
-    const bDiff = Math.abs(color1.b - color2.b);
-    return rDiff + gDiff + bDiff;
-}
-
-// "좋은" 색상 팔레트에서 랜덤 색상 선택 함수 (액자 색상과 유사하지 않도록 보정)
-function getRandomColorFromPalette() {
-    const panelThreeColor = new THREE.Color(panelColor); // 액자 색상을 Three.Color 객체로 변환
-    let selectedColor = null;
-    let attempts = 0;
-    const maxAttempts = 10; // 최대 시도 횟수 제한 (무한 루프 방지)
-    const minColorDistance = 0.5; // 최소 색상 거리 기준 (조절 가능)
-
-    while (attempts < maxAttempts) {
-        const randomIndex = Math.floor(Math.random() * goodColors.length);
-        selectedColor = new THREE.Color(goodColors[randomIndex]);
-        const distance = getColorDistance(selectedColor, panelThreeColor);
-
-        if (distance >= minColorDistance) {
-            // 선택된 색상이 액자 색상과 충분히 다르면 반환
-            return selectedColor;
-        }
-        attempts++;
-    }
-
-    // 최대 시도 횟수 초과 시, 팔레트에서 그냥 랜덤 색상 반환 (최악의 경우 대비)
-    console.warn("Could not find sufficiently different color after", maxAttempts, "attempts. Returning fallback color.");
-        return selectedColor || new THREE.Color(goodColors[0]); // 기본 색상 (빨간색) 또는 마지막 시도 색상 반환
-    }
 
 
-// 랜덤 색상 선택 함수 (커스터마이징 옵션에 따라 팔레트 또는 완전 랜덤 색상 사용)
-function getRandomColor() {
-    if (randomizeStimulusColor) {
-        return getRandomColorFromPalette(); // "좋은" 색상 팔레트에서 선택 (액자 색상 고려)
-    } else {
-        return null; // 색상 입히지 않음 (null 반환)
-    }
-}
+
+
+
+
+
+
+
 
 
 // Three.js Scene, Camera, Renderer 설정
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f0f0);
+scene.background = new THREE.Color(0xf0f0f0); // 캔버스 배경색 (light gray)
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.6, 2);
-camera.lookAt(0, 1.6, -5);
+camera.position.set(0, 1.6, 2); // 카메라 위치 (x, y, z) - (0, 1.6, 2)는 적절한 기본 시점
+camera.lookAt(0, 1.6, -5); // 카메라 시선 방향 (x, y, z) - (0, 1.6, -5)는 패널 중앙을 바라보게 함
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer({ antialias: true }); // WebGL 렌더러 생성 (antialias: 경계선 부드럽게 처리)
+renderer.setSize(window.innerWidth, window.innerHeight); // 렌더러 크기를 창 크기에 맞춤
+document.body.appendChild(renderer.domElement); // 렌더러를 HTML 문서에 추가
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+// 조명 설정
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 은은한 주변광 (색상, 강도) - 전체적으로 밝기 조절
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-directionalLight.position.set(0, 1, 0);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5); // 방향성 광 (색상, 강도) - 그림자 생성, 입체감 부여
+directionalLight.position.set(0, 1, 0); // 광원 위치 (x, y, z) - (0, 1, 0)는 위에서 아래로 비추는 효과
 directionalLight.intensity = 0.8;
 scene.add(directionalLight);
 
+// 방 크기 설정
 const roomWidth = 5;
 const roomHeight = 3;
 const roomDepth = 5;
 
+// 벽돌 텍스처 생성 함수 (기존과 동일)
 function createBrickTexture() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -197,6 +147,7 @@ const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
 backWall.position.set(0, roomHeight/2, -roomDepth/2);
 scene.add(backWall);
 
+// 나무 바닥 텍스처 생성 함수 (기존과 동일)
 function createWoodTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
@@ -281,15 +232,7 @@ const panelPositions = [
     { x: -roomWidth/2 + 0.06, y: 1.9, z: -0.5, rotation: [0, Math.PI/2, 0] },
     { x: -roomWidth/2 + 0.06, y: 0.8, z: -0.5, rotation: [0, Math.PI/2, 0] },
     { x: roomWidth/2 - 0.06, y: 1.9, z: -0.5, rotation: [0, -Math.PI/2, 0] },
-    { x: roomWidth/2 - 0.06, y: 0.8, z: -0.5, rotation: [0, -Math.PI/2, 0] },
-    
-    // 바닥 액자 (2개) - z 좌표 변경, 사용자 시점에 더 가깝게
-    { x: -1.3, y: 0.02, z: -0.5, rotation: [-Math.PI/2, 0, 0] }, // 왼쪽 바닥, z: -1.5 -> -0.5 변경
-    { x: 1.3, y: 0.02, z: -0.5, rotation: [-Math.PI/2, 0, 0] },  // 오른쪽 바닥, z: -1.5 -> -0.5 변경
-
-    // 천장 액자 (2개) - z 좌표 변경, 사용자 시점에 더 가깝게
-    { x: -1.3, y: roomHeight - 0.02, z: -0.5, rotation: [Math.PI/2, 0, 0] }, // 왼쪽 천장, z: -1.5 -> -0.5 변경
-    { x: 1.3, y: roomHeight - 0.02, z: -0.5, rotation: [Math.PI/2, 0, 0] }   // 오른쪽 천장, z: -1.5 -> -0.5 변경
+    { x: roomWidth/2 - 0.06, y: 0.8, z: -0.5, rotation: [0, -Math.PI/2, 0] }
 ];
 
 panelPositions.forEach((pos, index) => {
@@ -317,7 +260,7 @@ panelPositions.forEach((pos, index) => {
 
 // 이미지 로더 생성 및 이미지 텍스처 배열 준비
 const imageLoader = new THREE.TextureLoader();
-const imageTextures = []; // 이미지 텍스처를 저장할 배열
+const imageTextures = []; // 이미지 텍스처를 저장할 배열 -> 이제 텍스처와 색상 정보를 함께 저장할 배열로 변경
 
 // 랜덤 색상 생성 함수
 function getRandomColor() {
@@ -330,18 +273,22 @@ function getRandomColor() {
 // 이미지 파일 이름 목록 (images 폴더 안의 이미지 파일 이름들을 여기에 추가)
 const imageFilenames = [];
 for (let i = 1; i <= 101; i++) {
-    const filename = `image${String(i).padStart(3, '0')}.png`; // image001.png, image002.png, ... 형식으로 파일 이름 생성
+    // 수정된 부분: padStart(3, '0') 를 사용하여 3자리 숫자 (앞에 0 채움) 로 포맷팅
+    const filename = `image${String(i).padStart(3, '0')}.png`;
     imageFilenames.push(filename);
 }
 
+console.log("imageFilenames 배열 길이:", imageFilenames.length); // 추가
+
 imageFilenames.forEach((filename) => {
     const texture = imageLoader.load(`images/${filename}`);
-    let color = null;
-    if (randomizeStimulusColor) {
-        color = getRandomColor();
+    let color = null; // 기본적으로 색상 없음
+    if (randomizeStimulusColor) { // 랜덤 색상 입히기 옵션이 true이면
+        color = getRandomColor(); // 랜덤 색상 생성
     }
-    imageTextures.push({ texture: texture, color: color });
+    imageTextures.push({ texture: texture, color: color }); // 텍스처와 색상 정보를 함께 배열에 저장
 });
+console.log("imageTextures 배열 길이:", imageTextures.length);   // 추가
 
 
 // 자극 이미지 생성 함수
@@ -351,8 +298,8 @@ function createStimulusImage(imageIndex, panel) {
     const imageGeometry = new THREE.PlaneGeometry(panelWidth * imageScale, panelHeight * imageScale);
     const imageMaterial = new THREE.MeshBasicMaterial({
         map: imageTextures[imageIndex].texture,
-        transparent: true,
-        blending: THREE.NormalBlending
+        transparent: true, // 투명 배경 활성화!
+        blending: THREE.NormalBlending // 블렌딩 모드 설정 (기본값이 NormalBlending이지만 명시적으로 설정)
     });
     if (imageTextures[imageIndex].color) {
         imageMaterial.color = imageTextures[imageIndex].color;
@@ -366,6 +313,7 @@ function createStimulusImage(imageIndex, panel) {
     return imagePlane;
 }
 
+// 패널의 자극(이미지) 제거 함수 (기존과 동일)
 function clearStimulus(panel) {
     if (panel.stimulusObject) {
         panel.group.remove(panel.stimulusObject);
@@ -373,15 +321,18 @@ function clearStimulus(panel) {
     }
 }
 
+// 모든 패널의 자극(이미지) 제거 함수 (기존과 동일)
 function clearAllStimuli() {
     panels.forEach(panel => {
         clearStimulus(panel);
     });
 }
 
+// 반응 지시 박스 (S, L) 엘리먼트 가져오기 (기존과 동일)
 const sceneIndicator = document.getElementById('scene-indicator');
 const locationIndicator = document.getElementById('location-indicator');
 
+// 반응 지시 박스 상태 초기화 함수 (기존과 동일)
 function resetIndicators() {
     sceneIndicator.classList.remove('correct', 'incorrect', 'missed', 'early');
     locationIndicator.classList.remove('correct', 'incorrect', 'missed', 'early');
@@ -390,6 +341,7 @@ function resetIndicators() {
     gameState.canRespond = true;
 }
 
+// 반응 지시 박스에 피드백 표시 함수 (기존과 동일)
 function showIndicatorFeedback(indicator, isCorrect) {
     if (isCorrect) {
         indicator.classList.add('correct');
@@ -398,19 +350,23 @@ function showIndicatorFeedback(indicator, isCorrect) {
     }
 }
 
+// 조기 반응 피드백 표시 함수 (기존과 동일)
 function showEarlyResponseFeedback(indicator) {
     indicator.classList.add('early');
 }
 
+// 미반응 (missed) 타겟 피드백 표시 함수 (기존과 동일)
 function showMissedTargetFeedback(indicator) {
     indicator.classList.add('missed');
 }
 
+// 자극 제시 함수 (이미지 인덱스, 패널 인덱스) (기존과 동일)
 function showStimulus(imageIndex, panelIndex) {
     resetIndicators();
 
     const panel = panels[panelIndex];
 
+    console.log("showStimulus() - imageIndex:", imageIndex); // **추가**
     createStimulusImage(imageIndex, panel);
 
     gameState.sceneHistory.push(imageIndex);
@@ -443,11 +399,13 @@ function showStimulus(imageIndex, panelIndex) {
                 if (!gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
                     showMissedTargetFeedback(sceneIndicator);
                     gameState.sceneErrors++;
+                    console.log("showStimulus() - 장면 미반응, sceneErrors 증가:", gameState.sceneErrors); // **추가**
                 }
 
                 if (!gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
                     showMissedTargetFeedback(locationIndicator);
                     gameState.locationErrors++;
+                    console.log("showStimulus() - 위치 미반응, locationErrors 증가:", gameState.locationErrors); // **추가**
                 }
 
                 setTimeout(() => {
@@ -466,11 +424,13 @@ function showStimulus(imageIndex, panelIndex) {
                 if (!gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
                     showMissedTargetFeedback(sceneIndicator);
                     gameState.sceneErrors++;
+                    console.log("showStimulus() - 장면 미반응, sceneErrors 증가:", gameState.sceneErrors); // **추가**
                 }
 
                 if (!gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
                     showMissedTargetFeedback(locationIndicator);
                     gameState.locationErrors++;
+                    console.log("showStimulus() - 위치 미반응, locationErrors 증가:", gameState.locationErrors); // **추가**
                 }
 
                 setTimeout(() => {
@@ -481,70 +441,64 @@ function showStimulus(imageIndex, panelIndex) {
     }
 }
 
+// 다음 자극 생성 및 제시 함수 (기존과 동일)
 function generateNextStimulus() {
     if (!gameState.isPlaying) return;
 
+    const shouldBeSceneTarget = gameState.sceneTargets < 6 &&
+                               Math.random() < (6 - gameState.sceneTargets) /
+                               (gameState.stimuliPerBlock - gameState.currentStimulus);
+
+    const shouldBeLocationTarget = gameState.locationTargets < 6 &&
+                                  Math.random() < (6 - gameState.locationTargets) /
+                                  (gameState.stimuliPerBlock - gameState.currentStimulus);
+
+    const shouldBeBothTarget = gameState.bothTargets < 2 &&
+                              Math.random() < (2 - gameState.bothTargets) /
+                              (gameState.stimuliPerBlock - gameState.currentStimulus);
+
     let imageIndex, panelIndex;
-    let targetType = 'none'; // Default to no target
 
     if (gameState.currentStimulus >= gameState.nBackLevel) {
-        // Prioritize dual targets first
-        if (gameState.bothTargets < 2) {
-            targetType = 'both';
-            gameState.bothTargets++;
-            gameState.sceneTargets++; // Increment scene and location targets as well for dual targets
-            gameState.locationTargets++;
-        } else if (gameState.sceneTargets < 6) {
-            targetType = 'scene';
-            gameState.sceneTargets++;
-        } else if (gameState.locationTargets < 6) {
-            targetType = 'location';
-            gameState.locationTargets++;
-        }
+        if (shouldBeBothTarget) {
+            imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
+            panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+        } else if (shouldBeSceneTarget) {
+            imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
 
-
-        switch (targetType) {
-            case 'both':
-                imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
-                panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
-                break;
-            case 'scene':
-                imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
-                do {
-                    panelIndex = Math.floor(Math.random() * panels.length);
-                } while (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
-                break;
-            case 'location':
-                panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
-                do {
-                    imageIndex = Math.floor(Math.random() * imageTextures.length);
-                } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]);
-                break;
-            case 'none':
-            default:
-                imageIndex = Math.floor(Math.random() * imageTextures.length);
+            do {
                 panelIndex = Math.floor(Math.random() * panels.length);
-                while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel] ||
-                panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]) {
-                    if (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]) {
-                        imageIndex = Math.floor(Math.random() * imageTextures.length);
-                    }
-                    if (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]) {
-                        panelIndex = Math.floor(Math.random() * panels.length);
-                    }
+            } while (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
+        } else if (shouldBeLocationTarget) {
+            panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+
+            do {
+                imageIndex = Math.floor(Math.random() * imageTextures.length);
+            } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]);
+        } else {
+            imageIndex = Math.floor(Math.random() * imageTextures.length);
+            panelIndex = Math.floor(Math.random() * panels.length);
+
+            while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel] ||
+                   panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]) {
+                if (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]) {
+                    imageIndex = Math.floor(Math.random() * imageTextures.length);
                 }
-                break;
+                if (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]) {
+                    panelIndex = Math.floor(Math.random() * panels.length);
+                }
+            }
         }
-
-
-    } else { // n-back level is not reached yet, generate random stimuli
+    } else {
         imageIndex = Math.floor(Math.random() * imageTextures.length);
         panelIndex = Math.floor(Math.random() * panels.length);
     }
 
+    console.log("generateNextStimulus() - imageIndex:", imageIndex); // **추가**
     showStimulus(imageIndex, panelIndex);
 }
 
+// 키 입력 처리 함수 (기존과 동일)
 function handleKeyPress(e) {
     if (!gameState.isPlaying) {
         if (e.code === 'Space') {
@@ -562,6 +516,7 @@ function handleKeyPress(e) {
     }
 }
 
+// 이미지 반응 처리 함수 (기존과 동일)
 function handleSceneResponse() {
     gameState.sceneTargetProcessed = true;
 
@@ -577,9 +532,11 @@ function handleSceneResponse() {
 
     if (!isCorrect) {
         gameState.sceneErrors++;
+        console.log("handleSceneResponse() - 장면 오반응, sceneErrors 증가:", gameState.sceneErrors); // **추가**
     }
 }
 
+// 위치 반응 처리 함수 (기존과 동일)
 function handleLocationResponse() {
     gameState.locationTargetProcessed = true;
 
@@ -595,9 +552,11 @@ function handleLocationResponse() {
 
     if (!isCorrect) {
         gameState.locationErrors++;
+        console.log("handleLocationResponse() - 위치 오반응, locationErrors 증가:", gameState.locationErrors); // **추가**
     }
 }
 
+// 블록 시작 함수 (게임 시작) (기존과 동일)
 function startBlock() {
     gameState.isPlaying = true;
     gameState.currentStimulus = 0;
@@ -605,7 +564,7 @@ function startBlock() {
     gameState.locationHistory = [];
     gameState.sceneTargets = 0;
     gameState.locationTargets = 0;
-    gameState.bothTargets = 0,
+    gameState.bothTargets = 0;
     gameState.sceneResponses = 0;
     gameState.locationResponses = 0;
     gameState.sceneErrors = 0;
@@ -621,6 +580,7 @@ function startBlock() {
     }, 1000);
 }
 
+// 블록 종료 함수 (한 블록 완료 후 결과 처리 및 다음 블록 준비) (기존과 동일)
 function endBlock() {
     gameState.isPlaying = false;
     gameState.currentBlock++;
@@ -656,6 +616,7 @@ function endBlock() {
     document.getElementById('resultScreen').style.display = 'flex';
 }
 
+// 모든 타이머 취소 함수 (기존과 동일)
 function cancelAllTimers() {
     if (gameState.currentTimer) {
         clearTimeout(gameState.currentTimer);
@@ -665,6 +626,7 @@ function cancelAllTimers() {
     }
 }
 
+// --- 이벤트 리스너 등록 --- (기존과 동일)
 document.addEventListener('keydown', handleKeyPress);
 
 window.addEventListener('resize', function() {
@@ -716,11 +678,11 @@ document.getElementById('pressSpace').addEventListener('click', function() {
 });
 
 document.getElementById('pressSpace').addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        if (!gameState.isPlaying) {
-            startBlock();
-        }
-    });
+    e.preventDefault();
+    if (!gameState.isPlaying) {
+        startBlock();
+    }
+});
 
 document.getElementById('pressSpaceResult').addEventListener('click', function() {
     if (!gameState.isPlaying) {
@@ -735,6 +697,7 @@ document.getElementById('pressSpaceResult').addEventListener('touchstart', funct
     }
 });
 
+// 사용자 정의 레벨 설정 함수 (기존과 동일)
 function setCustomLevel() {
     const customLevelInput = document.getElementById('customLevel');
     let newLevel = parseInt(customLevelInput.value);
@@ -748,7 +711,7 @@ function setCustomLevel() {
     }
 
     gameState.nBackLevel = newLevel;
-    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    document.getElementById('nBackLevel').textContent = newLevel;
 
     customLevelInput.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
     setTimeout(() => {
@@ -757,6 +720,7 @@ function setCustomLevel() {
 }
 
 
+// 애니메이션 렌더링 함수 (기존과 동일)
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
