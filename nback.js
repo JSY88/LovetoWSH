@@ -25,8 +25,8 @@ const gameState = {
 };
 
 // --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
-const wallColor = 0xd0d0d0;     // 벽 색상 (light gray)
-const floorColor = 0xbb8a52;    // 바닥 색상 (나무 색상)
+const wallColor = 0x444444;     // 벽 색상 (light gray)
+const floorColor = 0x783F04;    // 바닥 색상 (나무 색상)
 const panelColor = 0x666666;    // 패널(액자) 색상 (dark gray - 변경됨)
 const imageScale = 1.0;         // 이미지 크기 비율 (1.0: 원래 크기, 0.5: 절반 크기)
 const randomizeStimulusColor = true; // 게임 시작 시 이미지에 랜덤 색상 입히기 여부 (true: 랜덤 색상 입힘, false: 색상 입히지 않음)
