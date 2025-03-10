@@ -82,8 +82,8 @@ function getRandomColorFromPalette() {
 
     // 최대 시도 횟수 초과 시, 팔레트에서 그냥 랜덤 색상 반환 (최악의 경우 대비)
     console.warn("Could not find sufficiently different color after", maxAttempts, "attempts. Returning fallback color.");
-    return selectedColor || new THREE.Color(goodColors[0]); // 기본 색상 (빨간색) 또는 마지막 시도 색상 반환
-}
+        return selectedColor || new THREE.Color(goodColors[0]); // 기본 색상 (빨간색) 또는 마지막 시도 색상 반환
+    }
 
 
 // 랜덤 색상 선택 함수 (커스터마이징 옵션에 따라 팔레트 또는 완전 랜덤 색상 사용)
@@ -281,7 +281,15 @@ const panelPositions = [
     { x: -roomWidth/2 + 0.06, y: 1.9, z: -0.5, rotation: [0, Math.PI/2, 0] },
     { x: -roomWidth/2 + 0.06, y: 0.8, z: -0.5, rotation: [0, Math.PI/2, 0] },
     { x: roomWidth/2 - 0.06, y: 1.9, z: -0.5, rotation: [0, -Math.PI/2, 0] },
-    { x: roomWidth/2 - 0.06, y: 0.8, z: -0.5, rotation: [0, -Math.PI/2, 0] }
+    { x: roomWidth/2 - 0.06, y: 0.8, z: -0.5, rotation: [0, -Math.PI/2, 0] },
+    
+    // 바닥 액자 (2개) - z 좌표 변경, 사용자 시점에 더 가깝게
+    { x: -1.3, y: 0.02, z: -0.5, rotation: [-Math.PI/2, 0, 0] }, // 왼쪽 바닥, z: -1.5 -> -0.5 변경
+    { x: 1.3, y: 0.02, z: -0.5, rotation: [-Math.PI/2, 0, 0] },  // 오른쪽 바닥, z: -1.5 -> -0.5 변경
+
+    // 천장 액자 (2개) - z 좌표 변경, 사용자 시점에 더 가깝게
+    { x: -1.3, y: roomHeight - 0.02, z: -0.5, rotation: [Math.PI/2, 0, 0] }, // 왼쪽 천장, z: -1.5 -> -0.5 변경
+    { x: 1.3, y: roomHeight - 0.02, z: -0.5, rotation: [Math.PI/2, 0, 0] }   // 오른쪽 천장, z: -1.5 -> -0.5 변경
 ];
 
 panelPositions.forEach((pos, index) => {
@@ -477,11 +485,62 @@ function generateNextStimulus() {
     if (!gameState.isPlaying) return;
 
     let imageIndex, panelIndex;
+    let targetType = 'none'; // Default to no target
 
-    // 이미지 인덱스를 0 ~ imageTextures.length - 1 범위 내에서 랜덤하게 선택
-    imageIndex = Math.floor(Math.random() * imageTextures.length);
-    panelIndex = Math.floor(Math.random() * panels.length);
+    if (gameState.currentStimulus >= gameState.nBackLevel) {
+        // Prioritize dual targets first
+        if (gameState.bothTargets < 2) {
+            targetType = 'both';
+            gameState.bothTargets++;
+            gameState.sceneTargets++; // Increment scene and location targets as well for dual targets
+            gameState.locationTargets++;
+        } else if (gameState.sceneTargets < 6) {
+            targetType = 'scene';
+            gameState.sceneTargets++;
+        } else if (gameState.locationTargets < 6) {
+            targetType = 'location';
+            gameState.locationTargets++;
+        }
 
+
+        switch (targetType) {
+            case 'both':
+                imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
+                panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+                break;
+            case 'scene':
+                imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
+                do {
+                    panelIndex = Math.floor(Math.random() * panels.length);
+                } while (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
+                break;
+            case 'location':
+                panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+                do {
+                    imageIndex = Math.floor(Math.random() * imageTextures.length);
+                } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]);
+                break;
+            case 'none':
+            default:
+                imageIndex = Math.floor(Math.random() * imageTextures.length);
+                panelIndex = Math.floor(Math.random() * panels.length);
+                while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel] ||
+                panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]) {
+                    if (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]) {
+                        imageIndex = Math.floor(Math.random() * imageTextures.length);
+                    }
+                    if (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]) {
+                        panelIndex = Math.floor(Math.random() * panels.length);
+                    }
+                }
+                break;
+        }
+
+
+    } else { // n-back level is not reached yet, generate random stimuli
+        imageIndex = Math.floor(Math.random() * imageTextures.length);
+        panelIndex = Math.floor(Math.random() * panels.length);
+    }
 
     showStimulus(imageIndex, panelIndex);
 }
@@ -546,7 +605,7 @@ function startBlock() {
     gameState.locationHistory = [];
     gameState.sceneTargets = 0;
     gameState.locationTargets = 0;
-    gameState.bothTargets = 0;
+    gameState.bothTargets = 0,
     gameState.sceneResponses = 0;
     gameState.locationResponses = 0;
     gameState.sceneErrors = 0;
@@ -657,11 +716,11 @@ document.getElementById('pressSpace').addEventListener('click', function() {
 });
 
 document.getElementById('pressSpace').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    if (!gameState.isPlaying) {
-        startBlock();
-    }
-});
+        e.preventDefault();
+        if (!gameState.isPlaying) {
+            startBlock();
+        }
+    });
 
 document.getElementById('pressSpaceResult').addEventListener('click', function() {
     if (!gameState.isPlaying) {
@@ -689,7 +748,7 @@ function setCustomLevel() {
     }
 
     gameState.nBackLevel = newLevel;
-    document.getElementById('nBackLevel').textContent = newLevel;
+    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
 
     customLevelInput.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
     setTimeout(() => {
