@@ -1,0 +1,198 @@
+﻿﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dual N-back Task with Images</title>
+    <!-- Include your CSS properly -->
+    <style>
+    /* Include the CSS content here */
+    body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+    }
+    canvas {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+    }
+
+    .level-input {
+        margin: 15px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap; /* Allow wrapping on small screens */
+    }
+    .level-input input {
+        width: 60px;
+        padding: 10px; /* Larger padding for touch targets */
+        text-align: center;
+        font-size: 18px; /* Larger font for mobile */
+        background-color: rgba(255,255,255,0.9);
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .level-input button {
+        padding: 10px 20px; /* Larger padding for touch targets */
+        background-color: rgba(255,255,255,0.9);
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px; /* Larger font for mobile */
+        min-width: 70px; /* Ensure minimum width for touch */
+    }
+    .level-input button:hover {
+        background-color: rgba(255,255,255,1);
+    }
+
+    #titleScreen {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
+        background-color: rgba(0,0,0,0.7);
+        padding: 20px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 400px;
+        z-index: 10;
+    }
+    #titleScreen h1 {
+        margin-top: 0;
+    }
+    #nBackLevel {
+        font-size: 48px;
+        margin: 20px 0;
+    }
+    #pressSpace, #pressSpaceResult {
+        cursor: pointer;
+        padding: 10px 15px;
+        background-color: rgba(255,255,255,0.2);
+        border-radius: 5px;
+        margin-top: 20px;
+        font-size: 24px;
+        animation: blink 1.5s infinite;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    #pressSpace:active, #pressSpaceResult:active {
+        background-color: rgba(255,255,255,0.4);
+    }
+    #resultScreen {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
+        background-color: rgba(0,0,0,0.7);
+        padding: 20px;
+        border-radius: 10px;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        width: 400px;
+        z-index: 10;
+    }
+    #stats {
+        margin: 20px 0;
+        text-align: left;
+        width: 100%;
+    }
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+    .indicator-box {
+        position: absolute;
+        width: 80px; /* Increased size for better touch targets */
+        height: 80px; /* Increased size for better touch targets */
+        background-color: rgba(128, 128, 128, 0.7);
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 32px; /* Larger font for mobile */
+        font-weight: bold;
+        color: white;
+        transition: background-color 0.2s ease;
+        cursor: pointer; /* Show pointer cursor on desktop */
+        -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+        user-select: none; /* Prevent text selection */
+        touch-action: manipulation; /* Optimize for touch */
+        z-index: 10;
+    }
+    #scene-indicator {
+        left: 30px;
+        bottom: 40px;
+    }
+    #location-indicator {
+        right: 30px;
+        bottom: 40px;
+    }
+
+    .indicator-box:active {
+        opacity: 0.8;
+        transform: scale(0.95);
+    }
+
+    .correct {
+        background-color: rgba(0, 180, 0, 0.8) !important;
+    }
+    .incorrect {
+        background-color: rgba(200, 0, 0, 0.8) !important;
+    }
+    .missed {
+        background-color: rgba(200, 0, 0, 0.8) !important;
+    }
+    .early {
+        background-color: rgba(0, 100, 255, 0.8) !important;
+    }
+    </style>
+</head>
+<body>
+    <div id="titleScreen">
+        <h1>Dual N-Back Task</h1>
+        <div>Current Level: <span id="nBackLevel">1</span>-back</div>
+        <div class="level-input">
+            <label for="customLevel">Start at level: </label>
+            <input type="number" id="customLevel" min="1" max="9" value="1">
+            <button id="setLevelBtn">Set</button>
+        </div>
+        <div>Press 'S' when the IMAGE repeats</div>
+        <div>Press 'L' when a LOCATION repeats</div>
+        <div>You have 1.5 seconds after an image disappears to respond</div>
+        <div id="pressSpace">Press SPACE to begin</div>
+    </div>
+
+    <div id="resultScreen">
+        <h1>Block Complete</h1>
+        <div id="stats">
+            <div>Scene Errors: <span id="sceneErrors">0</span>/6</div>
+            <div>Location Errors: <span id="locationErrors">0</span>/6</div>
+            <div>N-Back Level: <span id="resultNLevel">1</span></div>
+            <div id="levelChange"></div>
+        </div>
+        <div id="pressSpaceResult">Press SPACE to continue</div>
+    </div>
+
+    <div id="scene-indicator" class="indicator-box">S</div>
+    <div id="location-indicator" class="indicator-box">L</div>
+
+    <!-- Load Three.js first -->
+    <script src="ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Then load your script -->
+    <script src="nback.js"></script>
+</body>
+</html>
