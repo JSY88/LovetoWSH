@@ -1,4 +1,5 @@
-﻿﻿<!DOCTYPE html>
+--- START OF FILE index.htm ---
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -68,6 +69,7 @@
     }
     #titleScreen h1 {
         margin-top: 0;
+        font-size: 2em; /* Increased title font size */
     }
     #nBackLevel {
         font-size: 48px;
@@ -159,6 +161,17 @@
     .early {
         background-color: rgba(0, 100, 255, 0.8) !important;
     }
+
+    #stimulus-counter {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        font-size: 20px;
+        color: white;
+        opacity: 0.5; /* 투명도 50% */
+        z-index: 10;
+        pointer-events: none; /* 클릭 이벤트 무시 */
+    }
     </style>
 </head>
 <body>
@@ -190,9 +203,13 @@
     <div id="scene-indicator" class="indicator-box">S</div>
     <div id="location-indicator" class="indicator-box">L</div>
 
+    <!-- 자극 횟수 카운터 -->
+    <div id="stimulus-counter">Stimulus: 0 / 30</div> 
+
     <!-- Load Three.js first -->
     <script src="ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Then load your script -->
     <script src="nback.js"></script>
 </body>
 </html>
+--- END OF FILE index.htm ---
