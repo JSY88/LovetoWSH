@@ -747,14 +747,16 @@ function endBlock() {
     let levelChange = '';
     let nextNBackLevel = gameState.nBackLevel;
 
-    if (totalSceneErrors < 3 && totalLocationErrors < 3) {
-        nextNBackLevel = gameState.nBackLevel + 1;
-        levelChange = '⬆️ Excellent! Level increased!';
-    } else if (totalSceneErrors > 5 || totalLocationErrors > 5) {
-        nextNBackLevel = Math.max(1, gameState.nBackLevel - 1);
-        levelChange = '⬇️ Too many errors. Level decreased.';
-    } else {
-        levelChange = '➡️ Level remains the same.';
+    if (gameState.nBackLevel === 1 && (totalSceneErrors > 5 || totalLocationErrors > 5)) { // 현재 레벨 1이고, 오류 횟수가 레벨 다운 조건 만족하면
+        levelChange = '즐기는 거야~!😆'; // 레벨 다운 메시지 (레벨 1에서는 레벨 다운 없음)
+    } else if (totalSceneErrors < 3 && totalLocationErrors < 3) { // 장면/위치 오류 횟수 모두 3회 미만이면 (레벨 업 조건 만족)
+        nextNBackLevel = gameState.nBackLevel + 1; // 다음 레벨 = 현재 레벨 + 1 (레벨 업)
+        levelChange = ⬆️ 최고야! 레벨업!!♥️🥰'; // 레벨 업 메시지
+    } else if (totalSceneErrors > 5 || totalLocationErrors > 5) { // 장면/위치 오류 횟수 중 하나라도 5회 초과면 (레벨 다운 조건 만족)
+        nextNBackLevel = Math.max(1, gameState.nBackLevel - 1); // 다음 레벨 = max(1, 현재 레벨 - 1) (레벨 다운, 최소 레벨 1) - Math.max(1, ...) : 레벨이 1 아래로 내려가지 않도록 함
+        levelChange = '⬇️ 괜찮아! 다시 해보자!😉♥️'; // 레벨 다운 메시지
+    } else { // 레벨 유지 조건
+        levelChange = '➡️ 오 좋아! 킵고잉!👏♥️'; // 레벨 유지 메시지
     }
 
     document.getElementById('levelChange').textContent = levelChange;
