@@ -41,7 +41,7 @@ const gameState = {
 // --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
 const wallColor = 0x444444;     // 벽 색상 (gray) - Three.js Color 값 (hexadecimal)
 const floorColor = 0x783F04;    // 바닥 색상 (brownish) - Three.js Color 값 (hexadecimal)
-const panelColor = 0x666666;    // 패널(액자) 색상 (dark gray) - Three.js Color 값 (hexadecimal)
+const panelColor = 0x000000;    // 패널(액자) 색상 (dark gray) - Three.js Color 값 (hexadecimal)
 const imageScale = 1.0;         // 이미지 크기 비율 (1.0: 원래 크기, 0.5: 절반 크기) - 1.0: 원래 크기, 0.5: 절반 크기
 const randomizeStimulusColor = true; // 게임 시작 시 이미지에 랜덤 색상 입히기 여부 (true: 랜덤 색상 입힘, false: 색상 입히지 않음) - true: 랜덤 색상 적용, false: 색상 미적용
 // --- 커스터마이징 옵션 끝 ---
@@ -393,7 +393,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex) { // 간섭
     }
 
     // --- 간섭 발생 확률 (개별 간섭 유형 확률 -> 전체 간섭 확률로 변경) ---
-    const interferenceChance = 0.0; // 전체 간섭 발생 확률 (12.5%) - 필요에 따라 조절 - 모든 간섭 유형에 공통 적용
+    const interferenceChance = 0.35; // 전체 간섭 발생 확률 (12.5%) - 필요에 따라 조절 - 모든 간섭 유형에 공통 적용
     if (Math.random() < interferenceChance) { // 전체 간섭 발생 확률에 따라 간섭 적용 여부 결정
         let interferedImageIndex = currentImageIndex; // 간섭된 이미지 인덱스 변수 초기화 (기본값: 현재 이미지 인덱스)
         let interferedPanelIndex = currentPanelIndex; // 간섭된 패널 인덱스 변수 초기화 (기본값: 현재 패널 인덱스)
