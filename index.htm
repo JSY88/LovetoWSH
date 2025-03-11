@@ -70,9 +70,8 @@
         flex-direction: column; /* flex direction column: 세로 방향 정렬 */
         align-items: center; /* align items center: 가로축(중앙) 기준 정렬 */
         width: 400px; /* width 400px */
-        z-index: 10; /* z-index 10: canvas 위에 표시 */
+        z-index: 10; /* canvas 위에 표시 */
     }
-    /* 타이틀 화면 h1 스타일 */
     #titleScreen h1 {
         margin-top: 0; /* margin-top 0: h1 상단 margin 제거 */
         font-size: 2em; /* font-size 2em: 기본 폰트 크기의 2배 */
@@ -96,7 +95,7 @@
     }
 
     /* "Press SPACE" 메시지 active (클릭/터치) 시 스타일 */
-    #pressSpace:active, #pressSpaceResult:active {
+     #pressSpace:active, #pressSpaceResult:active {
         background-color: rgba(255,255,255,0.4); /* active 시 배경색 약간 진하게 */
     }
     /* 결과 화면 스타일 */
@@ -114,101 +113,129 @@
         flex-direction: column; /* flex direction column: 세로 방향 정렬 */
         align-items: center; /* align items center: 가로축(중앙) 기준 정렬 */
         width: 400px; /* width 400px */
-        z-index: 10; /* z-index 10: canvas 위에 표시 */
+        z-index: 10; /* canvas 위에 표시 */
     }
     /* 결과 통계 영역 스타일 */
     #stats {
-        margin: 20px 0; /* 상하 margin 20px */
-        text-align: left; /* 텍스트 왼쪽 정렬 */
-        width: 100%; /* width 100%: 부모 width 에 맞춤 */
+        margin: 20px 0;
+        text-align: left;
+        width: 100%;
     }
     /* blink 애니메이션 (깜빡임 효과) */
     @keyframes blink {
-        0% { opacity: 1; } /* 0% 투명도 1 (보임) */
-        50% { opacity: 0.3; } /* 50% 투명도 0.3 (약간 흐림) */
-        100% { opacity: 1; } /* 100% 투명도 1 (보임) */
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
     }
     /* indicator box (S, L 박스) 스타일 */
     .indicator-box {
-        position: absolute; /* position absolute: body 기준 절대 위치 */
-        width: 80px; /* width 80px (터치 영역 넓히기) */
-        height: 80px; /* height 80px (터치 영역 넓히기) */
-        background-color: rgba(128, 128, 128, 0.7); /* 배경색 gray 투명도 0.7 */
-        border-radius: 8px; /* border-radius 8px */
-        display: flex; /* flexbox 레이아웃 */
-        justify-content: center; /* 가로 중앙 정렬 */
-        align-items: center; /* 세로 중앙 정렬 */
-        font-size: 32px; /* font-size 32px (모바일용 크게) */
-        font-weight: bold; /* font-weight bold: 텍스트 굵게 */
-        color: white; /* 텍스트 색상 흰색 */
-        transition: background-color 0.2s ease; /* 배경색 transition 0.2초 ease */
-        cursor: pointer; /* cursor pointer: hover 시 손가락 커서 (데스크탑) */
-        -webkit-tap-highlight-color: transparent; /* 터치 하이라이트 제거 (모바일) */
-        user-select: none; /* 텍스트 선택 방지 */
-        touch-action: manipulation; /* 터치 최적화 (모바일) */
-        z-index: 10; /* z-index 10: canvas 위에 표시 */
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        background-color: rgba(128, 128, 128, 0.7);
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 32px;
+        font-weight: bold;
+        color: white;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        touch-action: manipulation;
+        z-index: 10;
     }
     /* 장면 (S) indicator box 위치 */
     #scene-indicator {
-        left: 30px; /* left 30px: 왼쪽 여백 30px */
-        bottom: 40px; /* bottom 40px: 하단 여백 40px */
+        left: 30px;
+        bottom: 40px;
     }
     /* 위치 (L) indicator box 위치 */
     #location-indicator {
-        right: 30px; /* right 30px: 오른쪽 여백 30px */
-        bottom: 40px; /* bottom 40px: 하단 여백 40px */
+        right: 30px;
+        bottom: 40px;
     }
 
     /* indicator box active (클릭/터치) 시 스타일 */
     .indicator-box:active {
-        opacity: 0.8; /* active 시 투명도 0.8 */
-        transform: scale(0.95); /* active 시 크기 0.95배 */
+        opacity: 0.8;
+        transform: scale(0.95);
     }
 
     /* correct (정답) indicator box 스타일 */
     .correct {
-        background-color: rgba(0, 180, 0, 0.8) !important; /* 배경색 초록 투명도 0.8 !important: 우선 적용 */
+        background-color: rgba(0, 180, 0, 0.8) !important;
     }
     /* incorrect (오답) indicator box 스타일 */
     .incorrect {
-        background-color: rgba(200, 0, 0, 0.8) !important; /* 배경색 빨강 투명도 0.8 !important: 우선 적용 */
+        background-color: rgba(200, 0, 0, 0.8) !important;
     }
     /* missed (미반응) indicator box 스타일 */
     .missed {
-        background-color: rgba(200, 0, 0, 0.8) !important; /* 배경색 빨강 투명도 0.8 !important: 우선 적용 */
+        background-color: rgba(200, 0, 0, 0.8) !important;
     }
     /* early (조기 반응) indicator box 스타일 */
     .early {
-        background-color: rgba(0, 100, 255, 0.8) !important; /* 배경색 파랑 투명도 0.8 !important: 우선 적용 */
+        background-color: rgba(0, 100, 255, 0.8) !important;
     }
 
     /* 자극 횟수 카운터 스타일 */
     #stimulus-counter {
-        position: absolute; /* position absolute: body 기준 절대 위치 */
-        bottom: 20px; /* bottom 20px: 하단 여백 20px */
-        right: 20px; /* right 20px: 오른쪽 여백 20px */
-        font-size: 20px; /* font-size 20px */
-        color: white; /* 텍스트 색상 흰색 */
-        opacity: 0.5; /* 투명도 50% */
-        z-index: 10; /* z-index 10: canvas 위에 표시 */
-        pointer-events: none; /* pointer-events none: 클릭 이벤트 무시 (transparent) */
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        font-size: 20px;
+        color: white;
+        opacity: 0.5;
+        z-index: 10;
+        pointer-events: none;
     }
 
     /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS --- */
     /* 연속 게임 횟수, 오늘 게임 횟수 카운터 공통 스타일 */
     #consecutiveGamesCounter, #totalGamesTodayCounter {
-        position: absolute; /* position absolute: body 기준 절대 위치 */
-        bottom: 10px; /* 결과창 하단으로부터의 거리 조정 */
-        left: 50%; /* left 50%: 가로 중앙 정렬 기준점 */
-        transform: translateX(-50%); /* translateX(-50%): 가로 중앙 정렬 */
-        font-size: 18px; /* 폰트 크기 조정 */
-        color: white; /* 기본 색상 흰색 */
-        text-align: center; /* 텍스트 가운데 정렬 */
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 18px;
+        color: white;
+        text-align: center;
     }
     /* 횟수 숫자 스타일 (lightskyblue 색상) */
     #consecutiveGamesCount, #totalGamesTodayCountValue {
-        color: lightskyblue; /* 횟수 숫자 파란색 */
+        color: lightskyblue;
     }
+
+    /* --- [NEW] 모바일 화면 대응 CSS (미디어 쿼리) --- */
+    @media screen and (max-width: 480px) { /* 480px 이하 화면에 적용 (일반적인 모바일 portrait) */
+        #titleScreen {
+            width: 90%;
+            max-width: 300px;
+            padding: 20px;
+        }
+        #titleScreen h1 {
+            font-size: 1.5em;
+        }
+        #nBackLevel {
+            font-size: 36px;
+            margin: 15px 0;
+        }
+        #pressSpace, #pressSpaceResult {
+            font-size: 18px;
+            padding: 8px 12px;
+            margin-top: 15px;
+        }
+        .level-input label,
+        .level-input button,
+        .level-input input {
+            font-size: 14px;
+            padding: 8px;
+        }
+    }
+    /* --- [NEW] 모바일 화면 대응 CSS 끝 --- */
     /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS 끝 --- */
 
     </style>
@@ -216,21 +243,21 @@
 <body>
     <!-- 타이틀 화면 -->
     <div id="titleScreen">
-        <h1>Dual N-Back Task</h1> <!-- 게임 제목 -->
-        <div>Current Level: <span id="nBackLevel">1</span>-back</div> <!-- 현재 레벨 표시 (nBackLevel span 에 값 표시) -->
-        <div class="level-input"> <!-- 레벨 입력 영역 -->
-            <label for="customLevel">Start at level: </label> <!-- 레벨 설정 label -->
-            <input type="number" id="customLevel" min="1" max="9" value="1"> <!-- 레벨 입력 input (min: 1, max: 9, 초기값: 1) -->
-            <button id="setLevelBtn">Set</button> <!-- 레벨 설정 버튼 (setLevelBtn id) -->
+        <h1>Dual N-Back Task</h1>
+        <div>Current Level: <span id="nBackLevel">1</span>-back</div>
+        <div class="level-input">
+            <label for="customLevel">Start at level: </label>
+            <input type="number" id="customLevel" min="1" max="9" value="1">
+            <button id="setLevelBtn">Set</button>
         </div>
-        <div>Press 'S' when the IMAGE repeats</div> <!-- 이미지 반복 시 'S' 키 입력 안내 -->
-        <div>Press 'L' when a LOCATION repeats</div> <!-- 위치 반복 시 'L' 키 입력 안내 -->
-        <div>You have 1.5 seconds after an image disappears to respond</div> <!-- 반응 시간 1.5초 안내 -->
-        <div id="pressSpace">Press SPACE to begin</div> <!-- "Press SPACE to begin" 메시지 (pressSpace id) -->
+        <div>Press 'S' when the IMAGE repeats</div>
+        <div>Press 'L' when a LOCATION repeats</div>
+        <div>You have 1.5 seconds after an image disappears to respond</div>
+        <div id="pressSpace">Press SPACE to begin</div>
 
         <!-- --- [NEW] 메인 화면창 오늘 게임 횟수 표시 --- -->
-        <div id="totalGamesTodayCounter"> <!-- 오늘 게임 횟수 카운터 영역 -->
-            오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번 <!-- "오늘 게임 횟수" 텍스트 및 횟수 값 (totalGamesTodayCountValue span 에 값 표시) -->
+        <div id="totalGamesTodayCounter">
+            오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번
         </div>
         <!-- --- [NEW] 메인 화면창 오늘 게임 횟수 표시 끝 --- -->
 
@@ -238,73 +265,72 @@
 
     <!-- 결과 화면 (초기 숨김) -->
     <div id="resultScreen">
-        <h1>Block Complete</h1> <!-- "Block Complete" 제목 -->
-        <div id="stats"> <!-- 결과 통계 영역 -->
-            <div>Scene Errors: <span id="sceneErrors">0</span>/6</div> <!-- 장면 오류 횟수 표시 (sceneErrors span 에 값 표시) -->
-            <div>Location Errors: <span id="locationErrors">0</span>/6</div> <!-- 위치 오류 횟수 표시 (locationErrors span 에 값 표시) -->
-            <div>N-Back Level: <span id="resultNLevel">1</span></div> <!-- 결과 화면 N-back 레벨 표시 (resultNLevel span 에 값 표시) -->
-            <div id="levelChange"></div> <!-- 레벨 변화 메시지 표시 (levelChange div 에 텍스트 표시) -->
+        <h1>Block Complete</h1>
+        <div id="stats">
+            <div>Scene Errors: <span id="sceneErrors">0</span>/6</div>
+            <div>Location Errors: <span id="locationErrors">0</span>/6</div>
+            <div>N-Back Level: <span id="resultNLevel">1</span></div>
+            <div id="levelChange"></div>
         </div>
-        <div id="pressSpaceResult">Press SPACE to continue</div> <!-- 결과 화면 "Press SPACE to continue" 메시지 (pressSpaceResult id) -->
+        <div id="pressSpaceResult">Press SPACE to continue</div>
 
         <!-- --- [NEW] 결과 화면 연속 게임 횟수 표시 --- -->
-        <div id="consecutiveGamesCounter"> <!-- 결과 화면 연속 게임 횟수 카운터 영역 -->
-            연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번 <!-- "연속 게임 횟수" 텍스트 및 횟수 값 (consecutiveGamesCount span 에 값 표시) -->
+        <div id="consecutiveGamesCounter">
+            연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번
         </div>
         <!-- --- [NEW] 결과 화면 연속 게임 횟수 표시 끝 --- -->
 
     </div>
 
     <!-- 장면 반응 indicator box (S) -->
-    <div id="scene-indicator" class="indicator-box">S</div> <!-- 장면 반응 indicator box (scene-indicator id, indicator-box class) -->
+    <div id="scene-indicator" class="indicator-box">S</div>
     <!-- 위치 반응 indicator box (L) -->
-    <div id="location-indicator" class="indicator-box">L</div> <!-- 위치 반응 indicator box (location-indicator id, indicator-box class) -->
+    <div id="location-indicator" class="indicator-box">L</div>
 
     <!-- 자극 횟수 카운터 -->
-    <div id="stimulus-counter">Stimulus: 0 / 30</div> <!-- 자극 횟수 카운터 (stimulus-counter id) -->
+    <div id="stimulus-counter">Stimulus: 0 / 30</div>
 
     <!-- Three.js 라이브러리 로드 -->
-    <script src="ajax/libs/three.js/r128/three.min.js"></script> <!-- Three.js 라이브러리 (CDN) -->
+    <script src="ajax/libs/three.js/r128/three.min.js"></script>
     <!-- nback.js 스크립트 로드 -->
-    <script src="nback.js"></script> <!-- nback.js 파일 로드 -->
-     <!-- --- [NEW] Double tap fullscreen script --- -->
+    <script src="nback.js"></script>
+    <!-- --- [NEW] Double tap fullscreen script --- -->
     <script>
         // 데스크탑 더블 클릭 이벤트: 전체화면 토글
         document.body.addEventListener('dblclick', function() {
-            if (!document.fullscreenElement) { // 현재 전체화면 아니면
-                document.body.requestFullscreen(); // 전체화면 요청
-            } else { // 현재 전체화면이면
-                document.exitFullscreen(); // 전체화면 해제
+            if (!document.fullscreenElement) {
+                document.body.requestFullscreen();
+            } else {
+                document.exitFullscreen();
             }
         });
 
-        let lastTouchTime = 0; // 마지막 터치 시간 저장 변수
-        // 모바일 터치 이벤트: 더블 탭 감지 및 전체화면 토글
+        let lastTouchTime = 0;
         document.body.addEventListener('touchstart', function(e) {
-            let currentTime = new Date().getTime(); // 현재 시간
-            let tapLength = currentTime - lastTouchTime; // 탭 간 간격 계산
-            if (tapLength < 300 && tapLength > 0) { // 더블 탭 조건 (300ms 이내 탭 간격, 탭 간격 유효)
-                e.preventDefault(); // 줌 방지 (더블 탭 시 기본 줌 기능 방지)
-                if (!document.fullscreenElement) { // 현재 전체화면 아니면
-                    if (document.body.requestFullscreen) { // 표준 전체화면 API
+            let currentTime = new Date().getTime();
+            let tapLength = currentTime - lastTouchTime;
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                if (!document.fullscreenElement) {
+                    if (document.body.requestFullscreen) {
                         document.body.requestFullscreen();
-                    } else if (document.body.webkitRequestFullscreen) { /* Safari */ // Safari 브라우저
+                    } else if (document.body.webkitRequestFullscreen) { /* Safari */
                         document.body.webkitRequestFullscreen();
-                    } else if (document.body.msRequestFullscreen) { /* IE11 */ // IE11 브라우저
+                    } else if (document.body.msRequestFullscreen) { /* IE11 */
                         document.body.msRequestFullscreen();
                     }
-                } else { // 현재 전체화면이면
-                    if (document.exitFullscreen) { // 표준 전체화면 해제 API
+                } else {
+                    if (document.exitFullscreen) {
                         document.exitFullscreen();
-                    } else if (document.body.webkitExitFullscreen) { /* Safari */ // Safari 브라우저
+                    } else if (document.body.webkitExitFullscreen) { /* Safari */
                         document.webkitExitFullscreen();
-                    } else if (document.msExitFullscreen) { /* IE11 */ // IE11 브라우저
+                    } else if (document.msExitFullscreen) { /* IE11 */
                         document.msExitFullscreen();
                     }
                 }
-                lastTouchTime = 0; // 마지막 터치 시간 초기화 (더블 탭 처리 후)
-            } else { // 더블 탭 조건 만족 안 하면
-                lastTouchTime = currentTime; // 현재 시간을 마지막 터치 시간으로 저장
+                lastTouchTime = 0;
+            } else {
+                lastTouchTime = currentTime;
             }
         });
     </script> <!-- --- [NEW] Double tap fullscreen script END --- -->
