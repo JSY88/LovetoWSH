@@ -5,7 +5,7 @@ const gameState = {
     nBackLevel: 1,
     currentBlock: 0,
     maxBlocks: 12,
-    stimuliPerBlock: 30,
+    stimuliPerBlock: 1,
     currentStimulus: 0,
     sceneHistory: [],
     locationHistory: [],
@@ -679,6 +679,7 @@ function endBlock() {
     document.getElementById('levelChange').textContent = levelChange;
     gameState.nBackLevel = nextNBackLevel;
     document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    localStorage.setItem('nBackLevel', gameState.nBackLevel);
     document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
 
     // --- [수정됨] 결과 이미지 설정 및 동적 로딩 (오류 수정) ---
