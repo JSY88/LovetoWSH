@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,7 +59,7 @@
         text-align: center;
         color: white;
         background-color: rgba(0,0,0,0.7);
-        padding: 20px;
+        padding: 40px;
         border-radius: 10px;
         display: flex;
         flex-direction: column;
@@ -97,7 +98,7 @@
         text-align: center;
         color: white;
         background-color: rgba(0,0,0,0.7);
-        padding: 20px;
+        padding: 40px;
         border-radius: 10px;
         display: none;
         flex-direction: column;
@@ -171,6 +172,22 @@
         z-index: 10;
         pointer-events: none; /* 클릭 이벤트 무시 */
     }
+
+    /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS --- */
+    #consecutiveGamesCounter, #totalGamesTodayCounter {
+        position: absolute;
+        bottom: 10px; /* 결과창 하단으로부터의 거리 조정 */
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 18px; /* 폰트 크기 조정 */
+        color: white; /* 기본 색상 흰색 */
+        text-align: center; /* 텍스트 가운데 정렬 */
+    }
+    #consecutiveGamesCount, #totalGamesTodayCountValue {
+        color: lightskyblue; /* 횟수 숫자 파란색 */
+    }
+    /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS 끝 --- */
+
     </style>
 </head>
 <body>
@@ -186,6 +203,13 @@
         <div>Press 'L' when a LOCATION repeats</div>
         <div>You have 1.5 seconds after an image disappears to respond</div>
         <div id="pressSpace">Press SPACE to begin</div>
+
+        <!-- --- [NEW] 메인 화면창 오늘 게임 횟수 표시 --- -->
+        <div id="totalGamesTodayCounter">
+            오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번
+        </div>
+        <!-- --- [NEW] 메인 화면창 오늘 게임 횟수 표시 끝 --- -->
+
     </div>
 
     <div id="resultScreen">
@@ -197,13 +221,20 @@
             <div id="levelChange"></div>
         </div>
         <div id="pressSpaceResult">Press SPACE to continue</div>
+
+        <!-- --- [NEW] 결과 화면 연속 게임 횟수 표시 --- -->
+        <div id="consecutiveGamesCounter">
+            연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번
+        </div>
+        <!-- --- [NEW] 결과 화면 연속 게임 횟수 표시 끝 --- -->
+
     </div>
 
     <div id="scene-indicator" class="indicator-box">S</div>
     <div id="location-indicator" class="indicator-box">L</div>
 
     <!-- 자극 횟수 카운터 -->
-    <div id="stimulus-counter">Stimulus: 0 / 30</div> 
+    <div id="stimulus-counter">Stimulus: 0 / 30</div>
 
     <!-- Load Three.js first -->
     <script src="ajax/libs/three.js/r128/three.min.js"></script>
