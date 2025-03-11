@@ -773,7 +773,7 @@ function endBlock() { // 블록 종료 함수 - 한 블록 완료 후 결과 처
 
     gameState.nBackLevel = nextNBackLevel; // gameState 의 N-back 레벨 업데이트 - 다음 레벨로 업데이트
     document.getElementById('nBackLevel').textContent = gameState.nBackLevel; // 타이틀 화면의 레벨 표시 업데이트 - 타이틀 화면 레벨 표시 업데이트
-
+    localStorage.setItem('nBackLevel', gameState.nBackLevel);
     // --- 결과 화면에 연속 게임 횟수 표시 --- // --- [NEW] 결과 화면 연속 게임 횟수 표시 ---
     document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames; // 결과 화면에 연속 게임 횟수 표시 - 결과 화면에 연속 게임 횟수 표시
     document.getElementById('resultScreen').style.display = 'flex'; // 결과 화면 표시 - 결과 화면 표시
