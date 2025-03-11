@@ -2,7 +2,7 @@ const gameState = {
     isPlaying: false, // 게임 플레이 상태 (true: 진행 중, false: 일시 정지)
     nBackLevel: 1, // 현재 N-back 레벨 (기본값: 1)
     currentBlock: 0, // 현재 블록 번호
-    maxBlocks: 12, // 최대 블록 수 (현재 사용 안 함)
+    maxBlocks: 12, // 최대 블록 수 (최대 블록 수, 현재 사용 안 함)
     stimuliPerBlock: 30, // 블록당 자극 제시 횟수 (30회)
     currentStimulus: 0, // 현재 제시된 자극 횟수
     sceneHistory: [], // 장면 자극 히스토리 (이미지 인덱스 저장 배열)
@@ -23,10 +23,7 @@ const gameState = {
     inResponseWindow: false, // 반응 시간 창 활성화 여부
     canRespond: true, // 반응 가능 상태 여부
 
-//const interferenceChance 랜덤 간섭의 발생활률 조정
-
     // --- 간섭 관련 설정 ---
-    // interferenceChance: 0.325, // 기존: 전체 간섭 발생 확률 (더 이상 사용 안 함)
     interferenceType: "random", // 간섭 유형 ("none", "previous", "cyclic", "next", "random") - 기본값: "none" (간섭 없음), "random" 추가
     randomInterferenceProbabilities: { // 랜덤 간섭 유형별 확률 (합계: 1) - interferenceType: "random" 일 때 적용
         "previous": 0.33, // 이전(previous) 간섭 확률: 33%
@@ -34,13 +31,16 @@ const gameState = {
         "next": 0.34 // 다음(next) 간섭 확률: 34%
     },
     cyclicInterferenceNBackLevel: 2, // 순환 간섭 시 사용할 N-back 레벨 (기본값: 2) - interferenceType: "cyclic" 일 때 적용
-    nextStimulusInfo: null // "next" 간섭 유형을 위한 다음 자극 정보 임시 저장 변수 - interferenceType: "next" 일 때 사용
+    nextStimulusInfo: null, // "next" 간섭 유형을 위한 다음 자극 정보 임시 저장 변수 - interferenceType: "next" 일 때 사용
     // --- 간섭 관련 설정 끝 ---
+
+    consecutiveGames: 0, // 연속 게임 횟수 (현재 세션 기준) - 새로 추가
+    totalGamesToday: 0 // 오늘 총 게임 횟수 - 새로 추가
 };
 
 // --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
-const wallColor = 0x444444;     // 벽 색상 (gray) - Three.js Color 값 (hexadecimal)
-const floorColor = 0x783F04;    // 바닥 색상 (brownish) - Three.js Color 값 (hexadecimal)
+const wallColor = 0x262626;     // 벽 색상 (gray) - Three.js Color 값 (hexadecimal)
+const floorColor = 0x393734;    // 바닥 색상 (brownish) - Three.js Color 값 (hexadecimal)
 const panelColor = 0x000000;    // 패널(액자) 색상 (dark gray) - Three.js Color 값 (hexadecimal)
 const imageScale = 1.0;         // 이미지 크기 비율 (1.0: 원래 크기, 0.5: 절반 크기) - 1.0: 원래 크기, 0.5: 절반 크기
 const randomizeStimulusColor = true; // 게임 시작 시 이미지에 랜덤 색상 입히기 여부 (true: 랜덤 색상 입힘, false: 색상 입히지 않음) - true: 랜덤 색상 적용, false: 색상 미적용
@@ -393,7 +393,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex) { // 간섭
     }
 
     // --- 간섭 발생 확률 (개별 간섭 유형 확률 -> 전체 간섭 확률로 변경) ---
-    const interferenceChance = 0.35; // 전체 간섭 발생 확률 (12.5%) - 필요에 따라 조절 - 모든 간섭 유형에 공통 적용
+    const interferenceChance = 0.35; // 전체 간섭 발생 확률 (35%) - 필요에 따라 조절 - 모든 간섭 유형에 공통 적용
     if (Math.random() < interferenceChance) { // 전체 간섭 발생 확률에 따라 간섭 적용 여부 결정
         let interferedImageIndex = currentImageIndex; // 간섭된 이미지 인덱스 변수 초기화 (기본값: 현재 이미지 인덱스)
         let interferedPanelIndex = currentPanelIndex; // 간섭된 패널 인덱스 변수 초기화 (기본값: 현재 패널 인덱스)
@@ -712,6 +712,12 @@ function startBlock() { // 블록 시작 함수 - 게임 시작 시 호출
     gameState.locationResponses = 0; // 위치 반응 횟수 0으로 초기화
     gameState.sceneErrors = 0; // 장면 오류 횟수 0으로 초기화
     gameState.locationErrors = 0; // 위치 오류 횟수 0으로 초기화
+    gameState.consecutiveGames++; // 연속 게임 횟수 증가 - 새로운 게임 시작 시 카운터 증가 // --- [NEW] 연속 게임 횟수 증가 ---
+    gameState.totalGamesToday++; // 오늘 총 게임 횟수 증가 // --- [NEW] 오늘 총 게임 횟수 증가 ---
+
+    // --- 오늘 게임 횟수 LocalStorage 에 저장 ---
+    localStorage.setItem('totalGamesToday', gameState.totalGamesToday); // LocalStorage 에 오늘 총 게임 횟수 저장
+    localStorage.setItem('lastGameDate', new Date().toDateString()); // LocalStorage 에 마지막 게임 날짜 저장 (날짜 비교 위해)
 
     document.getElementById('titleScreen').style.display = 'none'; // 타이틀 화면 숨기기
     document.getElementById('resultScreen').style.display = 'none'; // 결과 화면 숨기기
@@ -764,7 +770,9 @@ function endBlock() {
     gameState.nBackLevel = nextNBackLevel;
     document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
 
-    document.getElementById('resultScreen').style.display = 'flex';
+    // --- 결과 화면에 연속 게임 횟수 표시 --- // --- [NEW] 결과 화면 연속 게임 횟수 표시 ---
+    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames; // 결과 화면에 연속 게임 횟수 표시
+    document.getElementById('resultScreen').style.display = 'flex'; // 결과 화면 표시
 
      // 디버깅 로그: endBlock 함수 종료 시 레벨 변화 정보 출력
     console.log("endBlock() - 종료:", "levelChange:", levelChange, "nextNBackLevel:", nextNBackLevel);
@@ -873,13 +881,26 @@ function setCustomLevel() { // 사용자 정의 레벨 설정 함수 - setLevelB
     }, 500); // 0.5초 딜레이
 }
 
-// --- 페이지 로드 시 저장된 N-back 레벨 불러오기 ---
+// --- 페이지 로드 시 저장된 N-back 레벨 및 오늘 게임 횟수 불러오기 --- // --- [NEW] 페이지 로드 시 오늘 게임 횟수 불러오기 ---
 window.addEventListener('load', function() { // window load event listener 등록 - 페이지 로드 완료 시 실행
+    // --- 저장된 N-back 레벨 불러오기 ---
     const storedLevel = localStorage.getItem('nBackLevel'); // LocalStorage 에서 'nBackLevel' 키로 저장된 값 가져오기
     if (storedLevel) { // 저장된 레벨이 있으면
         gameState.nBackLevel = parseInt(storedLevel); // gameState 의 N-back 레벨을 LocalStorage 에서 불러온 값으로 설정
         document.getElementById('nBackLevel').textContent = gameState.nBackLevel; // 타이틀 화면의 레벨 표시 업데이트 - 저장된 레벨 표시
     } // 저장된 레벨 없으면 기본 레벨(1-back) 유지
+
+    // --- 오늘 게임 횟수 불러오기 및 날짜 확인 --- // --- [NEW] 오늘 게임 횟수 불러오기 및 날짜 확인 ---
+    let storedTotalGamesToday = localStorage.getItem('totalGamesToday'); // LocalStorage 에서 'totalGamesToday' 키로 저장된 값 가져오기
+    let lastGameDate = localStorage.getItem('lastGameDate'); // LocalStorage 에서 'lastGameDate' 키로 저장된 마지막 게임 날짜 가져오기
+    const todayDate = new Date().toDateString(); // 오늘 날짜 문자열로 변환
+
+    if (storedTotalGamesToday && lastGameDate === todayDate) { // 저장된 오늘 게임 횟수가 있고, 마지막 게임 날짜가 오늘이면
+        gameState.totalGamesToday = parseInt(storedTotalGamesToday); // gameState 의 오늘 게임 횟수를 LocalStorage 에서 불러온 값으로 설정
+    } else { // 저장된 오늘 게임 횟수가 없거나, 마지막 게임 날짜가 오늘이 아니면 (새로운 날짜)
+        gameState.totalGamesToday = 0; // 오늘 게임 횟수 0으로 초기화
+    }
+    document.getElementById('totalGamesTodayCount').textContent = gameState.totalGamesToday; // 타이틀 화면에 오늘 게임 횟수 표시 // --- [NEW] 타이틀 화면에 오늘 게임 횟수 표시 ---
 });
 
 
