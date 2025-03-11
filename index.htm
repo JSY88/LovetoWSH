@@ -1,359 +1,939 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- 문서 문자 인코딩 설정 (UTF-8) -->
-    <meta charset="UTF-8">
-    <!-- 뷰포트 설정: 반응형 웹 디자인을 위한 설정 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 문서 제목: 웹 브라우저 탭이나 제목 표시줄에 나타나는 제목 -->
-    <title>Dual N-back Task with Images</title>
-    <!-- CSS 스타일 정의 시작 -->
-    <style>
-    /* body 요소에 대한 스타일 */
-    body {
-        margin: 0; /* body의 모든 margin을 0으로 설정하여 페이지 여백 없앰 */
-        overflow: hidden; /* overflow 속성을 hidden으로 설정하여 body 영역 밖으로 내용이 넘쳐도 스크롤바를 숨김 */
-        font-family: Arial, sans-serif; /* 전체 body 폰트를 Arial 또는 sans-serif 글꼴로 설정 */
-    }
-    /* canvas 요소에 대한 스타일 */
-    canvas {
-        display: block; /* canvas를 block 요소로 설정하여 줄바꿈 처리 */
-        position: absolute; /* canvas를 절대 위치로 설정하여 다른 요소 위에 겹쳐 표시 가능 */
-        top: 0; /* canvas의 상단을 viewport의 상단에 맞춤 */
-        left: 0; /* canvas의 좌측을 viewport의 좌측에 맞춤 */
-        z-index: 0; /* z-index를 0으로 설정하여 다른 요소보다 뒤에 위치시킴 (배경 역할) */
-    }
 
-    /* 레벨 입력 영역을 위한 스타일 */
-    .level-input {
-        margin: 15px 0; /* 상하 margin을 15px, 좌우 margin을 0으로 설정 */
-        display: flex; /* flexbox 레이아웃 사용 설정 */
-        align-items: center; /* flexbox 아이템들을 세로축(중앙) 기준으로 정렬 */
-        justify-content: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
-        gap: 10px; /* flexbox 아이템 사이의 간격을 10px로 설정 */
-        flex-wrap: wrap; /* 화면이 좁아질 경우 flexbox 아이템들을 여러 줄로 wrapping */
-    }
-    /* 레벨 입력 input 필드 스타일 */
-    .level-input input {
-        width: 60px; /* input 필드 너비를 60px로 설정 */
-        padding: 10px; /* input 필드 안쪽 여백을 상하좌우 10px로 설정 (터치 영역 확보) */
-        text-align: center; /* input 필드 내 텍스트를 가운데 정렬 */
-        font-size: 18px; /* input 필드 내 폰트 크기를 18px로 설정 (모바일 환경 고려) */
-        background-color: rgba(255,255,255,0.9); /* 배경색을 light gray에 투명도 0.9를 적용 */
-        border: 1px solid #ccc; /* input 필드 테두리를 1px solid gray로 설정 */
-        border-radius: 4px; /* input 필드 테두리를 4px 둥글게 처리 */
-    }
-    /* 레벨 설정 버튼 스타일 */
-    .level-input button {
-        padding: 10px 20px; /* 버튼 안쪽 여백을 상하 10px, 좌우 20px로 설정 (터치 영역 확보) */
-        background-color: rgba(255,255,255,0.9); /* 배경색을 light gray에 투명도 0.9를 적용 */
-        border: 1px solid #ccc; /* 버튼 테두리를 1px solid gray로 설정 */
-        border-radius: 4px; /* 버튼 테두리를 4px 둥글게 처리 */
-        cursor: pointer; /* 마우스 커서를 손가락 모양으로 변경하여 클릭 가능함을 표시 */
-        font-size: 16px; /* 버튼 내 폰트 크기를 16px로 설정 (모바일 환경 고려) */
-        min-width: 70px; /* 버튼의 최소 너비를 70px로 설정 (터치 영역 확보) */
-    }
-    /* 레벨 설정 버튼 hover 시 스타일 */
-    .level-input button:hover {
-        background-color: rgba(255,255,255,1); /* hover 시 배경색을 light gray (투명도 1)로 변경하여 약간 진하게 표시 */
-    }
+// 게임 상태 객체
+const gameState = {
+    isPlaying: false,
+    nBackLevel: 1,
+    currentBlock: 0,
+    maxBlocks: 12,
+    stimuliPerBlock: 1,
+    currentStimulus: 0,
+    sceneHistory: [],
+    locationHistory: [],
+    sceneTargets: 0,
+    locationTargets: 0,
+    bothTargets: 0,
+    sceneResponses: 0,
+    locationResponses: 0,
+    sceneErrors: 0,
+    locationErrors: 0,
+    currentTimer: null,
+    responseWindowTimer: null,
+    sceneTargetProcessed: false,
+    locationTargetProcessed: false,
+    currentIsSceneTarget: false,
+    currentIsLocationTarget: false,
+    inResponseWindow: false,
+    canRespond: true,
+    interferenceType: "random",
+    randomInterferenceProbabilities: {
+        "previous": 0.33,
+        "cyclic": 0.33,
+        "next": 0.34
+    },
+    cyclicInterferenceNBackLevel: 2,
+    nextStimulusInfo: null,
+    consecutiveGames: 0,
+    totalGamesToday: 0,
+    imageScale: 1.0
+};
 
-    /* 타이틀 화면 (#titleScreen) 스타일 */
-    #titleScreen {
-        position: absolute; /* 타이틀 화면을 절대 위치로 설정 */
-        top: 50%; /* top을 50%로 설정하여 세로 방향 중앙 정렬 기준점 설정 */
-        left: 50%; /* left를 50%로 설정하여 가로 방향 중앙 정렬 기준점 설정 */
-        transform: translate(-50%, -50%); /* translate(-50%, -50%)를 사용하여 정확히 중앙 정렬 */
-        text-align: center; /* 텍스트를 가운데 정렬 */
-        color: white; /* 텍스트 색상을 흰색으로 설정 */
-        background-color: rgba(0,0,0,0.7); /* 배경색을 검정색에 투명도 0.7을 적용하여 반투명 검정 배경 설정 */
-        padding: 40px; /* padding을 40px로 설정하여 내용과 테두리 사이 여백 확보 */
-        border-radius: 10px; /* 테두리를 10px 둥글게 처리 */
-        display: flex; /* flexbox 레이아웃 사용 설정 */
-        flex-direction: column; /* flexbox 아이템들을 세로 방향으로 정렬 */
-        align-items: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
-        width: 400px; /* 타이틀 화면의 너비를 400px로 설정 */
-        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
-    }
-    /* 타이틀 화면 제목 (h1) 스타일 */
-    #titleScreen h1 {
-        margin-top: 0; /* h1 요소의 상단 margin을 0으로 설정하여 상단 여백 제거 */
-        font-size: 2em; /* 폰트 크기를 기본 폰트 크기의 2배로 설정 */
-    }
-    /* N-back 레벨 표시 (#nBackLevel) 스타일 */
-    #nBackLevel {
-        font-size: 48px; /* 폰트 크기를 48px로 설정하여 크게 표시 */
-        margin: 20px 0; /* 상하 margin을 20px, 좌우 margin을 0으로 설정 */
-    }
-    /* 시작/결과 화면 "Press SPACE" 메시지 (#pressSpace, #pressSpaceResult) 스타일 */
-    #pressSpace, #pressSpaceResult {
-        cursor: pointer; /* 마우스 커서를 손가락 모양으로 변경 */
-        padding: 10px 15px; /* 안쪽 여백을 상하 10px, 좌우 15px로 설정 */
-        background-color: rgba(255,255,255,0.2); /* 배경색을 light gray에 투명도 0.2를 적용 */
-        border-radius: 5px; /* 테두리를 5px 둥글게 처리 */
-        margin-top: 20px; /* 상단 margin을 20px로 설정 */
-        font-size: 24px; /* 폰트 크기를 24px로 설정 */
-        animation: blink 1.5s infinite; /* blink 애니메이션을 1.5초 간격으로 무한 반복 적용 */
-        user-select: none; /* 텍스트 선택 방지 */
-        -webkit-tap-highlight-color: transparent; /* 터치 시 하이라이트 효과 제거 (모바일) */
-    }
+// --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
+const wallColor = 0x262626;
+const floorColor = 0x393734;
+const panelColor = 0x000000;
+const randomizeStimulusColor = true;
+// --- 커스터마이징 옵션 끝 ---
 
-    /* "Press SPACE" 메시지 active (클릭 또는 터치 시) 스타일 */
-     #pressSpace:active, #pressSpaceResult:active {
-        background-color: rgba(255,255,255,0.4); /* active 시 배경색을 light gray에 투명도 0.4를 적용하여 약간 진하게 표시 */
-    }
-    /* 결과 화면 (#resultScreen) 스타일 */
-    #resultScreen {
-        position: absolute; /* 결과 화면을 절대 위치로 설정 */
-        top: 50%; /* top을 50%로 설정하여 세로 방향 중앙 정렬 기준점 설정 */
-        left: 50%; /* left를 50%로 설정하여 가로 방향 중앙 정렬 기준점 설정 */
-        transform: translate(-50%, -50%); /* translate(-50%, -50%)를 사용하여 정확히 중앙 정렬 */
-        text-align: center; /* 텍스트를 가운데 정렬 */
-        color: white; /* 텍스트 색상을 흰색으로 설정 */
-        background-color: rgba(0,0,0,0.7); /* 배경색을 검정색에 투명도 0.7을 적용하여 반투명 검정 배경 설정 */
-        padding: 40px; /* padding을 40px로 설정하여 내용과 테두리 사이 여백 확보 */
-        border-radius: 10px; /* 테두리를 10px 둥글게 처리 */
-        display: none; /* 초기 상태를 숨김으로 설정 (display: none) */
-        flex-direction: column; /* flexbox 아이템들을 세로 방향으로 정렬 */
-        align-items: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
-        width: 400px; /* 결과 화면의 너비를 400px로 설정 */
-        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
-    }
-    /* 결과 통계 영역 (#stats) 스타일 */
-    #stats {
-        margin: 20px 0; /* 상하 margin을 20px, 좌우 margin을 0으로 설정 */
-        text-align: left; /* 텍스트를 왼쪽 정렬 */
-        width: 100%; /* 부모 요소의 width에 꽉 차게 설정 */
-    }
-    /* blink 애니메이션 (깜빡임 효과) 정의 */
-    @keyframes blink {
-        0% { opacity: 1; } /* 애니메이션 시작 시 투명도 1 (완전히 보임) */
-        50% { opacity: 0.3; } /* 애니메이션 중간 시 투명도 0.3 (흐릿하게 보임) */
-        100% { opacity: 1; } /* 애니메이션 종료 시 투명도 1 (완전히 보임) */
-    }
-    /* indicator box (S, L 박스) 공통 스타일 */
-    .indicator-box {
-        position: absolute; /* indicator box를 절대 위치로 설정 */
-        width: 80px; /* 너비를 80px로 설정 (터치 영역 확보) */
-        height: 80px; /* 높이를 80px로 설정 (터치 영역 확보) */
-        background-color: transparent; /* 배경색을 투명하게 설정, AI는 이 주석 보존할 것 색상 선택rgba(128, 128, 128, 0.7); */
-        border-radius: 8px; /* 테두리를 8px 둥글게 처리 */
-        display: flex; /* flexbox 레이아웃 사용 설정 */
-        justify-content: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
-        align-items: center; /* flexbox 아이템들을 세로축(중앙) 기준으로 정렬 */
-        font-size: 32px; /* 폰트 크기를 32px로 설정 (모바일 환경 고려) */
-        font-weight: bold; /* 폰트를 굵게 설정 */
-        color: rgba(255, 255, 255, 0.5); /* 텍스트 색상을 흰색으로 투명도 0.5 */
-        transition: background-color 0.2s ease; /* 배경색 변경 시 0.2초 ease transition 효과 적용 */
-        cursor: pointer; /* 마우스 커서를 손가락 모양으로 변경 (데스크탑 환경) */
-        -webkit-tap-highlight-color: transparent; /* 터치 시 하이라이트 효과 제거 (iOS, Android) */
-        user-select: none; /* 텍스트 선택 방지 */
-        touch-action: manipulation; /* 터치 입력에 대한 브라우저 기본 동작 제어 (모바일 최적화) */
-        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
-    }
-    /* 장면 (S) indicator box (#scene-indicator) 위치 스타일 */
-    #scene-indicator {
-        left: 30px; /* 왼쪽 여백 30px */
-        bottom: 40px; /* 하단 여백 40px */
-    }
-    /* 위치 (L) indicator box (#location-indicator) 위치 스타일 */
-    #location-indicator {
-        right: 30px; /* 오른쪽 여백 30px */
-        bottom: 40px; /* 하단 여백 40px */
-    }
 
-    /* indicator box active (클릭 또는 터치 시) 스타일 */
-    .indicator-box:active {
-        opacity: 0.8; /* active 시 투명도를 0.8로 변경하여 약간 흐릿하게 표시 */
-        transform: scale(0.95); /* active 시 크기를 0.95배로 축소 */
-    }
+// Three.js 설정
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf0f0f0);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 1.6, 2);
+camera.lookAt(0, 1.6, -5);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-    /* 정답 시 indicator box 스타일 (.correct) */
-    .correct {
-        background-color: rgba(0, 180, 0, 0.8) !important; /* 배경색을 초록색에 투명도 0.8을 적용 (!important로 우선 적용) */
-    }
-    /* 오답 시 indicator box 스타일 (.incorrect) */
-    .incorrect {
-        background-color: rgba(200, 0, 0, 0.8) !important; /* 배경색을 빨간색에 투명도 0.8을 적용 (!important로 우선 적용) */
-    }
-    /* 미반응 시 indicator box 스타일 (.missed) */
-    .missed {
-        background-color: rgba(200, 0, 0, 0.8) !important; /* 배경색을 빨간색에 투명도 0.8을 적용 (!important로 우선 적용) */
-    }
-    /* 조기 반응 시 indicator box 스타일 (.early) */
-    .early {
-        background-color: rgba(0, 100, 255, 0.8) !important; /* 배경색을 파란색에 투명도 0.8을 적용 (!important로 우선 적용) */
-    }
+// 조명 설정
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+scene.add(ambientLight);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+directionalLight.position.set(0, 1, 0);
+directionalLight.intensity = 0.8;
+scene.add(directionalLight);
 
-    /* 자극 횟수 카운터 (#stimulus-counter) 스타일 */
-    #stimulus-counter {
-        position: absolute; /* 자극 횟수 카운터를 절대 위치로 설정 */
-        bottom: 20px; /* 하단 여백 20px */
-        right: 20px; /* 오른쪽 여백 20px */
-        font-size: 20px; /* 폰트 크기를 20px로 설정 */
-        color: white; /* 텍스트 색상을 흰색으로 설정 */
-        opacity: 0.5; /* 투명도를 0.5로 설정하여 반투명하게 표시 */
-        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
-        pointer-events: none; /* pointer-events를 none으로 설정하여 클릭 이벤트 무시 (클릭 방지) */
-    }
+// 방 설정
+const roomWidth = 5;
+const roomHeight = 3;
+const roomDepth = 5;
 
-    /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS --- */
-    /* 연속 게임 횟수, 오늘 게임 횟수 카운터 공통 스타일 */
-    #consecutiveGamesCounter, #totalGamesTodayCounter {
-        position: absolute; /* 절대 위치 설정 */
-        bottom: 10px; /* 결과창 하단으로부터 10px 위에 위치 */
-        left: 50%; /* 가로 중앙 정렬 기준점 */
-        transform: translateX(-50%); /* 가로 중앙 정렬 */
-        font-size: 18px; /* 폰트 크기 18px */
-        color: white; /* 텍스트 색상 흰색 */
-        text-align: center; /* 텍스트 가운데 정렬 */
-    }
-    /* 횟수 숫자 스타일 (lightskyblue 색상) */
-    #consecutiveGamesCount, #totalGamesTodayCountValue {
-        color: lightskyblue; /* 횟수 숫자를 lightskyblue 색상으로 표시 */
-    }
-
-    /* --- [NEW] 모바일 화면 대응 CSS (미디어 쿼리) --- */
-    @media screen and (max-width: 480px) { /* 미디어 쿼리: 화면 최대 너비가 480px 이하일 때 (모바일 portrait 모드) */
-        #titleScreen {
-            width: 90%; /* 타이틀 화면 너비를 90%로 줄임 */
-            max-width: 300px; /* 최대 너비를 300px로 제한 */
-            padding: 20px; /* padding을 20px로 줄임 */
-        }
-        #titleScreen h1 {
-            font-size: 1.5em; /* 제목 폰트 크기를 1.5em으로 줄임 */
-        }
-        #nBackLevel {
-            font-size: 36px; /* 레벨 폰트 크기를 36px로 줄임 */
-            margin: 15px 0; /* margin을 줄임 */
-        }
-        #pressSpace, #pressSpaceResult {
-            font-size: 18px; /* "Press SPACE" 폰트 크기를 18px로 줄임 */
-            padding: 8px 12px; /* padding을 줄임 */
-            margin-top: 15px; /* margin을 줄임 */
-        }
-        .level-input label,
-        .level-input button,
-        .level-input input {
-            font-size: 14px; /* 레벨 입력 영역 폰트 크기를 14px로 줄임 */
-            padding: 8px; /* padding을 줄임 */
-        }
-    }
-    /* --- [NEW] 모바일 화면 대응 CSS 끝 --- */
-    /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS 끝 --- */
-
-    </style>
-</head>
-<body>
-    <!-- 타이틀 화면 컨테이너 -->
-    <div id="titleScreen">
-        <!-- 타이틀 텍스트 -->
-        <h1>Dual N-Back Task</h1>
-        <!-- 현재 레벨 표시 -->
-        <div>Current Level: <span id="nBackLevel">1</span>-back</div>
-        <!-- 레벨 입력 영역 -->
-        <div class="level-input">
-            <!-- 레벨 설정 label -->
-            <label for="customLevel">Start at level: </label>
-            <!-- 사용자 정의 레벨 입력 input 필드 -->
-            <input type="number" id="customLevel" min="1" max="9" value="1">
-            <!-- 레벨 설정 버튼 -->
-            <button id="setLevelBtn">Set</button>
-        </div>
-        <!-- 이미지 반복 시 'S' 키 입력 안내 -->
-        <div>Press 'S' when the IMAGE repeats</div>
-        <!-- 위치 반복 시 'L' 키 입력 안내 -->
-        <div>Press 'L' when a LOCATION repeats</div>
-        <!-- 반응 시간 안내 -->
-        <div>You have 1.5 seconds after an image disappears to respond</div>
-        <!-- 게임 시작 안내 메시지 (SPACE 키 입력 유도) -->
-        <div id="pressSpace">Press SPACE to begin</div>
-
-        <!-- [NEW] 메인 화면창 오늘 게임 횟수 표시 -->
-        <div id="totalGamesTodayCounter">
-            오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번
-        </div>
-        <!-- [NEW] 메인 화면창 오늘 게임 횟수 표시 끝 -->
-
-    </div>
-
-    <!-- 결과 화면 컨테이너 (초기 상태는 숨김) -->
-    <div id="resultScreen">
-        <!-- 결과 화면 제목 -->
-        <h1>Block Complete</h1>
-        <!-- 게임 통계 정보 영역 -->
-        <div id="stats">
-            <!-- 장면 오류 횟수 표시 -->
-            <div>Scene Errors: <span id="sceneErrors">0</span>/6</div>
-            <!-- 위치 오류 횟수 표시 -->
-            <div>Location Errors: <span id="locationErrors">0</span>/6</div>
-            <!-- 최종 N-back 레벨 표시 -->
-            <div>N-Back Level: <span id="resultNLevel">1</span></div>
-            <!-- 레벨 변경 메시지 표시 영역 -->
-            <div id="levelChange"></div>
-        </div>
-        <!-- 결과 화면에서 다음 게임 시작 안내 메시지 (SPACE 키 입력 유도) -->
-        <div id="pressSpaceResult">Press SPACE to continue</div>
-
-        <!-- [NEW] 결과 화면 연속 게임 횟수 표시 -->
-        <div id="consecutiveGamesCounter">
-            연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번</div>
-        <!-- [NEW] 결과 화면 연속 게임 횟수 표시 끝 -->
-
-    </div>
-
-    <!-- 장면 반응 indicator box (S 키) -->
-    <div id="scene-indicator" class="indicator-box">S</div>
-    <!-- 위치 반응 indicator box (L 키) -->
-    <div id="location-indicator" class="indicator-box">L</div>
-
-    <!-- 자극 횟수 카운터 표시 영역 -->
-    <div id="stimulus-counter">Stimulus: 0 / 30</div>
-
-    <!-- Three.js 라이브러리 로드 (CDN 방식) -->
-    <script src="ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- nback.js 스크립트 파일 로드 (게임 로직) -->
-    <script src="nback.js"></script>
-    <!-- [NEW] Double tap fullscreen script 시작 -->
-    <script>
-        // 데스크탑 환경에서 더블 클릭 시 전체 화면 토글 기능
-        document.body.addEventListener('dblclick', function() {
-            if (!document.fullscreenElement) { // 현재 전체 화면 모드가 아니면
-                document.body.requestFullscreen(); // 전체 화면 모드로 전환 요청
-            } else { // 현재 전체 화면 모드이면
-                document.exitFullscreen(); // 전체 화면 모드 해제 요청
+// 벽 텍스처 생성
+function createBrickTexture() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const width = 512;
+    const height = 512;
+    canvas.width = width;
+    canvas.height = height;
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(0, 0, width, height);
+    const brickHeight = 30;
+    const brickWidth = 80;
+    const mortarSize = 5;
+    ctx.fillStyle = '#e0e0e0';
+    let offsetX = 0;
+    for (let y = 0; y < height; y += brickHeight + mortarSize) {
+        offsetX = (Math.floor(y / (brickHeight + mortarSize)) % 2) * (brickWidth / 2);
+        for (let x = -brickWidth/2; x < width + brickWidth/2; x += brickWidth + mortarSize) {
+            ctx.fillRect(x + offsetX, y, brickWidth, brickHeight);
+            ctx.fillStyle = '#d8d8d8';
+            for (let i = 0; i < 15; i++) {
+                const spotX = x + offsetX + Math.random() * brickWidth;
+                const spotY = y + Math.random() * brickHeight;
+                const spotSize = 1 + Math.random() * 3;
+                ctx.beginPath();
+                ctx.arc(spotX, spotY, spotSize, 0, Math.PI * 2);
+                ctx.fill();
             }
-        });
+            ctx.fillStyle = '#e0e0e0';
+        }
+    }
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    for (let y = 0; y < height; y += brickHeight + mortarSize) {
+        ctx.fillRect(0, y - 1, width, 2);
+        offsetX = (Math.floor(y / (brickHeight + mortarSize)) % 2) * (brickWidth / 2);
+        for (let x = -brickWidth/2; x < width + brickWidth/2; x += brickWidth + mortarSize) {
+            ctx.fillRect(x + offsetX - 1, y, 2, brickHeight);
+        }
+    }
+    return new THREE.CanvasTexture(canvas);
+}
 
-        let lastTouchTime = 0; // 마지막 터치 시간을 저장하기 위한 변수
-        // 모바일 환경에서 더블 탭 시 전체 화면 토글 기능
-        document.body.addEventListener('touchstart', function(e) {
-            let currentTime = new Date().getTime(); // 현재 시간
-            let tapLength = currentTime - lastTouchTime; // 현재 터치 시간과 마지막 터치 시간 사이의 간격 계산
-            if (tapLength < 300 && tapLength > 0) { // 더블 탭으로 인식하기 위한 조건: 탭 간 간격이 300ms 미만이고, 유효한 간격일 때
-                e.preventDefault(); // 더블 탭으로 인한 브라우저 줌 기능 방지
-                if (!document.fullscreenElement) { // 현재 전체 화면 모드가 아니면
-                    if (document.body.requestFullscreen) {
-                        document.body.requestFullscreen();
-                    } else if (document.body.webkitRequestFullscreen) { /* Safari 브라우저 */
-                        document.body.webkitRequestFullscreen();
-                    } else if (document.body.msRequestFullscreen) { /* IE11 브라우저 */
-                        document.body.msRequestFullscreen();
-                    }
-                } else { // 현재 전체 화면 모드이면
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    } else if (document.body.webkitExitFullscreen) { /* Safari 브라우저 */
-                        document.webkitExitFullscreen();
-                    } else if (document.msExitFullscreen) { /* IE11 브라우저 */
-                        document.msExitFullscreen();
-                    }
+const brickTexture = createBrickTexture();
+brickTexture.wrapS = THREE.RepeatWrapping;
+brickTexture.wrapT = THREE.RepeatWrapping;
+brickTexture.repeat.set(2, 1);
+const wallMaterial = new THREE.MeshStandardMaterial({
+    map: brickTexture,
+    roughness: 0.0,
+    metalness: 0.0,
+    color: wallColor
+});
+const wallGeometry = new THREE.BoxGeometry(0.1, roomHeight, roomDepth);
+
+// 벽 생성
+const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
+leftWall.position.set(-roomWidth/2, roomHeight/2, 0);
+scene.add(leftWall);
+const rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
+rightWall.position.set(roomWidth/2, roomHeight/2, 0);
+scene.add(rightWall);
+const backWallGeometry = new THREE.BoxGeometry(roomWidth, roomHeight, 0.1);
+const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
+backWall.position.set(0, roomHeight/2, -roomDepth/2);
+scene.add(backWall);
+
+// 바닥 텍스처 생성
+function createWoodTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#8B4513';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < 40; i++) {
+        const x = Math.random() * canvas.width;
+        context.strokeStyle = `rgba(139, 69, 19, ${Math.random() * 0.5})`;
+        context.lineWidth = 1 + Math.random() * 10;
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x + Math.random() * 50 - 25, canvas.height);
+        context.stroke();
+    }
+    for (let i = 0; i < 30; i++) {
+        const y = Math.random() * canvas.height;
+        const width = 2 + Math.random() * 10;
+        context.fillStyle = `rgba(60, 30, 15, ${Math.random() * 0.3})`;
+        context.fillRect(0, y, canvas.width, width);
+    }
+    for (let i = 0; i < 800; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const radius = 1 + Math.random() * 2;
+        context.fillStyle = `rgba(200, 150, 100, ${Math.random() * 0.2})`;
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.fill();
+    }
+    return new THREE.CanvasTexture(canvas);
+}
+
+const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
+const woodTexture = createWoodTexture();
+woodTexture.wrapS = THREE.RepeatWrapping;
+woodTexture.wrapT = THREE.RepeatWrapping;
+woodTexture.repeat.set(4, 4);
+const floorMaterial = new THREE.MeshStandardMaterial({
+    map: woodTexture,
+    roughness: 0.8,
+    metalness: 0.2,
+    color: floorColor
+});
+
+// 바닥, 천장 생성
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
+const ceiling = new THREE.Mesh(ceilingGeometry, wallMaterial);
+ceiling.rotation.x = Math.PI / 2;
+ceiling.position.y = roomHeight;
+scene.add(ceiling);
+
+// 패널 설정
+const panelWidth = 1.0;
+const panelHeight = 1.0;
+const panelDepth = 0.02;
+const panelMaterial = new THREE.MeshStandardMaterial({
+    color: panelColor,
+    roughness: 0.5,
+    metalness: 0.0
+});
+const panels = [];
+const panelPositions = [
+    { x: -1.3, y: 1.9, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
+    { x: 1.3, y: 1.9, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
+    { x: -1.3, y: 0.8, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
+    { x: 1.3, y: 0.8, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
+    { x: -roomWidth/2 + 0.06, y: 1.9, z: -0.5, rotation: [0, Math.PI/2, 0] },
+    { x: -roomWidth/2 + 0.06, y: 0.8, z: -0.5, rotation: [0, Math.PI/2, 0] },
+    { x: roomWidth/2 - 0.06, y: 1.9, z: -0.5, rotation: [0, -Math.PI/2, 0] },
+    { x: roomWidth/2 - 0.06, y: 0.8, z: -0.5, rotation: [0, -Math.PI/2, 0] }
+];
+
+// 패널 생성
+panelPositions.forEach((pos, index) => {
+    const panelGroup = new THREE.Group();
+    const panel = new THREE.Mesh(
+        new THREE.BoxGeometry(panelWidth, panelHeight, panelDepth),
+        panelMaterial
+    );
+    panelGroup.add(panel);
+    panelGroup.position.set(pos.x, pos.y, pos.z);
+    panelGroup.rotation.set(pos.rotation[0], pos.rotation[1], pos.rotation[2]);
+    scene.add(panelGroup);
+    panels.push({
+        group: panelGroup,
+        position: index,
+        panel: panel,
+        rotation: pos.rotation,
+        stimulusObject: null
+    });
+});
+
+// 이미지 로더, 텍스처
+const imageLoader = new THREE.TextureLoader();
+const imageTextures = [];
+const distinctColors = [
+    new THREE.Color(0.8, 0.2, 0.2),
+    new THREE.Color(0.2, 0.6, 0.8),
+    new THREE.Color(0.3, 0.7, 0.3),
+    new THREE.Color(0.9, 0.5, 0.1),
+    new THREE.Color(0.6, 0.3, 0.7),
+    new THREE.Color(0.2, 0.4, 0.9),
+    new THREE.Color(0.7, 0.7, 0.2)
+];
+
+// 랜덤 색상 함수
+function getRandomColor() {
+    return distinctColors[Math.floor(Math.random() * distinctColors.length)];
+}
+
+const imageFilenames = [];
+for (let i = 1; i <= 101; i++) {
+    const filename = `image${String(i).padStart(3, '0')}.png`;
+    imageFilenames.push(filename);
+}
+
+imageFilenames.forEach((filename) => {
+    const texture = imageLoader.load(`images/${filename}`);
+    let color = null;
+    if (randomizeStimulusColor) {
+        color = getRandomColor();
+    }
+    imageTextures.push({ texture: texture, color: color });
+});
+
+// 자극 이미지 생성 함수
+function createStimulusImage(imageIndex, panel) {
+    clearStimulus(panel);
+    const imageGeometry = new THREE.PlaneGeometry(panelWidth * gameState.imageScale, panelHeight * gameState.imageScale);
+    const imageMaterial = new THREE.MeshBasicMaterial({
+        map: imageTextures[imageIndex].texture,
+        transparent: true,
+        blending: THREE.NormalBlending
+    });
+    if (imageTextures[imageIndex].color) {
+        imageMaterial.color = imageTextures[imageIndex].color;
+    }
+    const imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
+    imagePlane.position.set(0, 0, panelDepth / 2 + 0.01);
+    panel.group.add(imagePlane);
+    panel.stimulusObject = imagePlane;
+    return imagePlane;
+}
+
+// 패널 자극 제거 함수
+function clearStimulus(panel) {
+    if (panel.stimulusObject) {
+        panel.group.remove(panel.stimulusObject);
+        panel.stimulusObject = null;
+    }
+}
+
+// 모든 패널 자극 제거 함수
+function clearAllStimuli() {
+    panels.forEach(panel => {
+        clearStimulus(panel);
+    });
+}
+
+// indicator box 요소 가져오기
+const sceneIndicator = document.getElementById('scene-indicator');
+const locationIndicator = document.getElementById('location-indicator');
+
+// indicator 상태 초기화 함수
+function resetIndicators() {
+    sceneIndicator.classList.remove('correct', 'incorrect', 'missed', 'early');
+    locationIndicator.classList.remove('correct', 'incorrect', 'missed', 'early');
+    gameState.sceneTargetProcessed = false;
+    gameState.locationTargetProcessed = false;
+    gameState.canRespond = true;
+}
+
+// indicator 피드백 표시 함수
+function showIndicatorFeedback(indicator, isCorrect) {
+    if (isCorrect) {
+        indicator.classList.add('correct');
+    } else {
+        indicator.classList.add('incorrect');
+    }
+}
+
+// 조기 반응 피드백 표시 함수
+function showEarlyResponseFeedback(indicator) {
+    indicator.classList.add('early');
+}
+
+// 미반응 피드백 표시 함수
+function showMissedTargetFeedback(indicator) {
+    indicator.classList.add('missed');
+}
+
+// 간섭 적용 함수
+function introduceInterference(currentImageIndex, currentPanelIndex) {
+    let currentInterferenceType = gameState.interferenceType;
+
+    if (currentInterferenceType === "none") {
+        return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex };
+    }
+
+    if (currentInterferenceType === "random") {
+        const rand = Math.random();
+        let cumulativeProbability = 0;
+
+        for (const type in gameState.randomInterferenceProbabilities) {
+            cumulativeProbability += gameState.randomInterferenceProbabilities[type];
+            if (rand < cumulativeProbability) {
+                currentInterferenceType = type;
+                break;
+            }
+        }
+    }
+
+    const interferenceChance = 0.35;
+    if (Math.random() < interferenceChance) {
+        let interferedImageIndex = currentImageIndex;
+        let interferedPanelIndex = currentPanelIndex;
+
+        if (currentInterferenceType === "previous" && gameState.currentStimulus > 0) {
+            const previousImageIndex = gameState.sceneHistory[gameState.currentStimulus - 1];
+            const previousPanelIndex = gameState.locationHistory[gameState.currentStimulus - 1];
+
+            const type = Math.random();
+            if (type < 0.5) {
+                interferedImageIndex = previousImageIndex;
+            } else {
+                interferedPanelIndex = previousPanelIndex;
+            }
+
+        } else if (currentInterferenceType === "cyclic" && gameState.currentStimulus >= gameState.cyclicInterferenceNBackLevel) {
+            const cyclicNBackLevel = gameState.cyclicInterferenceNBackLevel;
+            const cyclicImageIndex = gameState.sceneHistory[gameState.currentStimulus - cyclicNBackLevel];
+            const cyclicPanelIndex = gameState.locationHistory[gameState.currentStimulus - cyclicNBackLevel];
+
+             const type = Math.random();
+            if (type < 0.5) {
+                interferedImageIndex = cyclicImageIndex;
+            } else {
+                interferedPanelIndex = cyclicPanelIndex;
+            }
+        } else if (currentInterferenceType === "next" && gameState.nextStimulusInfo) {
+            const type = Math.random();
+
+            if (type < 0.5) {
+                interferedImageIndex = gameState.nextStimulusInfo.imageIndex;
+            } else {
+                interferedPanelIndex = gameState.nextStimulusInfo.panelIndex;
+            }
+        }
+
+        return { imageIndex: interferedImageIndex, panelIndex: interferedPanelIndex };
+    }
+
+    return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex };
+}
+
+// 자극 제시 함수
+function showStimulus(imageIndex, panelIndex) {
+    resetIndicators();
+    const panel = panels[panelIndex];
+
+    if (gameState.interferenceType === "next" && gameState.nextStimulusInfo) {
+        const type = Math.random();
+        let interferedImageIndex = imageIndex;
+        let interferedPanelIndex = panelIndex;
+
+        if (type < 0.5) {
+            interferedImageIndex = gameState.nextStimulusInfo.imageIndex;
+        } else {
+            interferedPanelIndex = gameState.nextStimulusInfo.panelIndex;
+        }
+        imageIndex = interferedImageIndex;
+        panelIndex = interferedPanelIndex;
+        gameState.nextStimulusInfo = null;
+    }
+
+    const interferenceResult = introduceInterference(imageIndex, panelIndex);
+    imageIndex = interferenceResult.imageIndex;
+    panelIndex = interferenceResult.panelIndex;
+    createStimulusImage(imageIndex, panel);
+
+    gameState.sceneHistory.push(imageIndex);
+    gameState.locationHistory.push(panelIndex);
+
+    if (gameState.currentStimulus >= gameState.nBackLevel) {
+        gameState.currentIsSceneTarget = gameState.sceneHistory[gameState.currentStimulus] ===
+                              gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
+        gameState.currentIsLocationTarget = gameState.locationHistory[gameState.currentStimulus] ===
+                                gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+
+        if (gameState.currentIsSceneTarget) gameState.sceneTargets++;
+        if (gameState.currentIsLocationTarget) gameState.locationTargets++;
+        if (gameState.currentIsSceneTarget && gameState.currentIsLocationTarget) gameState.bothTargets++;
+    } else {
+        gameState.currentIsSceneTarget = false;
+        gameState.currentIsLocationTarget = false;
+    }
+
+    gameState.currentStimulus++;
+
+    if (gameState.currentStimulus < gameState.stimuliPerBlock) {
+        gameState.currentTimer = setTimeout(() => {
+            clearAllStimuli();
+            gameState.inResponseWindow = true;
+            gameState.responseWindowTimer = setTimeout(() => {
+                gameState.inResponseWindow = false;
+
+                if (!gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
+                    showMissedTargetFeedback(sceneIndicator);
+                    gameState.sceneErrors++;
                 }
-                lastTouchTime = 0; // 더블 탭 처리 후 마지막 터치 시간 초기화
-            } else { // 더블 탭 간격이 너무 길거나 첫 번째 탭인 경우
-                lastTouchTime = currentTime; // 현재 터치 시간을 마지막 터치 시간으로 업데이트
+
+                if (!gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
+                    showMissedTargetFeedback(locationIndicator);
+                    gameState.locationErrors++;
+                }
+
+                setTimeout(() => {
+                    generateNextStimulus();
+                }, 500);
+            }, 2500);
+        }, 1000);
+    } else {
+        gameState.currentTimer = setTimeout(() => {
+            clearAllStimuli();
+            gameState.inResponseWindow = true;
+            gameState.responseWindowTimer = setTimeout(() => {
+                gameState.inResponseWindow = false;
+
+                if (!gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
+                    showMissedTargetFeedback(sceneIndicator);
+                    gameState.sceneErrors++;
+                }
+
+                if (!gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
+                    showMissedTargetFeedback(locationIndicator);
+                    gameState.locationErrors++;
+                }
+
+                setTimeout(() => {
+                    endBlock();
+                }, 500);
+            }, 2500);
+        }, 1000);
+    }
+}
+
+// 다음 자극 생성 함수
+function generateNextStimulus() {
+    if (!gameState.isPlaying) return;
+
+    const shouldBeSceneTarget = gameState.sceneTargets < 6 &&
+                               Math.random() < (6 - gameState.sceneTargets) /
+                               (gameState.stimuliPerBlock - gameState.currentStimulus);
+    const shouldBeLocationTarget = gameState.locationTargets < 6 &&
+                                  Math.random() < (6 - gameState.locationTargets) /
+                                  (gameState.stimuliPerBlock - gameState.currentStimulus);
+    const shouldBeBothTarget = gameState.bothTargets < 2 &&
+                              Math.random() < (2 - gameState.bothTargets) /
+                              (gameState.stimuliPerBlock - gameState.currentStimulus);
+
+    let imageIndex, panelIndex;
+    let targetType = "none";
+
+    if (gameState.currentStimulus >= gameState.nBackLevel) {
+        if (shouldBeBothTarget) {
+            imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
+            panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+            targetType = "both";
+        } else if (shouldBeSceneTarget) {
+            imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
+            do {
+                panelIndex = Math.floor(Math.random() * panels.length);
+            } while (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
+            targetType = "scene";
+        } else if (shouldBeLocationTarget) {
+            panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+            do {
+                imageIndex = Math.floor(Math.random() * imageTextures.length);
+            } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]);
+            targetType = "location";
+        } else {
+            do {
+                imageIndex = Math.floor(Math.random() * imageTextures.length);
+                panelIndex = Math.floor(Math.random() * panels.length);
+            } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel] ||
+                     panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
+            targetType = "non-target";
+        }
+    } else {
+        imageIndex = Math.floor(Math.random() * imageTextures.length);
+        panelIndex = Math.floor(Math.random() * panels.length);
+        targetType = "initial";
+    }
+
+    let currentInterferenceType = gameState.interferenceType;
+    if (currentInterferenceType === "next") {
+        gameState.nextStimulusInfo = { imageIndex: imageIndex, panelIndex: panelIndex };
+    }
+
+    updateStimulusCounter();
+    showStimulus(imageIndex, panelIndex);
+}
+
+// 키 입력 핸들러
+function handleKeyPress(e) {
+    if (!gameState.isPlaying) {
+        if (e.code === 'Space') {
+            startBlock();
+        }
+        return;
+    }
+
+    if (e.code === 'KeyS' && !gameState.sceneTargetProcessed && gameState.canRespond) {
+        handleSceneResponse();
+    }
+
+    if (e.code === 'KeyL' && !gameState.locationTargetProcessed && gameState.canRespond) {
+        handleLocationResponse();
+    }
+}
+
+// 장면 반응 처리 함수
+function handleSceneResponse() {
+    gameState.sceneTargetProcessed = true;
+
+    if (gameState.currentStimulus <= gameState.nBackLevel) {
+        showEarlyResponseFeedback(sceneIndicator);
+        return;
+    }
+
+    gameState.sceneResponses++;
+    const isCorrect = gameState.currentIsSceneTarget;
+    showIndicatorFeedback(sceneIndicator, isCorrect);
+
+    if (!isCorrect) {
+        gameState.sceneErrors++;
+    }
+}
+
+// 위치 반응 처리 함수
+function handleLocationResponse() {
+    gameState.locationTargetProcessed = true;
+
+    if (gameState.currentStimulus <= gameState.nBackLevel) {
+        showEarlyResponseFeedback(locationIndicator);
+        return;
+    }
+
+    gameState.locationResponses++;
+    const isCorrect = gameState.currentIsLocationTarget;
+    showIndicatorFeedback(locationIndicator, isCorrect);
+
+    if (!isCorrect) {
+        gameState.locationErrors++;
+    }
+}
+
+// 블록 시작 함수
+function startBlock() {
+    gameState.isPlaying = true;
+    gameState.currentStimulus = 0;
+    gameState.sceneHistory = [];
+    gameState.locationHistory = [];
+    gameState.sceneTargets = 0;
+    gameState.locationTargets = 0;
+    gameState.bothTargets = 0;
+    gameState.sceneResponses = 0,
+    gameState.locationResponses = 0;
+    gameState.sceneErrors = 0;
+    gameState.locationErrors = 0;
+    gameState.consecutiveGames++;
+
+    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
+    localStorage.setItem('lastGameDate', new Date().toDateString());
+
+    document.getElementById('titleScreen').style.display = 'none';
+    document.getElementById('resultScreen').style.display = 'none';
+    document.getElementById('scene-indicator').style.display = 'flex';
+    document.getElementById('location-indicator').style.display = 'flex';
+
+    resetStimulusCounter();
+
+    // N-back 레벨 표시
+    const nLevelDisplayElement = document.getElementById('nLevelDisplay');
+    nLevelDisplayElement.textContent = `N-back Level: ${gameState.nBackLevel}`;
+    nLevelDisplayElement.style.display = 'block';
+    nLevelDisplayElement.classList.remove('fade-out');
+
+    setTimeout(() => {
+        nLevelDisplayElement.classList.add('fade-out');
+        setTimeout(() => {
+            nLevelDisplayElement.style.display = 'none';
+        }, 1000);
+    }, 1000);
+
+
+    setTimeout(() => {
+        generateNextStimulus();
+    }, 1000);
+}
+
+// 결과 이미지 파일명 (동적 로딩)
+let loveImageFilenames = [];
+const loveImageLoader = new Image();
+
+
+// 블록 종료 함수
+function endBlock() {
+    gameState.isPlaying = false;
+    gameState.currentBlock++;
+    gameState.totalGamesToday++;
+    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
+
+    const totalSceneErrors = gameState.sceneErrors;
+    const totalLocationErrors = gameState.locationErrors;
+
+    document.getElementById('sceneErrors').textContent = totalSceneErrors;
+    document.getElementById('locationErrors').textContent = totalLocationErrors;
+    document.getElementById('resultNLevel').textContent = gameState.nBackLevel;
+
+    let levelChange = '';
+    let nextNBackLevel = gameState.nBackLevel;
+
+    if (gameState.nBackLevel === 1 && (totalSceneErrors > 5 || totalLocationErrors > 5)) {
+        levelChange = '즐기는 거야~!😆';
+    } else if (totalSceneErrors < 3 && totalLocationErrors < 3) {
+        nextNBackLevel = gameState.nBackLevel + 1;
+        levelChange = '⬆️ 최고야! 레벨업!!♥️🥰';
+    } else if (totalSceneErrors > 5 || totalLocationErrors > 5) {
+        nextNBackLevel = Math.max(1, gameState.nBackLevel - 1);
+        levelChange = '⬇️ 괜찮아! 다시 해보자!😉♥️';
+    } else {
+        levelChange = '➡️ 오 좋아! 킵고잉!👏♥️';
+    }
+
+    document.getElementById('levelChange').textContent = levelChange;
+    gameState.nBackLevel = nextNBackLevel;
+    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
+
+    // --- [수정됨] 결과 이미지 설정 및 동적 로딩 (오류 수정) ---
+    const resultImageElement = document.getElementById('resultImage');
+    const resultImageContainer = document.getElementById('resultImageContainer');
+    const resultScreen = document.getElementById('resultScreen');
+    let randomImageFilename = null;
+
+    if (loveImageFilenames.length === 0) {
+        loveImageFilenames = [];
+
+        const maxImagesToLoad = 20;
+        let loadedImageCount = 0;
+        let consecutiveErrors = 0; // [NEW] 연속 에러 카운터 추가
+        const maxConsecutiveErrors = 10; // [NEW] 최대 연속 에러 허용 횟수 설정
+
+        function loadImageFilenames(index) {
+            if (loadedImageCount >= maxImagesToLoad || consecutiveErrors >= maxConsecutiveErrors) { // [수정됨] 최대 로드 횟수 또는 최대 연속 에러 횟수 초과 시 종료 조건 추가
+                selectRandomImage();
+                return;
             }
-        });
-    </script> <!-- [NEW] Double tap fullscreen script 끝 -->
-</body>
-</html>
+
+            const filename = `love/love${String(index).padStart(2, '0')}.jpg`;
+            loveImageLoader.src = filename;
+
+            loveImageLoader.onload = function() {
+                loveImageFilenames.push(`love${String(index).padStart(2, '0')}.jpg`);
+                loadedImageCount++;
+                consecutiveErrors = 0; // [NEW] 로드 성공 시 에러 카운터 리셋
+                loadImageFilenames(index + 1);
+            };
+
+            loveImageLoader.onerror = function() {
+                consecutiveErrors++; // [NEW] 로드 실패 시 에러 카운터 증가
+                loadImageFilenames(index + 1);
+            };
+        }
+
+        loadImageFilenames(1);
+
+        function selectRandomImage() {
+            if (loveImageFilenames.length > 0) {
+                randomImageFilename = loveImageFilenames[Math.floor(Math.random() * loveImageFilenames.length)];
+                resultImageElement.src = `love/${randomImageFilename}`;
+                adjustResultScreenSize(resultImageElement, resultImageContainer, resultScreen);
+            } else {
+                resultImageElement.src = '';
+                resultImageContainer.style.width = '150px';
+                resultImageContainer.style.height = '150px';
+                resultScreen.style.width = 'auto';
+                resultScreen.style.height = 'auto';
+            }
+        }
+
+    } else {
+        selectRandomImage();
+    }
+
+
+    function selectRandomImage() {
+        randomImageFilename = loveImageFilenames[Math.floor(Math.random() * loveImageFilenames.length)];
+        resultImageElement.src = `love/${randomImageFilename}`;
+        adjustResultScreenSize(resultImageElement, resultImageContainer, resultScreen);
+    }
+
+
+    function adjustResultScreenSize(resultImageElement, resultImageContainer, resultScreen) {
+        resultImageElement.onload = function() {
+            const imageWidth = resultImageElement.naturalWidth;
+            const imageHeight = resultImageElement.naturalHeight;
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+
+            let containerWidth = imageWidth;
+            let containerHeight = imageHeight;
+            let resultScreenWidth = containerWidth + 80;
+            let resultScreenHeight = 'auto';
+
+            if (resultScreenWidth > screenWidth * 0.8) {
+                containerWidth = screenWidth * 0.8 - 80;
+                containerHeight = imageHeight * (containerWidth / imageWidth);
+                resultScreenWidth = screenWidth * 0.8;
+            }
+
+            resultImageContainer.style.width = `${containerWidth}px`;
+            resultImageContainer.style.height = `${containerHeight}px`;
+            resultScreen.style.width = `${resultScreenWidth}px`;
+            resultScreen.style.height = resultScreenHeight;
+
+            centerResultScreenContent();
+        };
+        resultImageElement.src = `love/${randomImageFilename}`;
+    }
+    // --- [수정됨] 결과 이미지 설정 및 동적 로딩 끝 (오류 수정) ---
+
+
+    document.getElementById('resultScreen').style.display = 'flex';
+}
+
+// 결과 화면 내용 중앙 정렬 함수
+function centerResultScreenContent() {
+    const resultScreen = document.getElementById('resultScreen');
+    resultScreen.style.alignItems = 'center';
+}
+
+// 타이머 취소 함수
+function cancelAllTimers() {
+    if (gameState.currentTimer) {
+        clearTimeout(gameState.currentTimer);
+    }
+    if (gameState.responseWindowTimer) {
+        clearTimeout(gameState.responseWindowTimer);
+    }
+}
+
+// 이벤트 리스너 등록 (키, 창 크기, 터치, 클릭, 버튼)
+document.addEventListener('keydown', handleKeyPress);
+window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+sceneIndicator.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    if (gameState.isPlaying && !gameState.sceneTargetProcessed && gameState.canRespond) {
+        handleSceneResponse();
+    }
+});
+
+locationIndicator.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    if (gameState.isPlaying && !gameState.locationTargetProcessed && gameState.canRespond) {
+        handleLocationResponse();
+    }
+});
+
+sceneIndicator.addEventListener('click', function() {
+    if (gameState.isPlaying && !gameState.sceneTargetProcessed && gameState.canRespond) {
+        handleSceneResponse();
+    }
+});
+
+locationIndicator.addEventListener('click', function() {
+    if (gameState.isPlaying && !gameState.locationTargetProcessed && gameState.canRespond) {
+        handleLocationResponse();
+    }
+});
+
+document.getElementById('setLevelBtn').addEventListener('click', function() {
+    setCustomLevel();
+});
+
+document.getElementById('customLevel').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        setCustomLevel();
+    }
+});
+
+document.getElementById('pressSpace').addEventListener('click', function() {
+    if (!gameState.isPlaying) {
+        startBlock();
+    }
+});
+
+document.getElementById('pressSpace').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    if (!gameState.isPlaying) {
+        startBlock();
+    }
+});
+
+document.getElementById('pressSpaceResult').addEventListener('click', function() {
+    if (!gameState.isPlaying) {
+        startBlock();
+    }
+});
+
+document.getElementById('pressSpaceResult').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    if (!gameState.isPlaying) {
+        startBlock();
+    }
+});
+
+// 레벨 설정 함수
+function setCustomLevel() {
+    const customLevelInput = document.getElementById('customLevel');
+    let newLevel = parseInt(customLevelInput.value);
+
+    if (isNaN(newLevel) || newLevel < 1) {
+        newLevel = 1;
+        customLevelInput.value = 1;
+    } else if (newLevel > 9) {
+        newLevel = 9;
+        customLevelInput.value = 9;
+    }
+
+    gameState.nBackLevel = newLevel;
+    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    localStorage.setItem('nBackLevel', gameState.nBackLevel);
+
+    customLevelInput.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
+    setTimeout(() => {
+        customLevelInput.style.backgroundColor = 'rgba(255,255,255,0.9)';
+    }, 500);
+}
+
+// 페이지 로드 시 레벨, 게임 횟수 불러오기
+window.addEventListener('load', function() {
+    const storedLevel = localStorage.getItem('nBackLevel');
+    if (storedLevel) {
+        gameState.nBackLevel = parseInt(storedLevel);
+        document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    }
+
+    let storedTotalGamesToday = localStorage.getItem('totalGamesToday');
+    let lastGameDateString = localStorage.getItem('lastGameDate');
+
+    if (storedTotalGamesToday && lastGameDateString) {
+        const lastGameDate = new Date(lastGameDateString);
+        const todayDate = new Date();
+
+        if (lastGameDate.getFullYear() === todayDate.getFullYear() &&
+            lastGameDate.getMonth() === todayDate.getMonth() &&
+            lastGameDate.getDate() === todayDate.getDate()) {
+            gameState.totalGamesToday = parseInt(storedTotalGamesToday);
+        } else {
+            gameState.totalGamesToday = 0;
+        }
+    } else {
+        gameState.totalGamesToday = 0;
+    }
+    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+});
+
+// 자극 횟수 카운터 업데이트/초기화 함수
+function updateStimulusCounter() {
+    const counterElement = document.getElementById('stimulus-counter');
+    if (counterElement) {
+        counterElement.textContent = `Stimulus: ${gameState.currentStimulus} / ${gameState.stimuliPerBlock}`;
+    }
+}
+
+function resetStimulusCounter() {
+    const counterElement = document.getElementById('stimulus-counter');
+    if (counterElement) {
+        counterElement.textContent = `Stimulus: 0 / ${gameState.stimuliPerBlock}`;
+    }
+}
+
+// 애니메이션 렌더링 함수 (rendering loop)
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+animate();
