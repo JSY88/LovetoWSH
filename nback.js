@@ -26,7 +26,7 @@ const gameState = {
 //const interferenceChance 랜덤 간섭의 발생활률 조정
 
     // --- 간섭 관련 설정 ---
-    // interferenceChance: 0.125, // 기존: 전체 간섭 발생 확률 (더 이상 사용 안 함)
+    // interferenceChance: 0.325, // 기존: 전체 간섭 발생 확률 (더 이상 사용 안 함)
     interferenceType: "random", // 간섭 유형 ("none", "previous", "cyclic", "next", "random") - 기본값: "none" (간섭 없음), "random" 추가
     randomInterferenceProbabilities: { // 랜덤 간섭 유형별 확률 (합계: 1) - interferenceType: "random" 일 때 적용
         "previous": 0.33, // 이전(previous) 간섭 확률: 33%
@@ -41,7 +41,7 @@ const gameState = {
 // --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
 const wallColor = 0x444444;     // 벽 색상 (gray) - Three.js Color 값 (hexadecimal)
 const floorColor = 0x783F04;    // 바닥 색상 (brownish) - Three.js Color 값 (hexadecimal)
-const panelColor = 0x000000;    // 패널(액자) 색상 (dark gray) - Three.js Color 값 (hexadecimal)
+const panelColor = 0x666666;    // 패널(액자) 색상 (dark gray) - Three.js Color 값 (hexadecimal)
 const imageScale = 1.0;         // 이미지 크기 비율 (1.0: 원래 크기, 0.5: 절반 크기) - 1.0: 원래 크기, 0.5: 절반 크기
 const randomizeStimulusColor = true; // 게임 시작 시 이미지에 랜덤 색상 입히기 여부 (true: 랜덤 색상 입힘, false: 색상 입히지 않음) - true: 랜덤 색상 적용, false: 색상 미적용
 // --- 커스터마이징 옵션 끝 ---
@@ -393,7 +393,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex) { // 간섭
     }
 
     // --- 간섭 발생 확률 (개별 간섭 유형 확률 -> 전체 간섭 확률로 변경) ---
-    const interferenceChance = 0.25; // 전체 간섭 발생 확률 (12.5%) - 필요에 따라 조절 - 모든 간섭 유형에 공통 적용
+    const interferenceChance = 0.0; // 전체 간섭 발생 확률 (12.5%) - 필요에 따라 조절 - 모든 간섭 유형에 공통 적용
     if (Math.random() < interferenceChance) { // 전체 간섭 발생 확률에 따라 간섭 적용 여부 결정
         let interferedImageIndex = currentImageIndex; // 간섭된 이미지 인덱스 변수 초기화 (기본값: 현재 이미지 인덱스)
         let interferedPanelIndex = currentPanelIndex; // 간섭된 패널 인덱스 변수 초기화 (기본값: 현재 패널 인덱스)
@@ -495,6 +495,12 @@ function showStimulus(imageIndex, panelIndex) { // 자극 제시 함수 (imageIn
     console.log("showStimulus() - imageIndex (after interference):", imageIndex, "panelIndex:", panelIndex); // 간섭 적용 후 자극 정보 콘솔에 출력 - 디버깅 용도
     createStimulusImage(imageIndex, panel); // 최종 자극 정보로 자극 이미지 생성 및 패널에 제시
 
+    console.log("showStimulus() - 제시된 자극 (imageIndex:", imageIndex, ", panelIndex:", panelIndex, ")"); // 제시된 자극 정보 로그
+    console.log("showStimulus() - sceneHistory:", gameState.sceneHistory); // sceneHistory 로그
+    console.log("showStimulus() - locationHistory:", gameState.locationHistory); // locationHistory 로그
+    console.log("showStimulus() - nBackLevel:", gameState.nBackLevel); // nBackLevel 로그
+    console.log("showStimulus() - 목표 자극 판정:", "장면 목표:", gameState.currentIsSceneTarget, ", 위치 목표:", gameState.currentIsLocationTarget); // 목표 자극 판정 결과 로그
+
 
     gameState.sceneHistory.push(imageIndex); // 장면 자극 히스토리에 현재 이미지 인덱스 추가
     gameState.locationHistory.push(panelIndex); // 위치 자극 히스토리에 현재 패널 인덱스 추가
@@ -525,13 +531,13 @@ function showStimulus(imageIndex, panelIndex) { // 자극 제시 함수 (imageIn
                 if (!gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) { // 장면 목표 자극인데, 처리 안 됐으면 (미반응)
                     showMissedTargetFeedback(sceneIndicator); // 장면 미반응 피드백 표시 (indicator box 빨간색)
                     gameState.sceneErrors++; // 장면 오류 횟수 증가 (미반응)
-                    console.log("showStimulus() - 장면 미반응, sceneErrors 증가:", gameState.sceneErrors); // 콘솔에 오류 정보 출력 - 디버깅 용도
+                    console.log("showStimulus() - 장면 미반응, sceneErrors 증가:", gameState.sceneErrors); // 장면 미반응 오류 증가 로그
                 }
 
                 if (!gameState.locationTargetProcessed && gameState.currentIsLocationTarget) { // 위치 목표 자극인데, 처리 안 됐으면 (미반응)
                     showMissedTargetFeedback(locationIndicator); // 위치 미반응 피드백 표시 (indicator box 빨간색)
                     gameState.locationErrors++; // 위치 오류 횟수 증가 (미반응)
-                    console.log("showStimulus() - 위치 미반응, locationErrors 증가:", gameState.locationErrors); // 콘솔에 오류 정보 출력 - 디버깅 용도
+                    console.log("showStimulus() - 위치 미반응, locationErrors 증가:", gameState.locationErrors); // 위치 미반응 오류 증가 로그
                 }
 
                 setTimeout(() => { // 0.5초 후 다음 자극 제시 (피드백 표시 후 잠시 딜레이)
@@ -583,21 +589,25 @@ function generateNextStimulus() { // 다음 자극 생성 및 제시 함수 - sh
                               (gameState.stimuliPerBlock - gameState.currentStimulus); // 남은 자극 횟수
 
     let imageIndex, panelIndex; // 다음 자극 이미지 인덱스, 패널 인덱스 변수 선언
+    let targetType = "none"; // 목표 자극 유형 변수 (디버깅용)
 
     if (gameState.currentStimulus >= gameState.nBackLevel) { // 현재 자극 횟수가 N-back 레벨 이상이면 (목표 자극 생성 가능)
         if (shouldBeBothTarget) { // 양쪽 모두 목표 자극 생성 조건 만족하면
             imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]; // 이미지: N-back 이전 이미지와 동일
             panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]; // 위치: N-back 이전 위치와 동일
+            targetType = "both"; // 목표 자극 유형: 양쪽 모두
         } else if (shouldBeSceneTarget) { // 장면 목표 자극 생성 조건 만족하면
             imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]; // 이미지: N-back 이전 이미지와 동일
             do { // 위치: N-back 이전 위치와 다른 위치 랜덤 선택
                 panelIndex = Math.floor(Math.random() * panels.length); // 패널 index 랜덤 선택 (0~7)
             } while (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]); // N-back 이전 위치와 다를 때까지 반복
+            targetType = "scene"; // 목표 자극 유형: 장면
         } else if (shouldBeLocationTarget) { // 위치 목표 자극 생성 조건 만족하면
             panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]; // 위치: N-back 이전 위치와 동일
             do { // 이미지: N-back 이전 이미지와 다른 이미지 랜덤 선택
                 imageIndex = Math.floor(Math.random() * imageTextures.length); // 이미지 index 랜덤 선택 (0~100)
             } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]); // N-back 이전 이미지와 다를 때까지 반복
+            targetType = "location"; // 목표 자극 유형: 위치
         } else { // 목표 자극 없을 때 (비-목표 자극 생성)
             do { // 이미지, 위치 모두 N-back 이전 자극과 다른 자극 랜덤 선택
                 imageIndex = Math.floor(Math.random() * imageTextures.length); // 이미지 index 랜덤 선택 (0~100)
@@ -605,10 +615,12 @@ function generateNextStimulus() { // 다음 자극 생성 및 제시 함수 - sh
                 // 이미지 또는 위치가 N-back 이전 자극과 같으면 다시 랜덤 선택
             } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel] || // 이미지 또는
                      panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]); // 위치가 N-back 이전 자극과 같으면 다시 랜덤 선택
+            targetType = "non-target"; // 목표 자극 유형: 비-목표
         }
     } else { // 현재 자극 횟수가 N-back 레벨 미만이면 (첫 N-back 자극)
         imageIndex = Math.floor(Math.random() * imageTextures.length); // 이미지 index 랜덤 선택 (0~100)
         panelIndex = Math.floor(Math.random() * panels.length); // 패널 index 랜덤 선택 (0~7)
+        targetType = "initial"; // 목표 자극 유형: 초기
     }
 
     let currentInterferenceType = gameState.interferenceType; // 현재 간섭 유형 가져오기 - generateNextStimulus 함수 내에서 정의해야 showStimulus 함수에서 참조 가능
@@ -619,7 +631,9 @@ function generateNextStimulus() { // 다음 자극 생성 및 제시 함수 - sh
         // 현재는 간섭을 적용하지 않고, 다음 자극 정보를 저장만 함. 실제 간섭 적용은 showStimulus() 함수에서 이루어짐. - "next" 간섭은 다음 자극에 영향을 주는 방식이므로 자극 생성 시점에는 간섭 적용 안 함
     }
 
-    console.log("generateNextStimulus() - imageIndex:", imageIndex, "panelIndex:", panelIndex); // 생성된 자극 정보 콘솔에 출력 - 디버깅 용도
+    console.log("generateNextStimulus() - imageIndex:", imageIndex, "panelIndex:", panelIndex);
+     // 디버깅 로그: 목표 자극 유형
+    console.log("generateNextStimulus() - 목표 자극 유형:", targetType);
 
     // --- 자극 횟수 카운터 업데이트 ---
     updateStimulusCounter(); // generateNextStimulus() 함수 호출 시 카운터 업데이트 - 화면에 자극 횟수 표시 업데이트
@@ -660,8 +674,8 @@ function handleSceneResponse() { // 이미지 반응 처리 함수 - 'S' 키 입
     showIndicatorFeedback(sceneIndicator, isCorrect); // 반응 지시 박스에 피드백 표시 (정답: 초록색, 오답: 빨간색)
 
     if (!isCorrect) { // 오답이면
-        gameState.sceneErrors++; // 장면 오류 횟수 증가 (오반응) - 오반응 횟수 카운트
-        console.log("handleSceneResponse() - 장면 오반응, sceneErrors 증가:", gameState.sceneErrors); // 콘솔에 오류 정보 출력 - 디버깅 용도
+        gameState.sceneErrors++;
+        console.log("handleSceneResponse() - 장면 오반응, sceneErrors 증가:", gameState.sceneErrors);
     }
 }
 
@@ -680,8 +694,8 @@ function handleLocationResponse() { // 위치 반응 처리 함수 - 'L' 키 입
     showIndicatorFeedback(locationIndicator, isCorrect); // 반응 지시 박스에 피드백 표시 (정답: 초록색, 오답: 빨간색)
 
     if (!isCorrect) { // 오답이면
-        gameState.locationErrors++; // 위치 오류 횟수 증가 (오반응) - 오반응 횟수 카운트
-        console.log("handleLocationResponse() - 위치 오반응, locationErrors 증가:", gameState.locationErrors); // 콘솔에 오류 정보 출력 - 디버깅 용도
+        gameState.locationErrors++;
+        console.log("handleLocationResponse() - 위치 오반응, locationErrors 증가:", gameState.locationErrors);
     }
 }
 
@@ -713,42 +727,45 @@ function startBlock() { // 블록 시작 함수 - 게임 시작 시 호출
 }
 
 // 블록 종료 함수 (한 블록 완료 후 결과 처리 및 다음 블록 준비)
-function endBlock() { // 블록 종료 함수 - 블록당 자극 횟수 다 채우면 showStimulus 함수에서 호출
-    gameState.isPlaying = false; // 게임 플레이 상태 false 로 설정 - 게임 일시 정지 상태로 변경
-    gameState.currentBlock++; // 현재 블록 번호 증가 - 블록 횟수 카운트
+function endBlock() {
+    gameState.isPlaying = false;
+    gameState.currentBlock++;
 
-    const sceneMisses = gameState.sceneTargets - (gameState.sceneResponses - gameState.sceneErrors); // 장면 미반응 횟수 계산 - (전체 장면 목표 횟수 - 정반응 횟수)
-    const locationMisses = gameState.locationTargets - (gameState.locationResponses - gameState.locationErrors); // 위치 미반응 횟수 계산 - (전체 위치 목표 횟수 - 정반응 횟수)
+    // Remove these lines - they are causing double-counting
+    // const sceneMisses = gameState.sceneTargets - (gameState.sceneResponses - gameState.sceneErrors);
+    // const locationMisses = gameState.locationTargets - (gameState.locationResponses - gameState.locationErrors);
 
-    const totalSceneErrors = gameState.sceneErrors + sceneMisses; // 총 장면 오류 횟수 계산 - 오반응 + 미반응
-    const totalLocationErrors = gameState.locationErrors + locationMisses; // 총 위치 오류 횟수 계산 - 오반응 + 미반응
+    // Directly use gameState.sceneErrors and gameState.locationErrors as total errors
+    const totalSceneErrors = gameState.sceneErrors; // sceneErrors already includes missed targets
+    const totalLocationErrors = gameState.locationErrors; // locationErrors already includes missed targets
 
-    document.getElementById('sceneErrors').textContent = totalSceneErrors; // 결과 화면에 총 장면 오류 횟수 표시
-    document.getElementById('locationErrors').textContent = totalLocationErrors; // 결과 화면에 총 위치 오류 횟수 표시
-    document.getElementById('resultNLevel').textContent = gameState.nBackLevel; // 결과 화면에 현재 N-back 레벨 표시
 
-    let levelChange = ''; // 레벨 변화 메시지 변수 초기화
-    let nextNBackLevel = gameState.nBackLevel; // 다음 N-back 레벨 변수 초기화 - 기본적으로 현재 레벨 유지
+    document.getElementById('sceneErrors').textContent = totalSceneErrors;
+    document.getElementById('locationErrors').textContent = totalLocationErrors;
+    document.getElementById('resultNLevel').textContent = gameState.nBackLevel;
 
-    if (totalSceneErrors < 3 && totalLocationErrors < 3) { // 장면, 위치 오류 모두 3회 미만이면 (성공)
-        nextNBackLevel = gameState.nBackLevel + 1; // 다음 레벨 = 현재 레벨 + 1 - 레벨 상승
-        levelChange = '⬆️ Excellent! Level increased!'; // 레벨 상승 메시지
-    } else if (totalSceneErrors > 5 || totalLocationErrors > 5) { // 장면 또는 위치 오류 중 하나라도 5회 초과면 (실패)
-        nextNBackLevel = Math.max(1, gameState.nBackLevel - 1); // 다음 레벨 = max(1, 현재 레벨 - 1) - 레벨 하락 (최소 1-back)
-        levelChange = '⬇️ Too many errors. Level decreased.'; // 레벨 하락 메시지
-    } else { // 오류 횟수 적절하면 (레벨 유지)
-        levelChange = '➡️ Level remains the same.'; // 레벨 유지 메시지
+    let levelChange = '';
+    let nextNBackLevel = gameState.nBackLevel;
+
+    if (totalSceneErrors < 3 && totalLocationErrors < 3) {
+        nextNBackLevel = gameState.nBackLevel + 1;
+        levelChange = '⬆️ Excellent! Level increased!';
+    } else if (totalSceneErrors > 5 || totalLocationErrors > 5) {
+        nextNBackLevel = Math.max(1, gameState.nBackLevel - 1);
+        levelChange = '⬇️ Too many errors. Level decreased.';
+    } else {
+        levelChange = '➡️ Level remains the same.';
     }
 
-    document.getElementById('levelChange').textContent = levelChange; // 결과 화면에 레벨 변화 메시지 표시
+    document.getElementById('levelChange').textContent = levelChange;
 
-    gameState.nBackLevel = nextNBackLevel; // gameState 의 N-back 레벨 업데이트 - 다음 블록에 적용될 레벨
-    document.getElementById('nBackLevel').textContent = gameState.nBackLevel; // 타이틀 화면의 레벨 표시 업데이트 - 변경된 레벨 표시
+    gameState.nBackLevel = nextNBackLevel;
+    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
 
-    // --- LocalStorage 에 N-back 레벨 저장 ---
-    localStorage.setItem('nBackLevel', gameState.nBackLevel); // 게임 종료 시 현재 레벨을 LocalStorage 에 저장 - 웹 브라우저 닫아도 레벨 유지
+    document.getElementById('resultScreen').style.display = 'flex';
 
-    document.getElementById('resultScreen').style.display = 'flex'; // 결과 화면 표시 - 블록 결과, 레벨 변화 등 표시
+     // 디버깅 로그: endBlock 함수 종료 시 레벨 변화 정보 출력
+    console.log("endBlock() - 종료:", "levelChange:", levelChange, "nextNBackLevel:", nextNBackLevel);
 }
 
 // 모든 타이머 취소 함수
