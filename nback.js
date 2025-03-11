@@ -875,6 +875,9 @@ function setCustomLevel() { // 사용자 정의 레벨 설정 함수 - setLevelB
     gameState.nBackLevel = newLevel; // gameState 의 N-back 레벨 업데이트 - 게임 레벨 변경
     document.getElementById('nBackLevel').textContent = newLevel; // 타이틀 화면의 레벨 표시 업데이트 - 변경된 레벨 표시
 
+    // --- [수정됨] 레벨 변경 시 LocalStorage 에 저장 ---
+    localStorage.setItem('nBackLevel', gameState.nBackLevel); // LocalStorage 에 현재 N-back 레벨 저장 // --- [NEW] 레벨 저장 코드 추가됨 ---
+
     customLevelInput.style.backgroundColor = 'rgba(0, 255, 0, 0.2)'; // 입력 필드 배경색 초록색으로 변경 - 레벨 변경 성공 시 피드백
     setTimeout(() => { // 0.5초 후 배경색 원래대로 복원 (애니메이션 효과)
         customLevelInput.style.backgroundColor = 'rgba(255,255,255,0.9)'; // 배경색 light gray 로 복원
@@ -890,17 +893,28 @@ window.addEventListener('load', function() { // window load event listener 등�
         document.getElementById('nBackLevel').textContent = gameState.nBackLevel; // 타이틀 화면의 레벨 표시 업데이트 - 저장된 레벨 표시
     } // 저장된 레벨 없으면 기본 레벨(1-back) 유지
 
-    // --- 오늘 게임 횟수 불러오기 및 날짜 확인 --- // --- [NEW] 오늘 게임 횟수 불러오기 및 날짜 확인 ---
+    // --- 오늘 게임 횟수 불러오기 및 날짜 확인 (수정됨) --- // --- [NEW] 오늘 게임 횟수 불러오기 및 날짜 확인 ---
     let storedTotalGamesToday = localStorage.getItem('totalGamesToday'); // LocalStorage 에서 'totalGamesToday' 키로 저장된 값 가져오기
-    let lastGameDate = localStorage.getItem('lastGameDate'); // LocalStorage 에서 'lastGameDate' 키로 저장된 마지막 게임 날짜 가져오기
-    const todayDate = new Date().toDateString(); // 오늘 날짜 문자열로 변환
+    let lastGameDateString = localStorage.getItem('lastGameDate'); // LocalStorage 에서 'lastGameDate' 키로 저장된 마지막 게임 날짜 문자열 가져오기
 
-    if (storedTotalGamesToday && lastGameDate === todayDate) { // 저장된 오늘 게임 횟수가 있고, 마지막 게임 날짜가 오늘이면
-        gameState.totalGamesToday = parseInt(storedTotalGamesToday); // gameState 의 오늘 게임 횟수를 LocalStorage 에서 불러온 값으로 설정
-    } else { // 저장된 오늘 게임 횟수가 없거나, 마지막 게임 날짜가 오늘이 아니면 (새로운 날짜)
-        gameState.totalGamesToday = 0; // 오늘 게임 횟수 0으로 초기화
+    if (storedTotalGamesToday && lastGameDateString) { // 저장된 오늘 게임 횟수와 마지막 게임 날짜가 있으면
+        const lastGameDate = new Date(lastGameDateString); // 저장된 날짜 문자열로부터 Date 객체 생성
+        const todayDate = new Date(); // 오늘 날짜 Date 객체 생성
+
+        // 날짜 정보 비교 (년, 월, 일)
+        if (lastGameDate.getFullYear() === todayDate.getFullYear() &&
+            lastGameDate.getMonth() === todayDate.getMonth() &&
+            lastGameDate.getDate() === todayDate.getDate()) {
+            // 마지막 게임 날짜와 오늘 날짜가 같으면 (같은 날짜)
+            gameState.totalGamesToday = parseInt(storedTotalGamesToday); // 저장된 오늘 게임 횟수 불러오기
+        } else {
+            // 마지막 게임 날짜가 오늘 날짜와 다르면 (새로운 날짜)
+            gameState.totalGamesToday = 0; // 오늘 게임 횟수 0으로 초기화
+        }
+    } else {
+        gameState.totalGamesToday = 0; // 저장된 오늘 게임 횟수 없으면 0으로 초기화
     }
-    document.getElementById('totalGamesTodayCount').textContent = gameState.totalGamesToday; // 타이틀 화면에 오늘 게임 횟수 표시 // --- [NEW] 타이틀 화면에 오늘 게임 횟수 표시 ---
+    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday; // 타이틀 화면에 오늘 게임 횟수 표시
 });
 
 
