@@ -4,7 +4,7 @@ const gameState = {
     nBackLevel: 1, // 현재 N-back 레벨 (기본값: 1)
     currentBlock: 0, // 현재 블록 번호
     maxBlocks: 12, // 최대 블록 수 (최대 블록 수, 현재 사용 안 함)
-    stimuliPerBlock: 30, // 블록당 자극 제시 횟수 (기본값: 30회)
+    stimuliPerBlock: 1, // 블록당 자극 제시 횟수 (기본값: 30회)
     currentStimulus: 0, // 현재 제시된 자극 횟수
     sceneHistory: [], // 장면 자극 히스토리 (이미지 인덱스 저장 배열)
     locationHistory: [], // 위치 자극 히스토리 (패널 인덱스 저장 배열)
