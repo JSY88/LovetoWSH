@@ -4,7 +4,7 @@ const gameState = {
     nBackLevel: 1, // 현재 N-back 레벨 (기본값: 1)
     currentBlock: 0, // 현재 블록 번호
     maxBlocks: 12, // 최대 블록 수 (최대 블록 수, 현재 사용 안 함)
-    stimuliPerBlock: 30, // 블록당 자극 제시 횟수 (30회)
+    stimuliPerBlock: 1, // 블록당 자극 제시 횟수 (기본값: 30회)
     currentStimulus: 0, // 현재 제시된 자극 횟수
     sceneHistory: [], // 장면 자극 히스토리 (이미지 인덱스 저장 배열)
     locationHistory: [], // 위치 자극 히스토리 (패널 인덱스 저장 배열)
@@ -25,7 +25,7 @@ const gameState = {
     canRespond: true, // 반응 가능 상태 여부
 
     // --- 간섭 관련 설정 ---
-    interferenceType: "random", // 간섭 유형 ("none", "previous", "cyclic", "next", "random") - 기본값: "none" (간섭 없음), "random" 추가
+    interferenceType: "none", // 간섭 유형 ("none", "previous", "cyclic", "next", "random") - 기본값: "none" (간섭 없음), "random" 추가
     randomInterferenceProbabilities: { // 랜덤 간섭 유형별 확률 (합계: 1) - interferenceType: "random" 일 때 적용
         "previous": 0.33, // 이전(previous) 간섭 확률: 33%
         "cyclic": 0.33, // 순환(cyclic) 간섭 확률: 33%
@@ -38,6 +38,9 @@ const gameState = {
     consecutiveGames: 0, // 연속 게임 횟수 (현재 세션 기준) - 새로 추가
     totalGamesToday: 0 // 오늘 총 게임 횟수 - 새로 추가
 };
+
+// --- [NEW] 업로드된 배경 이미지 저장 키 ---
+const uploadedImagesKey = 'nbackUploadedImages';
 
 // --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
 const wallColor = 0x262626;     // 벽 색상 (gray) - Three.js Color 값 (hexadecimal)
@@ -513,7 +516,7 @@ function showStimulus(imageIndex, panelIndex) { // 자극 제시 함수 (imageIn
                                 gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
 
         if (gameState.currentIsSceneTarget) gameState.sceneTargets++; // 장면 목표 자극이면 장면 목표 횟수 증가 - 장면 목표 자극이면 장면 목표 횟수 증가
-        if (gameState.currentIsLocationTarget) gameState.locationTargets++; // 위치 목표 자극이면 위치 목표 횟수 증가 - 위치 목표 자극이면 위치 목표 횟수 증가
+        if (gameState.currentIsLocationTarget) gameState.locationTargets++; // 위치 목표 자극이면 위치 목표 자극 횟수 증가 - 위치 목표 자극이면 위치 목표 자극 횟수 증가
         if (gameState.currentIsSceneTarget && gameState.currentIsLocationTarget) gameState.bothTargets++; // 양쪽 모두 목표 자극이면 양쪽 모두 목표 횟수 증가 - 양쪽 모두 목표 자극이면 양쪽 모두 목표 횟수 증가
     } else { // N-back 레벨 미만이면 (N-back 비교 아직 안 함) - N-back level 미만이면 (N-back 비교 안 함)
         gameState.currentIsSceneTarget = false; // 현재 자극은 장면 목표 자극 아님 - 목표 자극 아님으로 설정
@@ -780,6 +783,9 @@ function endBlock() { // 블록 종료 함수 - 한 블록 완료 후 결과 처
 
      // 디버깅 로그: endBlock 함수 종료 시 레벨 변화 정보 출력 - 레벨 변화 정보 디버깅 로그
     console.log("endBlock() - 종료:", "levelChange:", levelChange, "nextNBackLevel:", nextNBackLevel);
+
+    // --- [NEW] 결과 화면 배경 이미지 설정 ---
+    setBackgroundImageToResultScreen(); // 결과 화면 배경 이미지 설정 함수 호출
 }
 
 // 모든 타이머 취소 함수
@@ -791,6 +797,57 @@ function cancelAllTimers() { // 모든 타이머 취소 함수 - 게임 중단 �
         clearTimeout(gameState.responseWindowTimer); // 타이머 취소 - 타이머 취소
     }
 }
+
+// --- [NEW] 결과 화면 배경 이미지 설정 함수 ---
+function setBackgroundImageToResultScreen() {
+    const storedImages = loadUploadedImages(); // LocalStorage 에서 저장된 이미지 목록 로드
+    const backgroundImageDiv = document.getElementById('resultBackgroundImage'); // 배경 이미지 div element 가져오기
+
+    if (storedImages && storedImages.length > 0) { // 저장된 이미지가 있으면
+        const randomIndex = Math.floor(Math.random() * storedImages.length); // 랜덤 index 선택
+        const randomImageData = storedImages[randomIndex]; // 랜덤 이미지 데이터 가져오기
+        backgroundImageDiv.style.backgroundImage = `url('${randomImageData}')`; // 배경 이미지 URL 설정 (data URL 사용)
+    } else {
+        backgroundImageDiv.style.backgroundImage = 'none'; // 저장된 이미지 없으면 배경 이미지 제거
+    }
+}
+
+// --- [NEW] 이미지 업로드 처리 함수 ---
+document.getElementById('imageUpload').addEventListener('change', function(e) {
+    const files = e.target.files; // 선택된 파일 목록 가져오기
+    if (files && files.length > 0) { // 파일이 선택되었으면
+        const storedImages = loadUploadedImages(); // 기존 저장된 이미지 목록 로드
+        let updatedImages = [...storedImages]; // 기존 이미지 목록 복사 (새로운 배열 생성)
+
+        for (let i = 0; i < files.length; i++) { // 선택된 파일 목록 순회
+            const file = files[i]; // 현재 파일 가져오기
+            const reader = new FileReader(); // FileReader 생성 (파일 내용 읽기)
+
+            reader.onload = function(event) { // 파일 로드 완료 시 이벤트 핸들러
+                const imageDataUrl = event.target.result; // Data URL (base64 인코딩된 이미지 데이터)
+                updatedImages.push(imageDataUrl); // Data URL 을 업데이트된 이미지 목록에 추가
+                saveUploadedImages(updatedImages); // 업데이트된 이미지 목록 LocalStorage 에 저장
+                console.log(`Uploaded image added. Total images: ${updatedImages.length}`); // 콘솔 로그 (업로드된 이미지 추가, 총 이미지 수)
+            };
+
+            reader.readAsDataURL(file); // 파일을 Data URL 로 읽기 시작 (비동기)
+        }
+        // input type="file" 값 초기화 (동일 파일 재선택 가능하도록)
+        e.target.value = ''; // input value 초기화
+    }
+});
+
+// --- [NEW] LocalStorage 에 이미지 목록 저장 함수 ---
+function saveUploadedImages(images) {
+    localStorage.setItem(uploadedImagesKey, JSON.stringify(images)); // 이미지 목록 JSON 문자열로 변환 후 LocalStorage 에 저장
+}
+
+// --- [NEW] LocalStorage 에서 이미지 목록 로드 함수 ---
+function loadUploadedImages() {
+    const storedImages = localStorage.getItem(uploadedImagesKey); // LocalStorage 에서 이미지 목록 JSON 문자열 가져오기
+    return storedImages ? JSON.parse(storedImages) : []; // JSON 문자열 파싱하여 배열로 반환, 없으면 빈 배열 반환
+}
+
 
 // --- 이벤트 리스너 등록 ---
 document.addEventListener('keydown', handleKeyPress); // keydown event listener 등록 - 키 입력 처리 (handleKeyPress 함수 호출) - 키 입력 이벤트 리스너 등록
@@ -888,7 +945,7 @@ function setCustomLevel() { // 사용자 정의 레벨 설정 함수 - setLevelB
     }, 500); // 0.5초 딜레이 - 0.5초 딜레이
 }
 
-// --- 페이지 로드 시 저장된 N-back 레벨 및 오늘 게임 횟수 불러오기 --- // --- [NEW] 페이지 로드 시 오늘 게임 횟수 불러오기 ---
+// --- 페이지 로드 시 저장된 N-back 레벨 및 오늘 게임 횟수, 배경 이미지 목록 불러오기 --- // --- [NEW] 페이지 로드 시 오늘 게임 횟수 불러오기 ---
 window.addEventListener('load', function() { // window load event listener 등록 - 페이지 로드 완료 시 실행 - 페이지 로드 시 이벤트 리스너 등록
     // --- 저장된 N-back 레벨 불러오기 ---
     const storedLevel = localStorage.getItem('nBackLevel'); // LocalStorage 에서 'nBackLevel' 키로 저장된 값 가져오기 - LocalStorage 에서 레벨 정보 가져오기
@@ -919,6 +976,9 @@ window.addEventListener('load', function() { // window load event listener 등�
         gameState.totalGamesToday = 0; // 저장된 오늘 게임 횟수 없으면 0으로 초기화 - 저장된 게임 횟수 없으면 0으로 초기화
     }
     document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday; // 타이틀 화면에 오늘 게임 횟수 표시 - 타이틀 화면에 오늘 게임 횟수 표시
+
+    // --- [NEW] 저장된 배경 이미지 목록 불러오기 ---
+    loadUploadedImages(); // 페이지 로드 시 저장된 배경 이미지 목록 로드 (초기 로드)
 });
 
 
