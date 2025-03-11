@@ -1,939 +1,400 @@
+<html lang="en">
+<head>
+    <!-- 문서 문자 인코딩 설정 (UTF-8) -->
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <!-- 뷰포트 설정: 반응형 웹 디자인 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 문서 제목 -->
+    <title>Dual N-back Task with Images</title>
+    <!-- 스타일 시트 -->
+    <style>
+    /* body 스타일 */
+    body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+    }
 
-// 게임 상태 객체
-const gameState = {
-    isPlaying: false,
-    nBackLevel: 1,
-    currentBlock: 0,
-    maxBlocks: 12,
-    stimuliPerBlock: 1,
-    currentStimulus: 0,
-    sceneHistory: [],
-    locationHistory: [],
-    sceneTargets: 0,
-    locationTargets: 0,
-    bothTargets: 0,
-    sceneResponses: 0,
-    locationResponses: 0,
-    sceneErrors: 0,
-    locationErrors: 0,
-    currentTimer: null,
-    responseWindowTimer: null,
-    sceneTargetProcessed: false,
-    locationTargetProcessed: false,
-    currentIsSceneTarget: false,
-    currentIsLocationTarget: false,
-    inResponseWindow: false,
-    canRespond: true,
-    interferenceType: "random",
-    randomInterferenceProbabilities: {
-        "previous": 0.33,
-        "cyclic": 0.33,
-        "next": 0.34
-    },
-    cyclicInterferenceNBackLevel: 2,
-    nextStimulusInfo: null,
-    consecutiveGames: 0,
-    totalGamesToday: 0,
-    imageScale: 1.0
-};
+    /* 캔버스 스타일 */
+    canvas {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+    }
 
-// --- 커스터마이징 옵션 (사용자 설정 가능 변수) ---
-const wallColor = 0x262626;
-const floorColor = 0x393734;
-const panelColor = 0x000000;
-const randomizeStimulusColor = true;
-// --- 커스터마이징 옵션 끝 ---
+    /* 레벨 입력 영역 스타일 */
+    .level-input {
+        margin: 15px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
 
+    /* 레벨 입력 input 스타일 */
+    .level-input input {
+        width: 60px;
+        padding: 10px;
+        text-align: center;
+        font-size: 18px;
+        background-color: rgba(255,255,255,0.9);
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
 
-// Three.js 설정
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f0f0);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.6, 2);
-camera.lookAt(0, 1.6, -5);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+    /* 레벨 설정 버튼 스타일 */
+    .level-input button {
+        padding: 10px 20px;
+        background-color: rgba(255,255,255,0.9);
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        min-width: 70px;
+    }
 
-// 조명 설정
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-directionalLight.position.set(0, 1, 0);
-directionalLight.intensity = 0.8;
-scene.add(directionalLight);
+    /* 레벨 설정 버튼 hover 스타일 */
+    .level-input button:hover {
+        background-color: rgba(255,255,255,1);
+    }
 
-// 방 설정
-const roomWidth = 5;
-const roomHeight = 3;
-const roomDepth = 5;
+    /* 타이틀 화면 스타일 */
+    #titleScreen, #resultScreen {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
+        background-color: rgba(0,0,0,0.7);
+        padding: 40px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 400px;
+        z-index: 10;
+    }
 
-// 벽 텍스처 생성
-function createBrickTexture() {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const width = 512;
-    const height = 512;
-    canvas.width = width;
-    canvas.height = height;
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(0, 0, width, height);
-    const brickHeight = 30;
-    const brickWidth = 80;
-    const mortarSize = 5;
-    ctx.fillStyle = '#e0e0e0';
-    let offsetX = 0;
-    for (let y = 0; y < height; y += brickHeight + mortarSize) {
-        offsetX = (Math.floor(y / (brickHeight + mortarSize)) % 2) * (brickWidth / 2);
-        for (let x = -brickWidth/2; x < width + brickWidth/2; x += brickWidth + mortarSize) {
-            ctx.fillRect(x + offsetX, y, brickWidth, brickHeight);
-            ctx.fillStyle = '#d8d8d8';
-            for (let i = 0; i < 15; i++) {
-                const spotX = x + offsetX + Math.random() * brickWidth;
-                const spotY = y + Math.random() * brickHeight;
-                const spotSize = 1 + Math.random() * 3;
-                ctx.beginPath();
-                ctx.arc(spotX, spotY, spotSize, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.fillStyle = '#e0e0e0';
+    /* 결과 화면 스타일 (숨김) */
+    #resultScreen {
+        display: none;
+    }
+
+    /* 타이틀, 결과 화면 제목 스타일 */
+    #titleScreen h1, #resultScreen h1 {
+        margin-top: 0;
+        font-size: 2em;
+    }
+
+    /* N-back 레벨 표시 스타일 */
+    #nBackLevel, #resultNLevel {
+        font-size: 48px;
+        margin: 20px 0;
+    }
+
+    /* 결과 화면 N-back 레벨 (#resultNLevel) 스타일 - [NEW: 크기 조정] */
+    #resultNLevel {
+        font-size: 36px; /* 결과 화면 N-back 레벨 (크기 줄임) */
+        margin: 20px 0;
+    }
+
+    /* "Press SPACE" 메시지 스타일 */
+    #pressSpace, #pressSpaceResult {
+        cursor: pointer;
+        padding: 10px 15px;
+        background-color: rgba(255,255,255,0.2);
+        border-radius: 5px;
+        margin-top: 20px;
+        font-size: 24px;
+        animation: blink 1.5s infinite;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* "Press SPACE" 메시지 active 스타일 */
+    #pressSpace:active, #pressSpaceResult:active {
+        background-color: rgba(255,255,255,0.4);
+    }
+
+    /* 결과 통계 영역 스타일 */
+    #stats {
+        margin: 20px 0;
+        text-align: left;
+        width: 100%;
+    }
+
+    /* 깜빡임 애니메이션 스타일 */
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+
+    /* indicator box 공통 스타일 */
+    .indicator-box {
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        background-color: transparent;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 32px;
+        font-weight: bold;
+        color: rgba(255, 255, 255, 0.5);
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        touch-action: manipulation;
+        z-index: 10;
+    }
+
+    /* 장면 indicator box 스타일 */
+    #scene-indicator {
+        left: 30px;
+        bottom: 40px;
+    }
+
+    /* 위치 indicator box 스타일 */
+    #location-indicator {
+        right: 30px;
+        bottom: 40px;
+    }
+
+    /* indicator box active 스타일 */
+    .indicator-box:active {
+        opacity: 0.8;
+        transform: scale(0.95);
+    }
+
+    /* 정답 indicator box 스타일 */
+    .correct {
+        background-color: rgba(0, 180, 0, 0.8) !important;
+    }
+
+    /* 오답, 미반응 indicator box 스타일 */
+    .incorrect, .missed {
+        background-color: rgba(200, 0, 0, 0.8) !important;
+    }
+
+    /* 조기 반응 indicator box 스타일 */
+    .early {
+        background-color: rgba(0, 100, 255, 0.8) !important;
+    }
+
+    /* 자극 횟수 카운터 스타일 */
+    #stimulus-counter {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        font-size: 20px;
+        color: white;
+        opacity: 0.5;
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    /* 결과 이미지 컨테이너 스타일 */
+    #resultImageContainer {
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: 50vh;
+        margin: 20px auto;
+        overflow: hidden;
+        display: flex; /* Flexbox 레이아웃 사용 */
+        justify-content: center; /* 가로축 중앙 정렬 */
+        align-items: center; /* 세로축 중앙 정렬 */
+    }
+
+    /* 결과 이미지 스타일 */
+    #resultImage {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    /* N-back 레벨 표시 스타일 */
+    .n-level-display {
+        position: absolute;
+        left: 50%;
+        bottom: 20px;
+        transform: translateX(-50%);
+        font-size: 24px;
+        color: white;
+        opacity: 0.7;
+        z-index: 10;
+        text-align: center;
+        pointer-events: none;
+        display: none;
+        transition: opacity 1s ease-out;
+    }
+
+    .n-level-display.fade-out {
+        opacity: 0;
+    }
+
+    /* 게임 횟수 카운터 스타일 */
+    #consecutiveGamesCounter, #totalGamesTodayCounter {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 18px;
+        color: white;
+        text-align: center;
+    }
+
+    /* 횟수 값 스타일 */
+    #consecutiveGamesCount, #totalGamesTodayCountValue {
+        color: lightskyblue;
+    }
+
+    /* 모바일 화면 대응 */
+    @media screen and (max-width: 480px) {
+        #titleScreen, #resultScreen {
+            width: 90%;
+            max-width: 300px;
+            padding: 20px;
         }
-    }
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    for (let y = 0; y < height; y += brickHeight + mortarSize) {
-        ctx.fillRect(0, y - 1, width, 2);
-        offsetX = (Math.floor(y / (brickHeight + mortarSize)) % 2) * (brickWidth / 2);
-        for (let x = -brickWidth/2; x < width + brickWidth/2; x += brickWidth + mortarSize) {
-            ctx.fillRect(x + offsetX - 1, y, 2, brickHeight);
+        #titleScreen h1, #resultScreen h1 {
+            font-size: 1.5em;
         }
-    }
-    return new THREE.CanvasTexture(canvas);
-}
-
-const brickTexture = createBrickTexture();
-brickTexture.wrapS = THREE.RepeatWrapping;
-brickTexture.wrapT = THREE.RepeatWrapping;
-brickTexture.repeat.set(2, 1);
-const wallMaterial = new THREE.MeshStandardMaterial({
-    map: brickTexture,
-    roughness: 0.0,
-    metalness: 0.0,
-    color: wallColor
-});
-const wallGeometry = new THREE.BoxGeometry(0.1, roomHeight, roomDepth);
-
-// 벽 생성
-const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
-leftWall.position.set(-roomWidth/2, roomHeight/2, 0);
-scene.add(leftWall);
-const rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
-rightWall.position.set(roomWidth/2, roomHeight/2, 0);
-scene.add(rightWall);
-const backWallGeometry = new THREE.BoxGeometry(roomWidth, roomHeight, 0.1);
-const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
-backWall.position.set(0, roomHeight/2, -roomDepth/2);
-scene.add(backWall);
-
-// 바닥 텍스처 생성
-function createWoodTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const context = canvas.getContext('2d');
-    context.fillStyle = '#8B4513';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < 40; i++) {
-        const x = Math.random() * canvas.width;
-        context.strokeStyle = `rgba(139, 69, 19, ${Math.random() * 0.5})`;
-        context.lineWidth = 1 + Math.random() * 10;
-        context.beginPath();
-        context.moveTo(x, 0);
-        context.lineTo(x + Math.random() * 50 - 25, canvas.height);
-        context.stroke();
-    }
-    for (let i = 0; i < 30; i++) {
-        const y = Math.random() * canvas.height;
-        const width = 2 + Math.random() * 10;
-        context.fillStyle = `rgba(60, 30, 15, ${Math.random() * 0.3})`;
-        context.fillRect(0, y, canvas.width, width);
-    }
-    for (let i = 0; i < 800; i++) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        const radius = 1 + Math.random() * 2;
-        context.fillStyle = `rgba(200, 150, 100, ${Math.random() * 0.2})`;
-        context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2);
-        context.fill();
-    }
-    return new THREE.CanvasTexture(canvas);
-}
-
-const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
-const woodTexture = createWoodTexture();
-woodTexture.wrapS = THREE.RepeatWrapping;
-woodTexture.wrapT = THREE.RepeatWrapping;
-woodTexture.repeat.set(4, 4);
-const floorMaterial = new THREE.MeshStandardMaterial({
-    map: woodTexture,
-    roughness: 0.8,
-    metalness: 0.2,
-    color: floorColor
-});
-
-// 바닥, 천장 생성
-const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-floor.rotation.x = -Math.PI / 2;
-floor.receiveShadow = true;
-scene.add(floor);
-const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
-const ceiling = new THREE.Mesh(ceilingGeometry, wallMaterial);
-ceiling.rotation.x = Math.PI / 2;
-ceiling.position.y = roomHeight;
-scene.add(ceiling);
-
-// 패널 설정
-const panelWidth = 1.0;
-const panelHeight = 1.0;
-const panelDepth = 0.02;
-const panelMaterial = new THREE.MeshStandardMaterial({
-    color: panelColor,
-    roughness: 0.5,
-    metalness: 0.0
-});
-const panels = [];
-const panelPositions = [
-    { x: -1.3, y: 1.9, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
-    { x: 1.3, y: 1.9, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
-    { x: -1.3, y: 0.8, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
-    { x: 1.3, y: 0.8, z: -roomDepth/2 + 0.06, rotation: [0, 0, 0] },
-    { x: -roomWidth/2 + 0.06, y: 1.9, z: -0.5, rotation: [0, Math.PI/2, 0] },
-    { x: -roomWidth/2 + 0.06, y: 0.8, z: -0.5, rotation: [0, Math.PI/2, 0] },
-    { x: roomWidth/2 - 0.06, y: 1.9, z: -0.5, rotation: [0, -Math.PI/2, 0] },
-    { x: roomWidth/2 - 0.06, y: 0.8, z: -0.5, rotation: [0, -Math.PI/2, 0] }
-];
-
-// 패널 생성
-panelPositions.forEach((pos, index) => {
-    const panelGroup = new THREE.Group();
-    const panel = new THREE.Mesh(
-        new THREE.BoxGeometry(panelWidth, panelHeight, panelDepth),
-        panelMaterial
-    );
-    panelGroup.add(panel);
-    panelGroup.position.set(pos.x, pos.y, pos.z);
-    panelGroup.rotation.set(pos.rotation[0], pos.rotation[1], pos.rotation[2]);
-    scene.add(panelGroup);
-    panels.push({
-        group: panelGroup,
-        position: index,
-        panel: panel,
-        rotation: pos.rotation,
-        stimulusObject: null
-    });
-});
-
-// 이미지 로더, 텍스처
-const imageLoader = new THREE.TextureLoader();
-const imageTextures = [];
-const distinctColors = [
-    new THREE.Color(0.8, 0.2, 0.2),
-    new THREE.Color(0.2, 0.6, 0.8),
-    new THREE.Color(0.3, 0.7, 0.3),
-    new THREE.Color(0.9, 0.5, 0.1),
-    new THREE.Color(0.6, 0.3, 0.7),
-    new THREE.Color(0.2, 0.4, 0.9),
-    new THREE.Color(0.7, 0.7, 0.2)
-];
-
-// 랜덤 색상 함수
-function getRandomColor() {
-    return distinctColors[Math.floor(Math.random() * distinctColors.length)];
-}
-
-const imageFilenames = [];
-for (let i = 1; i <= 101; i++) {
-    const filename = `image${String(i).padStart(3, '0')}.png`;
-    imageFilenames.push(filename);
-}
-
-imageFilenames.forEach((filename) => {
-    const texture = imageLoader.load(`images/${filename}`);
-    let color = null;
-    if (randomizeStimulusColor) {
-        color = getRandomColor();
-    }
-    imageTextures.push({ texture: texture, color: color });
-});
-
-// 자극 이미지 생성 함수
-function createStimulusImage(imageIndex, panel) {
-    clearStimulus(panel);
-    const imageGeometry = new THREE.PlaneGeometry(panelWidth * gameState.imageScale, panelHeight * gameState.imageScale);
-    const imageMaterial = new THREE.MeshBasicMaterial({
-        map: imageTextures[imageIndex].texture,
-        transparent: true,
-        blending: THREE.NormalBlending
-    });
-    if (imageTextures[imageIndex].color) {
-        imageMaterial.color = imageTextures[imageIndex].color;
-    }
-    const imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
-    imagePlane.position.set(0, 0, panelDepth / 2 + 0.01);
-    panel.group.add(imagePlane);
-    panel.stimulusObject = imagePlane;
-    return imagePlane;
-}
-
-// 패널 자극 제거 함수
-function clearStimulus(panel) {
-    if (panel.stimulusObject) {
-        panel.group.remove(panel.stimulusObject);
-        panel.stimulusObject = null;
-    }
-}
-
-// 모든 패널 자극 제거 함수
-function clearAllStimuli() {
-    panels.forEach(panel => {
-        clearStimulus(panel);
-    });
-}
-
-// indicator box 요소 가져오기
-const sceneIndicator = document.getElementById('scene-indicator');
-const locationIndicator = document.getElementById('location-indicator');
-
-// indicator 상태 초기화 함수
-function resetIndicators() {
-    sceneIndicator.classList.remove('correct', 'incorrect', 'missed', 'early');
-    locationIndicator.classList.remove('correct', 'incorrect', 'missed', 'early');
-    gameState.sceneTargetProcessed = false;
-    gameState.locationTargetProcessed = false;
-    gameState.canRespond = true;
-}
-
-// indicator 피드백 표시 함수
-function showIndicatorFeedback(indicator, isCorrect) {
-    if (isCorrect) {
-        indicator.classList.add('correct');
-    } else {
-        indicator.classList.add('incorrect');
-    }
-}
-
-// 조기 반응 피드백 표시 함수
-function showEarlyResponseFeedback(indicator) {
-    indicator.classList.add('early');
-}
-
-// 미반응 피드백 표시 함수
-function showMissedTargetFeedback(indicator) {
-    indicator.classList.add('missed');
-}
-
-// 간섭 적용 함수
-function introduceInterference(currentImageIndex, currentPanelIndex) {
-    let currentInterferenceType = gameState.interferenceType;
-
-    if (currentInterferenceType === "none") {
-        return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex };
-    }
-
-    if (currentInterferenceType === "random") {
-        const rand = Math.random();
-        let cumulativeProbability = 0;
-
-        for (const type in gameState.randomInterferenceProbabilities) {
-            cumulativeProbability += gameState.randomInterferenceProbabilities[type];
-            if (rand < cumulativeProbability) {
-                currentInterferenceType = type;
-                break;
-            }
+        #nBackLevel, #resultNLevel {
+            font-size: 36px;
+            margin: 15px 0;
+        }
+        #pressSpace, #pressSpaceResult {
+            font-size: 18px;
+            padding: 8px 12px;
+            margin-top: 15px;
+        }
+        .level-input label,
+        .level-input button,
+        .level-input input {
+            font-size: 14px;
+            padding: 8px;
+        }
+        #resultImageContainer {
+            max-height: 40vh;
+            margin: 15px auto;
         }
     }
 
-    const interferenceChance = 0.35;
-    if (Math.random() < interferenceChance) {
-        let interferedImageIndex = currentImageIndex;
-        let interferedPanelIndex = currentPanelIndex;
+    /* --- [NEW] 결과 화면 내용 중앙 정렬 CSS --- */
+    #resultScreen {
+        justify-content: center; /* 세로축 중앙 정렬 */
+        align-items: center;    /* 가로축 중앙 정렬 */
+    }
 
-        if (currentInterferenceType === "previous" && gameState.currentStimulus > 0) {
-            const previousImageIndex = gameState.sceneHistory[gameState.currentStimulus - 1];
-            const previousPanelIndex = gameState.locationHistory[gameState.currentStimulus - 1];
+    #stats, #pressSpaceResult, #consecutiveGamesCounter, #totalGamesTodayCounter, #levelChange {
+        text-align: center; /* 텍스트 중앙 정렬 */
+    }
 
-            const type = Math.random();
-            if (type < 0.5) {
-                interferedImageIndex = previousImageIndex;
+    #stats {
+        text-align: left; /* 통계 정보는 왼쪽 정렬 */
+    }
+    /* --- [NEW] 결과 화면 내용 중앙 정렬 CSS 끝 --- */
+
+    </style>
+</head>
+<body>
+    <!-- 타이틀 화면 컨테이너 -->
+    <div id="titleScreen">
+        <h1>Dual N-Back Task</h1>
+        <div>Current Level: <span id="nBackLevel">1</span>-back</div>
+        <div class="level-input">
+            <label for="customLevel">Start at level:</label>
+            <input type="number" id="customLevel" min="1" max="9" value="1">
+            <button id="setLevelBtn">Set</button>
+        </div>
+        <div>Press 'S' when the IMAGE repeats</div>
+        <div>Press 'L' when a LOCATION repeats</div>
+        <div>You have 1.5 seconds after an image disappears to respond</div>
+        <div id="pressSpace">Press SPACE to begin</div>
+        <div id="totalGamesTodayCounter">
+            오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번
+        </div>
+    </div>
+
+    <!-- 결과 화면 컨테이너 -->
+    <div id="resultScreen">
+        <h1>Block Complete</h1>
+
+        <!-- 결과 이미지 컨테이너 -->
+        <div id="resultImageContainer">
+            <img id="resultImage" src="" alt="Game Result Image">
+        </div>
+
+        <div id="stats">
+            <div>Scene Errors: <span id="sceneErrors">0</span>/6</div>
+            <div>Location Errors: <span id="locationErrors">0</span>/6</div>
+            <div>N-Back Level: <span id="resultNLevel">1</span></div>
+            <div id="levelChange"></div>
+        </div>
+        <div id="pressSpaceResult">Press SPACE to continue</div>
+        <div id="consecutiveGamesCounter">
+            연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번</div>
+    </div>
+
+    <!-- indicator boxes -->
+    <div id="scene-indicator" class="indicator-box">S</div>
+    <div id="location-indicator" class="indicator-box">L</div>
+
+    <!-- 자극 횟수 카운터 -->
+    <div id="stimulus-counter">Stimulus: 0 / 30</div>
+
+    <!-- N-back 레벨 표시 -->
+    <div id="nLevelDisplay" class="n-level-display"></div>
+
+    <!-- Three.js -->
+    <script src="ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="nback.js"></script>
+    <!-- 더블 탭 전체 화면 스크립트 -->
+    <script>
+        document.body.addEventListener('dblclick', function() {
+            if (!document.fullscreenElement) {
+                document.body.requestFullscreen();
             } else {
-                interferedPanelIndex = previousPanelIndex;
+                document.exitFullscreen();
             }
+        });
 
-        } else if (currentInterferenceType === "cyclic" && gameState.currentStimulus >= gameState.cyclicInterferenceNBackLevel) {
-            const cyclicNBackLevel = gameState.cyclicInterferenceNBackLevel;
-            const cyclicImageIndex = gameState.sceneHistory[gameState.currentStimulus - cyclicNBackLevel];
-            const cyclicPanelIndex = gameState.locationHistory[gameState.currentStimulus - cyclicNBackLevel];
-
-             const type = Math.random();
-            if (type < 0.5) {
-                interferedImageIndex = cyclicImageIndex;
+        let lastTouchTime = 0;
+        document.body.addEventListener('touchstart', function(e) {
+            let currentTime = new Date().getTime();
+            let tapLength = currentTime - lastTouchTime;
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                if (!document.fullscreenElement) {
+                    if (document.body.requestFullscreen) {
+                        document.body.requestFullscreen();
+                    } else if (document.body.webkitRequestFullscreen) {
+                        document.body.webkitRequestFullscreen();
+                    } else if (document.body.msRequestFullscreen) {
+                        document.body.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.body.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+                lastTouchTime = 0;
             } else {
-                interferedPanelIndex = cyclicPanelIndex;
+                lastTouchTime = currentTime;
             }
-        } else if (currentInterferenceType === "next" && gameState.nextStimulusInfo) {
-            const type = Math.random();
-
-            if (type < 0.5) {
-                interferedImageIndex = gameState.nextStimulusInfo.imageIndex;
-            } else {
-                interferedPanelIndex = gameState.nextStimulusInfo.panelIndex;
-            }
-        }
-
-        return { imageIndex: interferedImageIndex, panelIndex: interferedPanelIndex };
-    }
-
-    return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex };
-}
-
-// 자극 제시 함수
-function showStimulus(imageIndex, panelIndex) {
-    resetIndicators();
-    const panel = panels[panelIndex];
-
-    if (gameState.interferenceType === "next" && gameState.nextStimulusInfo) {
-        const type = Math.random();
-        let interferedImageIndex = imageIndex;
-        let interferedPanelIndex = panelIndex;
-
-        if (type < 0.5) {
-            interferedImageIndex = gameState.nextStimulusInfo.imageIndex;
-        } else {
-            interferedPanelIndex = gameState.nextStimulusInfo.panelIndex;
-        }
-        imageIndex = interferedImageIndex;
-        panelIndex = interferedPanelIndex;
-        gameState.nextStimulusInfo = null;
-    }
-
-    const interferenceResult = introduceInterference(imageIndex, panelIndex);
-    imageIndex = interferenceResult.imageIndex;
-    panelIndex = interferenceResult.panelIndex;
-    createStimulusImage(imageIndex, panel);
-
-    gameState.sceneHistory.push(imageIndex);
-    gameState.locationHistory.push(panelIndex);
-
-    if (gameState.currentStimulus >= gameState.nBackLevel) {
-        gameState.currentIsSceneTarget = gameState.sceneHistory[gameState.currentStimulus] ===
-                              gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
-        gameState.currentIsLocationTarget = gameState.locationHistory[gameState.currentStimulus] ===
-                                gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
-
-        if (gameState.currentIsSceneTarget) gameState.sceneTargets++;
-        if (gameState.currentIsLocationTarget) gameState.locationTargets++;
-        if (gameState.currentIsSceneTarget && gameState.currentIsLocationTarget) gameState.bothTargets++;
-    } else {
-        gameState.currentIsSceneTarget = false;
-        gameState.currentIsLocationTarget = false;
-    }
-
-    gameState.currentStimulus++;
-
-    if (gameState.currentStimulus < gameState.stimuliPerBlock) {
-        gameState.currentTimer = setTimeout(() => {
-            clearAllStimuli();
-            gameState.inResponseWindow = true;
-            gameState.responseWindowTimer = setTimeout(() => {
-                gameState.inResponseWindow = false;
-
-                if (!gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
-                    showMissedTargetFeedback(sceneIndicator);
-                    gameState.sceneErrors++;
-                }
-
-                if (!gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
-                    showMissedTargetFeedback(locationIndicator);
-                    gameState.locationErrors++;
-                }
-
-                setTimeout(() => {
-                    generateNextStimulus();
-                }, 500);
-            }, 2500);
-        }, 1000);
-    } else {
-        gameState.currentTimer = setTimeout(() => {
-            clearAllStimuli();
-            gameState.inResponseWindow = true;
-            gameState.responseWindowTimer = setTimeout(() => {
-                gameState.inResponseWindow = false;
-
-                if (!gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
-                    showMissedTargetFeedback(sceneIndicator);
-                    gameState.sceneErrors++;
-                }
-
-                if (!gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
-                    showMissedTargetFeedback(locationIndicator);
-                    gameState.locationErrors++;
-                }
-
-                setTimeout(() => {
-                    endBlock();
-                }, 500);
-            }, 2500);
-        }, 1000);
-    }
-}
-
-// 다음 자극 생성 함수
-function generateNextStimulus() {
-    if (!gameState.isPlaying) return;
-
-    const shouldBeSceneTarget = gameState.sceneTargets < 6 &&
-                               Math.random() < (6 - gameState.sceneTargets) /
-                               (gameState.stimuliPerBlock - gameState.currentStimulus);
-    const shouldBeLocationTarget = gameState.locationTargets < 6 &&
-                                  Math.random() < (6 - gameState.locationTargets) /
-                                  (gameState.stimuliPerBlock - gameState.currentStimulus);
-    const shouldBeBothTarget = gameState.bothTargets < 2 &&
-                              Math.random() < (2 - gameState.bothTargets) /
-                              (gameState.stimuliPerBlock - gameState.currentStimulus);
-
-    let imageIndex, panelIndex;
-    let targetType = "none";
-
-    if (gameState.currentStimulus >= gameState.nBackLevel) {
-        if (shouldBeBothTarget) {
-            imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
-            panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
-            targetType = "both";
-        } else if (shouldBeSceneTarget) {
-            imageIndex = gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
-            do {
-                panelIndex = Math.floor(Math.random() * panels.length);
-            } while (panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
-            targetType = "scene";
-        } else if (shouldBeLocationTarget) {
-            panelIndex = gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
-            do {
-                imageIndex = Math.floor(Math.random() * imageTextures.length);
-            } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel]);
-            targetType = "location";
-        } else {
-            do {
-                imageIndex = Math.floor(Math.random() * imageTextures.length);
-                panelIndex = Math.floor(Math.random() * panels.length);
-            } while (imageIndex === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel] ||
-                     panelIndex === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel]);
-            targetType = "non-target";
-        }
-    } else {
-        imageIndex = Math.floor(Math.random() * imageTextures.length);
-        panelIndex = Math.floor(Math.random() * panels.length);
-        targetType = "initial";
-    }
-
-    let currentInterferenceType = gameState.interferenceType;
-    if (currentInterferenceType === "next") {
-        gameState.nextStimulusInfo = { imageIndex: imageIndex, panelIndex: panelIndex };
-    }
-
-    updateStimulusCounter();
-    showStimulus(imageIndex, panelIndex);
-}
-
-// 키 입력 핸들러
-function handleKeyPress(e) {
-    if (!gameState.isPlaying) {
-        if (e.code === 'Space') {
-            startBlock();
-        }
-        return;
-    }
-
-    if (e.code === 'KeyS' && !gameState.sceneTargetProcessed && gameState.canRespond) {
-        handleSceneResponse();
-    }
-
-    if (e.code === 'KeyL' && !gameState.locationTargetProcessed && gameState.canRespond) {
-        handleLocationResponse();
-    }
-}
-
-// 장면 반응 처리 함수
-function handleSceneResponse() {
-    gameState.sceneTargetProcessed = true;
-
-    if (gameState.currentStimulus <= gameState.nBackLevel) {
-        showEarlyResponseFeedback(sceneIndicator);
-        return;
-    }
-
-    gameState.sceneResponses++;
-    const isCorrect = gameState.currentIsSceneTarget;
-    showIndicatorFeedback(sceneIndicator, isCorrect);
-
-    if (!isCorrect) {
-        gameState.sceneErrors++;
-    }
-}
-
-// 위치 반응 처리 함수
-function handleLocationResponse() {
-    gameState.locationTargetProcessed = true;
-
-    if (gameState.currentStimulus <= gameState.nBackLevel) {
-        showEarlyResponseFeedback(locationIndicator);
-        return;
-    }
-
-    gameState.locationResponses++;
-    const isCorrect = gameState.currentIsLocationTarget;
-    showIndicatorFeedback(locationIndicator, isCorrect);
-
-    if (!isCorrect) {
-        gameState.locationErrors++;
-    }
-}
-
-// 블록 시작 함수
-function startBlock() {
-    gameState.isPlaying = true;
-    gameState.currentStimulus = 0;
-    gameState.sceneHistory = [];
-    gameState.locationHistory = [];
-    gameState.sceneTargets = 0;
-    gameState.locationTargets = 0;
-    gameState.bothTargets = 0;
-    gameState.sceneResponses = 0,
-    gameState.locationResponses = 0;
-    gameState.sceneErrors = 0;
-    gameState.locationErrors = 0;
-    gameState.consecutiveGames++;
-
-    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
-    localStorage.setItem('lastGameDate', new Date().toDateString());
-
-    document.getElementById('titleScreen').style.display = 'none';
-    document.getElementById('resultScreen').style.display = 'none';
-    document.getElementById('scene-indicator').style.display = 'flex';
-    document.getElementById('location-indicator').style.display = 'flex';
-
-    resetStimulusCounter();
-
-    // N-back 레벨 표시
-    const nLevelDisplayElement = document.getElementById('nLevelDisplay');
-    nLevelDisplayElement.textContent = `N-back Level: ${gameState.nBackLevel}`;
-    nLevelDisplayElement.style.display = 'block';
-    nLevelDisplayElement.classList.remove('fade-out');
-
-    setTimeout(() => {
-        nLevelDisplayElement.classList.add('fade-out');
-        setTimeout(() => {
-            nLevelDisplayElement.style.display = 'none';
-        }, 1000);
-    }, 1000);
-
-
-    setTimeout(() => {
-        generateNextStimulus();
-    }, 1000);
-}
-
-// 결과 이미지 파일명 (동적 로딩)
-let loveImageFilenames = [];
-const loveImageLoader = new Image();
-
-
-// 블록 종료 함수
-function endBlock() {
-    gameState.isPlaying = false;
-    gameState.currentBlock++;
-    gameState.totalGamesToday++;
-    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
-
-    const totalSceneErrors = gameState.sceneErrors;
-    const totalLocationErrors = gameState.locationErrors;
-
-    document.getElementById('sceneErrors').textContent = totalSceneErrors;
-    document.getElementById('locationErrors').textContent = totalLocationErrors;
-    document.getElementById('resultNLevel').textContent = gameState.nBackLevel;
-
-    let levelChange = '';
-    let nextNBackLevel = gameState.nBackLevel;
-
-    if (gameState.nBackLevel === 1 && (totalSceneErrors > 5 || totalLocationErrors > 5)) {
-        levelChange = '즐기는 거야~!😆';
-    } else if (totalSceneErrors < 3 && totalLocationErrors < 3) {
-        nextNBackLevel = gameState.nBackLevel + 1;
-        levelChange = '⬆️ 최고야! 레벨업!!♥️🥰';
-    } else if (totalSceneErrors > 5 || totalLocationErrors > 5) {
-        nextNBackLevel = Math.max(1, gameState.nBackLevel - 1);
-        levelChange = '⬇️ 괜찮아! 다시 해보자!😉♥️';
-    } else {
-        levelChange = '➡️ 오 좋아! 킵고잉!👏♥️';
-    }
-
-    document.getElementById('levelChange').textContent = levelChange;
-    gameState.nBackLevel = nextNBackLevel;
-    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
-    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
-
-    // --- [수정됨] 결과 이미지 설정 및 동적 로딩 (오류 수정) ---
-    const resultImageElement = document.getElementById('resultImage');
-    const resultImageContainer = document.getElementById('resultImageContainer');
-    const resultScreen = document.getElementById('resultScreen');
-    let randomImageFilename = null;
-
-    if (loveImageFilenames.length === 0) {
-        loveImageFilenames = [];
-
-        const maxImagesToLoad = 20;
-        let loadedImageCount = 0;
-        let consecutiveErrors = 0; // [NEW] 연속 에러 카운터 추가
-        const maxConsecutiveErrors = 10; // [NEW] 최대 연속 에러 허용 횟수 설정
-
-        function loadImageFilenames(index) {
-            if (loadedImageCount >= maxImagesToLoad || consecutiveErrors >= maxConsecutiveErrors) { // [수정됨] 최대 로드 횟수 또는 최대 연속 에러 횟수 초과 시 종료 조건 추가
-                selectRandomImage();
-                return;
-            }
-
-            const filename = `love/love${String(index).padStart(2, '0')}.jpg`;
-            loveImageLoader.src = filename;
-
-            loveImageLoader.onload = function() {
-                loveImageFilenames.push(`love${String(index).padStart(2, '0')}.jpg`);
-                loadedImageCount++;
-                consecutiveErrors = 0; // [NEW] 로드 성공 시 에러 카운터 리셋
-                loadImageFilenames(index + 1);
-            };
-
-            loveImageLoader.onerror = function() {
-                consecutiveErrors++; // [NEW] 로드 실패 시 에러 카운터 증가
-                loadImageFilenames(index + 1);
-            };
-        }
-
-        loadImageFilenames(1);
-
-        function selectRandomImage() {
-            if (loveImageFilenames.length > 0) {
-                randomImageFilename = loveImageFilenames[Math.floor(Math.random() * loveImageFilenames.length)];
-                resultImageElement.src = `love/${randomImageFilename}`;
-                adjustResultScreenSize(resultImageElement, resultImageContainer, resultScreen);
-            } else {
-                resultImageElement.src = '';
-                resultImageContainer.style.width = '150px';
-                resultImageContainer.style.height = '150px';
-                resultScreen.style.width = 'auto';
-                resultScreen.style.height = 'auto';
-            }
-        }
-
-    } else {
-        selectRandomImage();
-    }
-
-
-    function selectRandomImage() {
-        randomImageFilename = loveImageFilenames[Math.floor(Math.random() * loveImageFilenames.length)];
-        resultImageElement.src = `love/${randomImageFilename}`;
-        adjustResultScreenSize(resultImageElement, resultImageContainer, resultScreen);
-    }
-
-
-    function adjustResultScreenSize(resultImageElement, resultImageContainer, resultScreen) {
-        resultImageElement.onload = function() {
-            const imageWidth = resultImageElement.naturalWidth;
-            const imageHeight = resultImageElement.naturalHeight;
-            const screenWidth = window.innerWidth;
-            const screenHeight = window.innerHeight;
-
-            let containerWidth = imageWidth;
-            let containerHeight = imageHeight;
-            let resultScreenWidth = containerWidth + 80;
-            let resultScreenHeight = 'auto';
-
-            if (resultScreenWidth > screenWidth * 0.8) {
-                containerWidth = screenWidth * 0.8 - 80;
-                containerHeight = imageHeight * (containerWidth / imageWidth);
-                resultScreenWidth = screenWidth * 0.8;
-            }
-
-            resultImageContainer.style.width = `${containerWidth}px`;
-            resultImageContainer.style.height = `${containerHeight}px`;
-            resultScreen.style.width = `${resultScreenWidth}px`;
-            resultScreen.style.height = resultScreenHeight;
-
-            centerResultScreenContent();
-        };
-        resultImageElement.src = `love/${randomImageFilename}`;
-    }
-    // --- [수정됨] 결과 이미지 설정 및 동적 로딩 끝 (오류 수정) ---
-
-
-    document.getElementById('resultScreen').style.display = 'flex';
-}
-
-// 결과 화면 내용 중앙 정렬 함수
-function centerResultScreenContent() {
-    const resultScreen = document.getElementById('resultScreen');
-    resultScreen.style.alignItems = 'center';
-}
-
-// 타이머 취소 함수
-function cancelAllTimers() {
-    if (gameState.currentTimer) {
-        clearTimeout(gameState.currentTimer);
-    }
-    if (gameState.responseWindowTimer) {
-        clearTimeout(gameState.responseWindowTimer);
-    }
-}
-
-// 이벤트 리스너 등록 (키, 창 크기, 터치, 클릭, 버튼)
-document.addEventListener('keydown', handleKeyPress);
-window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-sceneIndicator.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    if (gameState.isPlaying && !gameState.sceneTargetProcessed && gameState.canRespond) {
-        handleSceneResponse();
-    }
-});
-
-locationIndicator.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    if (gameState.isPlaying && !gameState.locationTargetProcessed && gameState.canRespond) {
-        handleLocationResponse();
-    }
-});
-
-sceneIndicator.addEventListener('click', function() {
-    if (gameState.isPlaying && !gameState.sceneTargetProcessed && gameState.canRespond) {
-        handleSceneResponse();
-    }
-});
-
-locationIndicator.addEventListener('click', function() {
-    if (gameState.isPlaying && !gameState.locationTargetProcessed && gameState.canRespond) {
-        handleLocationResponse();
-    }
-});
-
-document.getElementById('setLevelBtn').addEventListener('click', function() {
-    setCustomLevel();
-});
-
-document.getElementById('customLevel').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        setCustomLevel();
-    }
-});
-
-document.getElementById('pressSpace').addEventListener('click', function() {
-    if (!gameState.isPlaying) {
-        startBlock();
-    }
-});
-
-document.getElementById('pressSpace').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    if (!gameState.isPlaying) {
-        startBlock();
-    }
-});
-
-document.getElementById('pressSpaceResult').addEventListener('click', function() {
-    if (!gameState.isPlaying) {
-        startBlock();
-    }
-});
-
-document.getElementById('pressSpaceResult').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    if (!gameState.isPlaying) {
-        startBlock();
-    }
-});
-
-// 레벨 설정 함수
-function setCustomLevel() {
-    const customLevelInput = document.getElementById('customLevel');
-    let newLevel = parseInt(customLevelInput.value);
-
-    if (isNaN(newLevel) || newLevel < 1) {
-        newLevel = 1;
-        customLevelInput.value = 1;
-    } else if (newLevel > 9) {
-        newLevel = 9;
-        customLevelInput.value = 9;
-    }
-
-    gameState.nBackLevel = newLevel;
-    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
-    localStorage.setItem('nBackLevel', gameState.nBackLevel);
-
-    customLevelInput.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
-    setTimeout(() => {
-        customLevelInput.style.backgroundColor = 'rgba(255,255,255,0.9)';
-    }, 500);
-}
-
-// 페이지 로드 시 레벨, 게임 횟수 불러오기
-window.addEventListener('load', function() {
-    const storedLevel = localStorage.getItem('nBackLevel');
-    if (storedLevel) {
-        gameState.nBackLevel = parseInt(storedLevel);
-        document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
-    }
-
-    let storedTotalGamesToday = localStorage.getItem('totalGamesToday');
-    let lastGameDateString = localStorage.getItem('lastGameDate');
-
-    if (storedTotalGamesToday && lastGameDateString) {
-        const lastGameDate = new Date(lastGameDateString);
-        const todayDate = new Date();
-
-        if (lastGameDate.getFullYear() === todayDate.getFullYear() &&
-            lastGameDate.getMonth() === todayDate.getMonth() &&
-            lastGameDate.getDate() === todayDate.getDate()) {
-            gameState.totalGamesToday = parseInt(storedTotalGamesToday);
-        } else {
-            gameState.totalGamesToday = 0;
-        }
-    } else {
-        gameState.totalGamesToday = 0;
-    }
-    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
-});
-
-// 자극 횟수 카운터 업데이트/초기화 함수
-function updateStimulusCounter() {
-    const counterElement = document.getElementById('stimulus-counter');
-    if (counterElement) {
-        counterElement.textContent = `Stimulus: ${gameState.currentStimulus} / ${gameState.stimuliPerBlock}`;
-    }
-}
-
-function resetStimulusCounter() {
-    const counterElement = document.getElementById('stimulus-counter');
-    if (counterElement) {
-        counterElement.textContent = `Stimulus: 0 / ${gameState.stimuliPerBlock}`;
-    }
-}
-
-// 애니메이션 렌더링 함수 (rendering loop)
-function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-}
-
-animate();
+        });
+    </script>
+</body>
+</html>
