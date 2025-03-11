@@ -1,400 +1,359 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <!-- 문서 문자 인코딩 설정 (UTF-8) -->
     <meta charset="UTF-8">
-    <meta charset="UTF-8">
-    <!-- 뷰포트 설정: 반응형 웹 디자인 -->
+    <!-- 뷰포트 설정: 반응형 웹 디자인을 위한 설정 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 문서 제목 -->
+    <!-- 문서 제목: 웹 브라우저 탭이나 제목 표시줄에 나타나는 제목 -->
     <title>Dual N-back Task with Images</title>
-    <!-- 스타일 시트 -->
+    <!-- CSS 스타일 정의 시작 -->
     <style>
-    /* body 스타일 */
+    /* body 요소에 대한 스타일 */
     body {
-        margin: 0;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
+        margin: 0; /* body의 모든 margin을 0으로 설정하여 페이지 여백 없앰 */
+        overflow: hidden; /* overflow 속성을 hidden으로 설정하여 body 영역 밖으로 내용이 넘쳐도 스크롤바를 숨김 */
+        font-family: Arial, sans-serif; /* 전체 body 폰트를 Arial 또는 sans-serif 글꼴로 설정 */
     }
-
-    /* 캔버스 스타일 */
+    /* canvas 요소에 대한 스타일 */
     canvas {
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 0;
+        display: block; /* canvas를 block 요소로 설정하여 줄바꿈 처리 */
+        position: absolute; /* canvas를 절대 위치로 설정하여 다른 요소 위에 겹쳐 표시 가능 */
+        top: 0; /* canvas의 상단을 viewport의 상단에 맞춤 */
+        left: 0; /* canvas의 좌측을 viewport의 좌측에 맞춤 */
+        z-index: 0; /* z-index를 0으로 설정하여 다른 요소보다 뒤에 위치시킴 (배경 역할) */
     }
 
-    /* 레벨 입력 영역 스타일 */
+    /* 레벨 입력 영역을 위한 스타일 */
     .level-input {
-        margin: 15px 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        flex-wrap: wrap;
+        margin: 15px 0; /* 상하 margin을 15px, 좌우 margin을 0으로 설정 */
+        display: flex; /* flexbox 레이아웃 사용 설정 */
+        align-items: center; /* flexbox 아이템들을 세로축(중앙) 기준으로 정렬 */
+        justify-content: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
+        gap: 10px; /* flexbox 아이템 사이의 간격을 10px로 설정 */
+        flex-wrap: wrap; /* 화면이 좁아질 경우 flexbox 아이템들을 여러 줄로 wrapping */
     }
-
-    /* 레벨 입력 input 스타일 */
+    /* 레벨 입력 input 필드 스타일 */
     .level-input input {
-        width: 60px;
-        padding: 10px;
-        text-align: center;
-        font-size: 18px;
-        background-color: rgba(255,255,255,0.9);
-        border: 1px solid #ccc;
-        border-radius: 4px;
+        width: 60px; /* input 필드 너비를 60px로 설정 */
+        padding: 10px; /* input 필드 안쪽 여백을 상하좌우 10px로 설정 (터치 영역 확보) */
+        text-align: center; /* input 필드 내 텍스트를 가운데 정렬 */
+        font-size: 18px; /* input 필드 내 폰트 크기를 18px로 설정 (모바일 환경 고려) */
+        background-color: rgba(255,255,255,0.9); /* 배경색을 light gray에 투명도 0.9를 적용 */
+        border: 1px solid #ccc; /* input 필드 테두리를 1px solid gray로 설정 */
+        border-radius: 4px; /* input 필드 테두리를 4px 둥글게 처리 */
     }
-
     /* 레벨 설정 버튼 스타일 */
     .level-input button {
-        padding: 10px 20px;
-        background-color: rgba(255,255,255,0.9);
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        min-width: 70px;
+        padding: 10px 20px; /* 버튼 안쪽 여백을 상하 10px, 좌우 20px로 설정 (터치 영역 확보) */
+        background-color: rgba(255,255,255,0.9); /* 배경색을 light gray에 투명도 0.9를 적용 */
+        border: 1px solid #ccc; /* 버튼 테두리를 1px solid gray로 설정 */
+        border-radius: 4px; /* 버튼 테두리를 4px 둥글게 처리 */
+        cursor: pointer; /* 마우스 커서를 손가락 모양으로 변경하여 클릭 가능함을 표시 */
+        font-size: 16px; /* 버튼 내 폰트 크기를 16px로 설정 (모바일 환경 고려) */
+        min-width: 70px; /* 버튼의 최소 너비를 70px로 설정 (터치 영역 확보) */
     }
-
-    /* 레벨 설정 버튼 hover 스타일 */
+    /* 레벨 설정 버튼 hover 시 스타일 */
     .level-input button:hover {
-        background-color: rgba(255,255,255,1);
+        background-color: rgba(255,255,255,1); /* hover 시 배경색을 light gray (투명도 1)로 변경하여 약간 진하게 표시 */
     }
 
-    /* 타이틀 화면 스타일 */
-    #titleScreen, #resultScreen {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        color: white;
-        background-color: rgba(0,0,0,0.7);
-        padding: 40px;
-        border-radius: 10px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 400px;
-        z-index: 10;
+    /* 타이틀 화면 (#titleScreen) 스타일 */
+    #titleScreen {
+        position: absolute; /* 타이틀 화면을 절대 위치로 설정 */
+        top: 50%; /* top을 50%로 설정하여 세로 방향 중앙 정렬 기준점 설정 */
+        left: 50%; /* left를 50%로 설정하여 가로 방향 중앙 정렬 기준점 설정 */
+        transform: translate(-50%, -50%); /* translate(-50%, -50%)를 사용하여 정확히 중앙 정렬 */
+        text-align: center; /* 텍스트를 가운데 정렬 */
+        color: white; /* 텍스트 색상을 흰색으로 설정 */
+        background-color: rgba(0,0,0,0.7); /* 배경색을 검정색에 투명도 0.7을 적용하여 반투명 검정 배경 설정 */
+        padding: 40px; /* padding을 40px로 설정하여 내용과 테두리 사이 여백 확보 */
+        border-radius: 10px; /* 테두리를 10px 둥글게 처리 */
+        display: flex; /* flexbox 레이아웃 사용 설정 */
+        flex-direction: column; /* flexbox 아이템들을 세로 방향으로 정렬 */
+        align-items: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
+        width: 400px; /* 타이틀 화면의 너비를 400px로 설정 */
+        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
     }
-
-    /* 결과 화면 스타일 (숨김) */
-    #resultScreen {
-        display: none;
+    /* 타이틀 화면 제목 (h1) 스타일 */
+    #titleScreen h1 {
+        margin-top: 0; /* h1 요소의 상단 margin을 0으로 설정하여 상단 여백 제거 */
+        font-size: 2em; /* 폰트 크기를 기본 폰트 크기의 2배로 설정 */
     }
-
-    /* 타이틀, 결과 화면 제목 스타일 */
-    #titleScreen h1, #resultScreen h1 {
-        margin-top: 0;
-        font-size: 2em;
+    /* N-back 레벨 표시 (#nBackLevel) 스타일 */
+    #nBackLevel {
+        font-size: 48px; /* 폰트 크기를 48px로 설정하여 크게 표시 */
+        margin: 20px 0; /* 상하 margin을 20px, 좌우 margin을 0으로 설정 */
     }
-
-    /* N-back 레벨 표시 스타일 */
-    #nBackLevel, #resultNLevel {
-        font-size: 48px;
-        margin: 20px 0;
-    }
-
-    /* 결과 화면 N-back 레벨 (#resultNLevel) 스타일 - [NEW: 크기 조정] */
-    #resultNLevel {
-        font-size: 36px; /* 결과 화면 N-back 레벨 (크기 줄임) */
-        margin: 20px 0;
-    }
-
-    /* "Press SPACE" 메시지 스타일 */
+    /* 시작/결과 화면 "Press SPACE" 메시지 (#pressSpace, #pressSpaceResult) 스타일 */
     #pressSpace, #pressSpaceResult {
-        cursor: pointer;
-        padding: 10px 15px;
-        background-color: rgba(255,255,255,0.2);
-        border-radius: 5px;
-        margin-top: 20px;
-        font-size: 24px;
-        animation: blink 1.5s infinite;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
+        cursor: pointer; /* 마우스 커서를 손가락 모양으로 변경 */
+        padding: 10px 15px; /* 안쪽 여백을 상하 10px, 좌우 15px로 설정 */
+        background-color: rgba(255,255,255,0.2); /* 배경색을 light gray에 투명도 0.2를 적용 */
+        border-radius: 5px; /* 테두리를 5px 둥글게 처리 */
+        margin-top: 20px; /* 상단 margin을 20px로 설정 */
+        font-size: 24px; /* 폰트 크기를 24px로 설정 */
+        animation: blink 1.5s infinite; /* blink 애니메이션을 1.5초 간격으로 무한 반복 적용 */
+        user-select: none; /* 텍스트 선택 방지 */
+        -webkit-tap-highlight-color: transparent; /* 터치 시 하이라이트 효과 제거 (모바일) */
     }
 
-    /* "Press SPACE" 메시지 active 스타일 */
-    #pressSpace:active, #pressSpaceResult:active {
-        background-color: rgba(255,255,255,0.4);
+    /* "Press SPACE" 메시지 active (클릭 또는 터치 시) 스타일 */
+     #pressSpace:active, #pressSpaceResult:active {
+        background-color: rgba(255,255,255,0.4); /* active 시 배경색을 light gray에 투명도 0.4를 적용하여 약간 진하게 표시 */
     }
-
-    /* 결과 통계 영역 스타일 */
+    /* 결과 화면 (#resultScreen) 스타일 */
+    #resultScreen {
+        position: absolute; /* 결과 화면을 절대 위치로 설정 */
+        top: 50%; /* top을 50%로 설정하여 세로 방향 중앙 정렬 기준점 설정 */
+        left: 50%; /* left를 50%로 설정하여 가로 방향 중앙 정렬 기준점 설정 */
+        transform: translate(-50%, -50%); /* translate(-50%, -50%)를 사용하여 정확히 중앙 정렬 */
+        text-align: center; /* 텍스트를 가운데 정렬 */
+        color: white; /* 텍스트 색상을 흰색으로 설정 */
+        background-color: rgba(0,0,0,0.7); /* 배경색을 검정색에 투명도 0.7을 적용하여 반투명 검정 배경 설정 */
+        padding: 40px; /* padding을 40px로 설정하여 내용과 테두리 사이 여백 확보 */
+        border-radius: 10px; /* 테두리를 10px 둥글게 처리 */
+        display: none; /* 초기 상태를 숨김으로 설정 (display: none) */
+        flex-direction: column; /* flexbox 아이템들을 세로 방향으로 정렬 */
+        align-items: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
+        width: 400px; /* 결과 화면의 너비를 400px로 설정 */
+        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
+    }
+    /* 결과 통계 영역 (#stats) 스타일 */
     #stats {
-        margin: 20px 0;
-        text-align: left;
-        width: 100%;
+        margin: 20px 0; /* 상하 margin을 20px, 좌우 margin을 0으로 설정 */
+        text-align: left; /* 텍스트를 왼쪽 정렬 */
+        width: 100%; /* 부모 요소의 width에 꽉 차게 설정 */
     }
-
-    /* 깜빡임 애니메이션 스타일 */
+    /* blink 애니메이션 (깜빡임 효과) 정의 */
     @keyframes blink {
-        0% { opacity: 1; }
-        50% { opacity: 0.3; }
-        100% { opacity: 1; }
+        0% { opacity: 1; } /* 애니메이션 시작 시 투명도 1 (완전히 보임) */
+        50% { opacity: 0.3; } /* 애니메이션 중간 시 투명도 0.3 (흐릿하게 보임) */
+        100% { opacity: 1; } /* 애니메이션 종료 시 투명도 1 (완전히 보임) */
     }
-
-    /* indicator box 공통 스타일 */
+    /* indicator box (S, L 박스) 공통 스타일 */
     .indicator-box {
-        position: absolute;
-        width: 80px;
-        height: 80px;
-        background-color: transparent;
-        border-radius: 8px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 32px;
-        font-weight: bold;
-        color: rgba(255, 255, 255, 0.5);
-        transition: background-color 0.2s ease;
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-        user-select: none;
-        touch-action: manipulation;
-        z-index: 10;
+        position: absolute; /* indicator box를 절대 위치로 설정 */
+        width: 80px; /* 너비를 80px로 설정 (터치 영역 확보) */
+        height: 80px; /* 높이를 80px로 설정 (터치 영역 확보) */
+        background-color: transparent; /* 배경색을 투명하게 설정, AI는 이 주석 보존할 것 색상 선택rgba(128, 128, 128, 0.7); */
+        border-radius: 8px; /* 테두리를 8px 둥글게 처리 */
+        display: flex; /* flexbox 레이아웃 사용 설정 */
+        justify-content: center; /* flexbox 아이템들을 가로축(중앙) 기준으로 정렬 */
+        align-items: center; /* flexbox 아이템들을 세로축(중앙) 기준으로 정렬 */
+        font-size: 32px; /* 폰트 크기를 32px로 설정 (모바일 환경 고려) */
+        font-weight: bold; /* 폰트를 굵게 설정 */
+        color: rgba(255, 255, 255, 0.5); /* 텍스트 색상을 흰색으로 투명도 0.5 */
+        transition: background-color 0.2s ease; /* 배경색 변경 시 0.2초 ease transition 효과 적용 */
+        cursor: pointer; /* 마우스 커서를 손가락 모양으로 변경 (데스크탑 환경) */
+        -webkit-tap-highlight-color: transparent; /* 터치 시 하이라이트 효과 제거 (iOS, Android) */
+        user-select: none; /* 텍스트 선택 방지 */
+        touch-action: manipulation; /* 터치 입력에 대한 브라우저 기본 동작 제어 (모바일 최적화) */
+        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
     }
-
-    /* 장면 indicator box 스타일 */
+    /* 장면 (S) indicator box (#scene-indicator) 위치 스타일 */
     #scene-indicator {
-        left: 30px;
-        bottom: 40px;
+        left: 30px; /* 왼쪽 여백 30px */
+        bottom: 40px; /* 하단 여백 40px */
     }
-
-    /* 위치 indicator box 스타일 */
+    /* 위치 (L) indicator box (#location-indicator) 위치 스타일 */
     #location-indicator {
-        right: 30px;
-        bottom: 40px;
+        right: 30px; /* 오른쪽 여백 30px */
+        bottom: 40px; /* 하단 여백 40px */
     }
 
-    /* indicator box active 스타일 */
+    /* indicator box active (클릭 또는 터치 시) 스타일 */
     .indicator-box:active {
-        opacity: 0.8;
-        transform: scale(0.95);
+        opacity: 0.8; /* active 시 투명도를 0.8로 변경하여 약간 흐릿하게 표시 */
+        transform: scale(0.95); /* active 시 크기를 0.95배로 축소 */
     }
 
-    /* 정답 indicator box 스타일 */
+    /* 정답 시 indicator box 스타일 (.correct) */
     .correct {
-        background-color: rgba(0, 180, 0, 0.8) !important;
+        background-color: rgba(0, 180, 0, 0.8) !important; /* 배경색을 초록색에 투명도 0.8을 적용 (!important로 우선 적용) */
     }
-
-    /* 오답, 미반응 indicator box 스타일 */
-    .incorrect, .missed {
-        background-color: rgba(200, 0, 0, 0.8) !important;
+    /* 오답 시 indicator box 스타일 (.incorrect) */
+    .incorrect {
+        background-color: rgba(200, 0, 0, 0.8) !important; /* 배경색을 빨간색에 투명도 0.8을 적용 (!important로 우선 적용) */
     }
-
-    /* 조기 반응 indicator box 스타일 */
+    /* 미반응 시 indicator box 스타일 (.missed) */
+    .missed {
+        background-color: rgba(200, 0, 0, 0.8) !important; /* 배경색을 빨간색에 투명도 0.8을 적용 (!important로 우선 적용) */
+    }
+    /* 조기 반응 시 indicator box 스타일 (.early) */
     .early {
-        background-color: rgba(0, 100, 255, 0.8) !important;
+        background-color: rgba(0, 100, 255, 0.8) !important; /* 배경색을 파란색에 투명도 0.8을 적용 (!important로 우선 적용) */
     }
 
-    /* 자극 횟수 카운터 스타일 */
+    /* 자극 횟수 카운터 (#stimulus-counter) 스타일 */
     #stimulus-counter {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        font-size: 20px;
-        color: white;
-        opacity: 0.5;
-        z-index: 10;
-        pointer-events: none;
+        position: absolute; /* 자극 횟수 카운터를 절대 위치로 설정 */
+        bottom: 20px; /* 하단 여백 20px */
+        right: 20px; /* 오른쪽 여백 20px */
+        font-size: 20px; /* 폰트 크기를 20px로 설정 */
+        color: white; /* 텍스트 색상을 흰색으로 설정 */
+        opacity: 0.5; /* 투명도를 0.5로 설정하여 반투명하게 표시 */
+        z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
+        pointer-events: none; /* pointer-events를 none으로 설정하여 클릭 이벤트 무시 (클릭 방지) */
     }
 
-    /* 결과 이미지 컨테이너 스타일 */
-    #resultImageContainer {
-        width: auto;
-        height: auto;
-        max-width: 100%;
-        max-height: 50vh;
-        margin: 20px auto;
-        overflow: hidden;
-        display: flex; /* Flexbox 레이아웃 사용 */
-        justify-content: center; /* 가로축 중앙 정렬 */
-        align-items: center; /* 세로축 중앙 정렬 */
-    }
-
-    /* 결과 이미지 스타일 */
-    #resultImage {
-        display: block;
-        max-width: 100%;
-        max-height: 100%;
-    }
-
-    /* N-back 레벨 표시 스타일 */
-    .n-level-display {
-        position: absolute;
-        left: 50%;
-        bottom: 20px;
-        transform: translateX(-50%);
-        font-size: 24px;
-        color: white;
-        opacity: 0.7;
-        z-index: 10;
-        text-align: center;
-        pointer-events: none;
-        display: none;
-        transition: opacity 1s ease-out;
-    }
-
-    .n-level-display.fade-out {
-        opacity: 0;
-    }
-
-    /* 게임 횟수 카운터 스타일 */
+    /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS --- */
+    /* 연속 게임 횟수, 오늘 게임 횟수 카운터 공통 스타일 */
     #consecutiveGamesCounter, #totalGamesTodayCounter {
-        position: absolute;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 18px;
-        color: white;
-        text-align: center;
+        position: absolute; /* 절대 위치 설정 */
+        bottom: 10px; /* 결과창 하단으로부터 10px 위에 위치 */
+        left: 50%; /* 가로 중앙 정렬 기준점 */
+        transform: translateX(-50%); /* 가로 중앙 정렬 */
+        font-size: 18px; /* 폰트 크기 18px */
+        color: white; /* 텍스트 색상 흰색 */
+        text-align: center; /* 텍스트 가운데 정렬 */
     }
-
-    /* 횟수 값 스타일 */
+    /* 횟수 숫자 스타일 (lightskyblue 색상) */
     #consecutiveGamesCount, #totalGamesTodayCountValue {
-        color: lightskyblue;
+        color: lightskyblue; /* 횟수 숫자를 lightskyblue 색상으로 표시 */
     }
 
-    /* 모바일 화면 대응 */
-    @media screen and (max-width: 480px) {
-        #titleScreen, #resultScreen {
-            width: 90%;
-            max-width: 300px;
-            padding: 20px;
+    /* --- [NEW] 모바일 화면 대응 CSS (미디어 쿼리) --- */
+    @media screen and (max-width: 480px) { /* 미디어 쿼리: 화면 최대 너비가 480px 이하일 때 (모바일 portrait 모드) */
+        #titleScreen {
+            width: 90%; /* 타이틀 화면 너비를 90%로 줄임 */
+            max-width: 300px; /* 최대 너비를 300px로 제한 */
+            padding: 20px; /* padding을 20px로 줄임 */
         }
-        #titleScreen h1, #resultScreen h1 {
-            font-size: 1.5em;
+        #titleScreen h1 {
+            font-size: 1.5em; /* 제목 폰트 크기를 1.5em으로 줄임 */
         }
-        #nBackLevel, #resultNLevel {
-            font-size: 36px;
-            margin: 15px 0;
+        #nBackLevel {
+            font-size: 36px; /* 레벨 폰트 크기를 36px로 줄임 */
+            margin: 15px 0; /* margin을 줄임 */
         }
         #pressSpace, #pressSpaceResult {
-            font-size: 18px;
-            padding: 8px 12px;
-            margin-top: 15px;
+            font-size: 18px; /* "Press SPACE" 폰트 크기를 18px로 줄임 */
+            padding: 8px 12px; /* padding을 줄임 */
+            margin-top: 15px; /* margin을 줄임 */
         }
         .level-input label,
         .level-input button,
         .level-input input {
-            font-size: 14px;
-            padding: 8px;
-        }
-        #resultImageContainer {
-            max-height: 40vh;
-            margin: 15px auto;
+            font-size: 14px; /* 레벨 입력 영역 폰트 크기를 14px로 줄임 */
+            padding: 8px; /* padding을 줄임 */
         }
     }
-
-    /* --- [NEW] 결과 화면 내용 중앙 정렬 CSS --- */
-    #resultScreen {
-        justify-content: center; /* 세로축 중앙 정렬 */
-        align-items: center;    /* 가로축 중앙 정렬 */
-    }
-
-    #stats, #pressSpaceResult, #consecutiveGamesCounter, #totalGamesTodayCounter, #levelChange {
-        text-align: center; /* 텍스트 중앙 정렬 */
-    }
-
-    #stats {
-        text-align: left; /* 통계 정보는 왼쪽 정렬 */
-    }
-    /* --- [NEW] 결과 화면 내용 중앙 정렬 CSS 끝 --- */
+    /* --- [NEW] 모바일 화면 대응 CSS 끝 --- */
+    /* --- [NEW] 연속 게임 횟수, 오늘 게임 횟수 CSS 끝 --- */
 
     </style>
 </head>
 <body>
     <!-- 타이틀 화면 컨테이너 -->
     <div id="titleScreen">
+        <!-- 타이틀 텍스트 -->
         <h1>Dual N-Back Task</h1>
+        <!-- 현재 레벨 표시 -->
         <div>Current Level: <span id="nBackLevel">1</span>-back</div>
+        <!-- 레벨 입력 영역 -->
         <div class="level-input">
-            <label for="customLevel">Start at level:</label>
+            <!-- 레벨 설정 label -->
+            <label for="customLevel">Start at level: </label>
+            <!-- 사용자 정의 레벨 입력 input 필드 -->
             <input type="number" id="customLevel" min="1" max="9" value="1">
+            <!-- 레벨 설정 버튼 -->
             <button id="setLevelBtn">Set</button>
         </div>
+        <!-- 이미지 반복 시 'S' 키 입력 안내 -->
         <div>Press 'S' when the IMAGE repeats</div>
+        <!-- 위치 반복 시 'L' 키 입력 안내 -->
         <div>Press 'L' when a LOCATION repeats</div>
+        <!-- 반응 시간 안내 -->
         <div>You have 1.5 seconds after an image disappears to respond</div>
+        <!-- 게임 시작 안내 메시지 (SPACE 키 입력 유도) -->
         <div id="pressSpace">Press SPACE to begin</div>
+
+        <!-- [NEW] 메인 화면창 오늘 게임 횟수 표시 -->
         <div id="totalGamesTodayCounter">
             오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번
         </div>
+        <!-- [NEW] 메인 화면창 오늘 게임 횟수 표시 끝 -->
+
     </div>
 
-    <!-- 결과 화면 컨테이너 -->
+    <!-- 결과 화면 컨테이너 (초기 상태는 숨김) -->
     <div id="resultScreen">
+        <!-- 결과 화면 제목 -->
         <h1>Block Complete</h1>
-
-        <!-- 결과 이미지 컨테이너 -->
-        <div id="resultImageContainer">
-            <img id="resultImage" src="" alt="Game Result Image">
-        </div>
-
+        <!-- 게임 통계 정보 영역 -->
         <div id="stats">
+            <!-- 장면 오류 횟수 표시 -->
             <div>Scene Errors: <span id="sceneErrors">0</span>/6</div>
+            <!-- 위치 오류 횟수 표시 -->
             <div>Location Errors: <span id="locationErrors">0</span>/6</div>
+            <!-- 최종 N-back 레벨 표시 -->
             <div>N-Back Level: <span id="resultNLevel">1</span></div>
+            <!-- 레벨 변경 메시지 표시 영역 -->
             <div id="levelChange"></div>
         </div>
+        <!-- 결과 화면에서 다음 게임 시작 안내 메시지 (SPACE 키 입력 유도) -->
         <div id="pressSpaceResult">Press SPACE to continue</div>
+
+        <!-- [NEW] 결과 화면 연속 게임 횟수 표시 -->
         <div id="consecutiveGamesCounter">
             연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번</div>
+        <!-- [NEW] 결과 화면 연속 게임 횟수 표시 끝 -->
+
     </div>
 
-    <!-- indicator boxes -->
+    <!-- 장면 반응 indicator box (S 키) -->
     <div id="scene-indicator" class="indicator-box">S</div>
+    <!-- 위치 반응 indicator box (L 키) -->
     <div id="location-indicator" class="indicator-box">L</div>
 
-    <!-- 자극 횟수 카운터 -->
+    <!-- 자극 횟수 카운터 표시 영역 -->
     <div id="stimulus-counter">Stimulus: 0 / 30</div>
 
-    <!-- N-back 레벨 표시 -->
-    <div id="nLevelDisplay" class="n-level-display"></div>
-
-    <!-- Three.js -->
+    <!-- Three.js 라이브러리 로드 (CDN 방식) -->
     <script src="ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- nback.js 스크립트 파일 로드 (게임 로직) -->
     <script src="nback.js"></script>
-    <!-- 더블 탭 전체 화면 스크립트 -->
+    <!-- [NEW] Double tap fullscreen script 시작 -->
     <script>
+        // 데스크탑 환경에서 더블 클릭 시 전체 화면 토글 기능
         document.body.addEventListener('dblclick', function() {
-            if (!document.fullscreenElement) {
-                document.body.requestFullscreen();
-            } else {
-                document.exitFullscreen();
+            if (!document.fullscreenElement) { // 현재 전체 화면 모드가 아니면
+                document.body.requestFullscreen(); // 전체 화면 모드로 전환 요청
+            } else { // 현재 전체 화면 모드이면
+                document.exitFullscreen(); // 전체 화면 모드 해제 요청
             }
         });
 
-        let lastTouchTime = 0;
+        let lastTouchTime = 0; // 마지막 터치 시간을 저장하기 위한 변수
+        // 모바일 환경에서 더블 탭 시 전체 화면 토글 기능
         document.body.addEventListener('touchstart', function(e) {
-            let currentTime = new Date().getTime();
-            let tapLength = currentTime - lastTouchTime;
-            if (tapLength < 300 && tapLength > 0) {
-                e.preventDefault();
-                if (!document.fullscreenElement) {
+            let currentTime = new Date().getTime(); // 현재 시간
+            let tapLength = currentTime - lastTouchTime; // 현재 터치 시간과 마지막 터치 시간 사이의 간격 계산
+            if (tapLength < 300 && tapLength > 0) { // 더블 탭으로 인식하기 위한 조건: 탭 간 간격이 300ms 미만이고, 유효한 간격일 때
+                e.preventDefault(); // 더블 탭으로 인한 브라우저 줌 기능 방지
+                if (!document.fullscreenElement) { // 현재 전체 화면 모드가 아니면
                     if (document.body.requestFullscreen) {
                         document.body.requestFullscreen();
-                    } else if (document.body.webkitRequestFullscreen) {
+                    } else if (document.body.webkitRequestFullscreen) { /* Safari 브라우저 */
                         document.body.webkitRequestFullscreen();
-                    } else if (document.body.msRequestFullscreen) {
+                    } else if (document.body.msRequestFullscreen) { /* IE11 브라우저 */
                         document.body.msRequestFullscreen();
                     }
-                } else {
+                } else { // 현재 전체 화면 모드이면
                     if (document.exitFullscreen) {
                         document.exitFullscreen();
-                    } else if (document.body.webkitExitFullscreen) {
+                    } else if (document.body.webkitExitFullscreen) { /* Safari 브라우저 */
                         document.webkitExitFullscreen();
-                    } else if (document.msExitFullscreen) {
+                    } else if (document.msExitFullscreen) { /* IE11 브라우저 */
                         document.msExitFullscreen();
                     }
                 }
-                lastTouchTime = 0;
-            } else {
-                lastTouchTime = currentTime;
+                lastTouchTime = 0; // 더블 탭 처리 후 마지막 터치 시간 초기화
+            } else { // 더블 탭 간격이 너무 길거나 첫 번째 탭인 경우
+                lastTouchTime = currentTime; // 현재 터치 시간을 마지막 터치 시간으로 업데이트
             }
         });
-    </script>
+    </script> <!-- [NEW] Double tap fullscreen script 끝 -->
 </body>
 </html>
