@@ -25,7 +25,7 @@ const gameState = {
     canRespond: true, // 반응 가능 상태 여부
 
     // --- 간섭 관련 설정 ---
-    interferenceType: "none", // 간섭 유형 ("none", "previous", "cyclic", "next", "random") - 기본값: "none" (간섭 없음), "random" 추가
+    interferenceType: "none", // 간섭 유형 ("none", "previous", "cyclic", "next", "random") - 기본값: "none" (간섭 없음)
     randomInterferenceProbabilities: { // 랜덤 간섭 유형별 확률 (합계: 1) - interferenceType: "random" 일 때 적용
         "previous": 0.33, // 이전(previous) 간섭 확률: 33%
         "cyclic": 0.33, // 순환(cyclic) 간섭 확률: 33%
@@ -438,7 +438,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex) { // 간섭
                 // 이미지는 그대로 유지 - 이미지는 그대로 유지
             }
              console.log("간섭 적용 (순환, N=" + cyclicNBackLevel + "):", "type=", type < 0.5 ? "image" : "location"); // 콘솔에 간섭 적용 정보 출력 - 디버깅 용도 - 간섭 적용 정보 콘솔 출력 (디버깅)
-        } else if (currentInterferenceType === "next" && gameState.nextStimulusInfo) { // 간섭 유형 "next" 이고, nextStimulusInfo 가 있으면 (generateNextStimulus 함수에서 다음 자극 정보 저장) - 간섭 유형 'next' 이고, 다음 자극 정보가 저장되어 있으면 (generateNextStimulus 에서 저장)
+        } else if (currentInterferenceType === "next" && gameState.nextStimulusInfo) { // 간섭 유형 "next" 이고, nextStimulusInfo 가 있으면 (generateNextStimulus 함수에서 다음 자극 정보 저장) - 간섭 유형 'next' 이고, nextStimulusInfo 가 있으면 (generateNextStimulus 에서 저장)
             // "Next" 간섭 (generateNextStimulus 함수에서 다음 자극 정보가 이미 저장됨)
             const type = Math.random(); // 이미지 또는 위치 중 어떤 것을 간섭할지 랜덤 결정 - 이미지/위치 중 어떤 것을 간섭할지 랜덤 결정
 
@@ -812,12 +812,32 @@ function setBackgroundImageToResultScreen() {
     }
 }
 
-// --- [NEW] 이미지 업로드 처리 함수 ---
+// --- [NEW] 이미지 업로드 처리 함수 (수정됨: Data URL 생성 완료 후 저장 및 배경 설정, 메시지 표시) ---
 document.getElementById('imageUpload').addEventListener('change', function(e) {
     const files = e.target.files; // 선택된 파일 목록 가져오기
     if (files && files.length > 0) { // 파일이 선택되었으면
         const storedImages = loadUploadedImages(); // 기존 저장된 이미지 목록 로드
         let updatedImages = [...storedImages]; // 기존 이미지 목록 복사 (새로운 배열 생성)
+        let loadedCount = 0; // 로드된 이미지 count 변수 추가
+        let fileNames = []; // 파일 이름 저장 배열 추가
+        for (let i = 0; i < files.length; i++) { // 선택된 파일 목록 순회
+            fileNames.push(files[i].name); // 파일 이름 배열에 추가
+        }
+        let uploadMessage = `Uploaded images: ${fileNames.join(', ')}`; // 업로드 메시지 생성 (파일 이름 목록)
+        if (files.length > 3) { // 3개 초과 업로드 시 메시지 변경
+            uploadMessage = `Uploaded ${files.length} images`; // 업로드 메시지 변경 (개수만 표시)
+        }
+
+        // 메시지 표시 엘리먼트 (titleScreen 아래에 추가)
+        const messageElement = document.createElement('div');
+        messageElement.textContent = "이미지 로딩 중..."; // 초기 메시지
+        messageElement.style.color = 'lightgreen'; // 메시지 스타일 (lightgreen 색상)
+        messageElement.style.marginTop = '10px'; // margin-top 추가
+        messageElement.id = 'uploadingMessage'; // id 부여 (나중에 제거 위해)
+
+        const titleScreenDiv = document.getElementById('titleScreen'); // titleScreen element 가져오기
+        titleScreenDiv.appendChild(messageElement); // titleScreenDiv 에 메시지 element 추가
+
 
         for (let i = 0; i < files.length; i++) { // 선택된 파일 목록 순회
             const file = files[i]; // 현재 파일 가져오기
@@ -826,8 +846,14 @@ document.getElementById('imageUpload').addEventListener('change', function(e) {
             reader.onload = function(event) { // 파일 로드 완료 시 이벤트 핸들러
                 const imageDataUrl = event.target.result; // Data URL (base64 인코딩된 이미지 데이터)
                 updatedImages.push(imageDataUrl); // Data URL 을 업데이트된 이미지 목록에 추가
-                saveUploadedImages(updatedImages); // 업데이트된 이미지 목록 LocalStorage 에 저장
-                console.log(`Uploaded image added. Total images: ${updatedImages.length}`); // 콘솔 로그 (업로드된 이미지 추가, 총 이미지 수)
+                loadedCount++; // 로드된 이미지 count 증가
+
+                if (loadedCount === files.length) { // 모든 파일 load 완료되었으면
+                    saveUploadedImages(updatedImages); // 업데이트된 이미지 목록 LocalStorage 에 저장
+                    console.log(`Uploaded images added. Total images: ${updatedImages.length}`); // 콘솔 로그 (업로드된 이미지 추가, 총 이미지 수)
+                    setBackgroundImageToResultScreen(); // 결과 화면 배경 이미지 설정 함수 호출 (load 완료 후 즉시 호출)
+                    showUploadCompleteMessage(uploadMessage); // 업로드 완료 메시지 표시 함수 호출 // [✨ NEW ✨]
+                }
             };
 
             reader.readAsDataURL(file); // 파일을 Data URL 로 읽기 시작 (비동기)
@@ -836,6 +862,19 @@ document.getElementById('imageUpload').addEventListener('change', function(e) {
         e.target.value = ''; // input value 초기화
     }
 });
+
+// --- [NEW] 이미지 업로드 완료 메시지 표시 함수 ---
+function showUploadCompleteMessage(message) {
+    const messageElement = document.getElementById('uploadingMessage'); // 메시지 element 가져오기
+    if (messageElement) { // 메시지 element 가 있으면
+        messageElement.textContent = message + " 완료!"; // 메시지 텍스트 변경 (완료 메시지)
+        setTimeout(() => { // 3초 후 메시지 사라지게 함 - 3초 후 사라지는 효과
+            if (messageElement && messageElement.parentNode) { // element 와 parentNode 둘 다 있는지 확인
+                messageElement.parentNode.removeChild(messageElement); // 메시지 element 제거 - 메시지 사라지게 함
+            }
+        }, 3000); // 3초 후 실행
+    }
+}
 
 // --- [NEW] LocalStorage 에 이미지 목록 저장 함수 ---
 function saveUploadedImages(images) {
@@ -894,7 +933,7 @@ document.getElementById('customLevel').addEventListener('keypress', function(e) 
     }
 });
 
-document.getElementById('pressSpace').addEventListener('click', function() { // "Press SPACE to begin" 버튼 click event listener 등록 - 클릭 시 게임 시작 - "Press SPACE to begin" 버튼 클릭 이벤트 리스너 등록
+document.getElementById('pressSpace').addEventListener('click', function() { // "Press SPACE to begin" 버튼 click event listener 등록 - 클릭 시 게임 시작 - "Press SPACE to begin" 버튼 click 이벤트 리스너 등록
     if (!gameState.isPlaying) { // 게임 중 아니면 (일시 정지 상태) - 게임 중 아니면 (일시 정지 상태)
         startBlock(); // 블록 시작 함수 호출 - 게임 시작 - 게임 시작
     }
@@ -907,7 +946,7 @@ document.getElementById('pressSpace').addEventListener('touchstart', function(e)
     }
 });
 
-document.getElementById('pressSpaceResult').addEventListener('click', function() { // 결과 화면 "Press SPACE to continue" 버튼 click event listener 등록 - 클릭 시 다음 블록 시작 - 결과 화면 "Press SPACE to continue" 버튼 클릭 이벤트 리스너 등록
+document.getElementById('pressSpaceResult').addEventListener('click', function() { // 결과 화면 "Press SPACE to continue" 버튼 click event listener 등록 - 클릭 시 다음 블록 시작 - 결과 화면 "Press SPACE to continue" 버튼 click event listener 등록
     if (!gameState.isPlaying) { // 게임 중 아니면 (일시 정지 상태) - 게임 중 아니면 (일시 정지 상태)
         startBlock(); // 블록 시작 함수 호출 - 다음 블록 시작 - 다음 블록 시작
     }
