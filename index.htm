@@ -119,6 +119,15 @@
         width: 400px; /* 결과 화면의 너비를 400px로 설정 */
         z-index: 10; /* z-index를 10으로 설정하여 canvas 위에 표시 */
     }
+
+#resultScreen h1,
+#stats,
+#pressSpaceResult,
+#consecutiveGamesCounter {
+    position: relative; /* position: relative 추가 */
+    z-index: 2;          /* z-index: 2 추가 */
+}
+
     /* 결과 화면 배경 이미지 컨테이너 스타일 */
     #resultBackgroundImage {
         position: absolute; /* 결과 배경 이미지 컨테이너를 절대 위치로 설정 */
@@ -129,7 +138,7 @@
         background-size: contain; /* 배경 이미지 크기를 컨테이너에 맞게 조절 (contain: 비율 유지, 늘리지 않음) */
         background-repeat: no-repeat; /* 배경 이미지 반복 금지 */
         background-position: center; /* 배경 이미지 위치를 중앙으로 설정 */
-        z-index: -1; /* z-index를 -1로 설정하여 다른 요소(텍스트, 버튼) 뒤에 배치 */
+        z-index: 1; /* z-index를 -1로 설정하여 다른 요소(텍스트, 버튼) 뒤에 배치 */
         opacity: 0.7; /* 배경 이미지 투명도를 0.7로 설정 (텍스트 가독성 확보) */
     }
     /* 결과 통계 영역 (#stats) 스타일 */
@@ -327,6 +336,7 @@
     <canvas></canvas>
     <!-- 타이틀 화면 컨테이너 -->
     <div id="titleScreen">
+<div id="uploadingMessage" style="color: lightgreen; margin-top: 10px;"></div>
         <!-- 타이틀 텍스트 -->
         <h1>Dual N-Back Task</h1>
         <!-- 현재 레벨 표시 -->
