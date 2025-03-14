@@ -183,7 +183,7 @@ canvas {
     right: 20px;
     font-size: 20px;
     color: white;
-    opacity: 0.5;
+    opacity: 0.0;
     z-index: 10;
     pointer-events: none;
 }
