@@ -1132,10 +1132,10 @@ function populateSettings() {
     document.getElementById('button1Bottom').value = parseInt(sceneIndicator.style.bottom) || 40;
     document.getElementById('button2Left').value = parseInt(soundIndicator.style.left) || 130;
     document.getElementById('button2Bottom').value = parseInt(soundIndicator.style.bottom) || 40;
-    document.getElementById('button3Right').value = parseInt(locationIndicator.style.right) || 130;
-    document.getElementById('button3Bottom').value = parseInt(locationIndicator.style.bottom) || 40;
-    document.getElementById('button4Right').value = parseInt(colorIndicator.style.right) || 30;
-    document.getElementById('button4Bottom').value = parseInt(colorIndicator.style.bottom) || 40;
+    document.getElementById('button3Right').value = parseInt(colorIndicator.style.right) || 130;
+    document.getElementById('button3Bottom').value = parseInt(colorIndicator.style.bottom) || 40;
+    document.getElementById('button4Right').value = parseInt(locationindicator.right) || 30;
+    document.getElementById('button4Bottom').value = parseInt(locationindicator.style.bottom) || 40;
     document.getElementById('buttonWidth').value = parseInt(sceneIndicator.style.width) || 80;
     document.getElementById('buttonHeight').value = parseInt(sceneIndicator.style.height) || 80;
 }
