@@ -1285,10 +1285,10 @@ window.addEventListener('load', function() {
     sceneIndicator.style.bottom = (localStorage.getItem('button1Bottom') || '40') + 'px';
     soundIndicator.style.left = (localStorage.getItem('button2Left') || '130') + 'px';
     soundIndicator.style.bottom = (localStorage.getItem('button2Bottom') || '40') + 'px';
-    locationIndicator.style.right = (localStorage.getItem('button3Right') || '130') + 'px';
-    locationIndicator.style.bottom = (localStorage.getItem('button3Bottom') || '40') + 'px';
-    colorIndicator.style.right = (localStorage.getItem('button4Right') || '30') + 'px';
-    colorIndicator.style.bottom = (localStorage.getItem('button4Bottom') || '40') + 'px';
+    colorIndicator.style.right = (localStorage.getItem('button3Right') || '130') + 'px';
+    colorIndicator.style.bottom = (localStorage.getItem('button3Bottom') || '40') + 'px';
+    locationIndicator.style.right = (localStorage.getItem('button4Right') || '30') + 'px';
+    locationIndicator.style.bottom = (localStorage.getItem('button4Bottom') || '40') + 'px';
 
     const buttonWidth = (localStorage.getItem('buttonWidth') || '80') + 'px';
     const buttonHeight = (localStorage.getItem('buttonHeight') || '80') + 'px';
