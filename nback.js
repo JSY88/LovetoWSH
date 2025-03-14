@@ -1155,6 +1155,7 @@ function applySettings() {
         return;
     }
 
+    // gameState 업데이트
     gameState.stimulusTypes = newStimulusTypes;
     gameState.imageSourceUrl = document.getElementById('imageSourceUrl').value || "images/";
     gameState.resultImageUrl = document.getElementById('resultImageUrl').value || "";
@@ -1186,10 +1187,10 @@ function applySettings() {
     colorIndicator.style.width = buttonWidth;
     colorIndicator.style.height = buttonHeight;
 
-    const bgColor = document.getElementById('buttonBgColor').value;
-    const bgOpacity = document.getElementById('buttonBgOpacity').value;
-    const textColor = document.getElementById('buttonTextColor').value;
-    const textOpacity = document.getElementById('buttonTextOpacity').value;
+    const bgColor = document.getElementById('buttonBgColor').value || '#ffffff';
+    const bgOpacity = document.getElementById('buttonBgOpacity').value || '0.5';
+    const textColor = document.getElementById('buttonTextColor').value || '#ffffff';
+    const textOpacity = document.getElementById('buttonTextOpacity').value || '0.5';
     sceneIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
     soundIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
     locationIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
@@ -1199,7 +1200,7 @@ function applySettings() {
     locationIndicator.style.color = hexToRgba(textColor, textOpacity);
     colorIndicator.style.color = hexToRgba(textColor, textOpacity);
 
-    // localStorage에 설정 저장
+    // localStorage에 저장
     localStorage.setItem('stimulusTypes', JSON.stringify(gameState.stimulusTypes));
     localStorage.setItem('imageSourceUrl', gameState.imageSourceUrl);
     localStorage.setItem('resultImageUrl', gameState.resultImageUrl);
@@ -1224,7 +1225,15 @@ function applySettings() {
     localStorage.setItem('buttonTextColor', textColor);
     localStorage.setItem('buttonTextOpacity', textOpacity);
 
+    // 저장 확인 로그
+    console.log("Settings saved to localStorage:", {
+        stimulusTypes: localStorage.getItem('stimulusTypes'),
+        resultImageUrl: localStorage.getItem('resultImageUrl'),
+        soundSource: localStorage.getItem('soundSource')
+    });
+
     loadImageTextures();
+    document.getElementById('settingsPanel').style.display = 'none';
 }
 
 function hexToRgba(hex, opacity) {
@@ -1271,7 +1280,7 @@ window.addEventListener('load', function() {
         document.getElementById('lockLevelBtn').textContent = '해제';
     }
 
-    // 버튼 위치 및 스타일 로드
+    // 버튼 스타일 로드
     sceneIndicator.style.left = (localStorage.getItem('button1Left') || '30') + 'px';
     sceneIndicator.style.bottom = (localStorage.getItem('button1Bottom') || '40') + 'px';
     soundIndicator.style.left = (localStorage.getItem('button2Left') || '130') + 'px';
@@ -1305,8 +1314,33 @@ window.addEventListener('load', function() {
     locationIndicator.style.color = hexToRgba(textColor, textOpacity);
     colorIndicator.style.color = hexToRgba(textColor, textOpacity);
 
+    // 로드 확인 로그
+    console.log("Settings loaded from localStorage:", {
+        stimulusTypes: gameState.stimulusTypes,
+        resultImageUrl: gameState.resultImageUrl,
+        soundSource: gameState.soundSource
+    });
+
     loadImageTextures();
     showTitleScreen();
+});
+
+
+function checkLocalStorage() {
+    console.log("Current localStorage values:", {
+        stimulusTypes: localStorage.getItem('stimulusTypes'),
+        imageSourceUrl: localStorage.getItem('imageSourceUrl'),
+        resultImageUrl: localStorage.getItem('resultImageUrl'),
+        soundSource: localStorage.getItem('soundSource'),
+        sceneKey: localStorage.getItem('sceneKey'),
+        buttonWidth: localStorage.getItem('buttonWidth')
+    });
+}
+
+// "적용" 버튼 클릭 후 호출 확인
+document.getElementById('applySettingsBtn').addEventListener('click', function() {
+    applySettings();
+    setTimeout(checkLocalStorage, 100); // 저장 후 100ms 뒤에 확인
 });
 
 function animate() {
