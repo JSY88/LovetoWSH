@@ -68,9 +68,9 @@ const gameState = {
     imageSourceUrl: "images/",
     resultImageUrl: "",
     sceneKey: "S",
-    locationKey: "L",
-    soundKey: "A",
-    colorKey: "D",
+    locationKey: "A",
+    soundKey: "L",
+    colorKey: "K",
     soundSourceUrl: "sounds/"
 };
 
