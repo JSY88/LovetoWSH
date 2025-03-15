@@ -68,9 +68,9 @@ const gameState = {
     imageSourceUrl: "images/",
     resultImageUrl: "",
     sceneKey: "S",
-    locationKey: "L",
-    soundKey: "A",
-    colorKey: "D",
+    locationKey: "A",
+    soundKey: "L",
+    colorKey: "K",
     soundSourceUrl: "sounds/"
 };
 
@@ -441,7 +441,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
             }
             console.log("Interference applied (Next):", type < 0.25 ? "image" : (type < 0.5 ? "location" : (type < 0.75 ? "sound" : "color")));
         }
-        return { imageIndex: interferedImageIndex, panelIndex: interferedPanelIndex, soundIndex: interferedSoundIndex, colorIndex: interferedColorIndex };
+        return { imageIndex: interferedImageIndex, panelIndex: interferedPanelIndex, soundIndex: interferedSoundIndex, colorIndex: currentColorIndex };
     }
     return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex, soundIndex: currentSoundIndex, colorIndex: currentColorIndex };
 }
@@ -860,13 +860,13 @@ function startBlock() {
     gameState.soundErrors = 0;
     gameState.colorErrors = 0;
     gameState.consecutiveGames++;
+    loadSettings(); // ⭐️ 게임 시작 시 설정을 다시 로드하는 코드 추가
     localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
     localStorage.setItem('lastGameDate', new Date().toDateString());
 
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('resultScreen').style.display = 'none';
 
-    // applySettings(); // 게임 시작 시마다 설정을 새로 적용하지 않음, loadSettings()로 초기화된 상태 사용
     sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
     soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
     locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
@@ -1148,10 +1148,10 @@ function loadSettings() {
     sceneIndicator.style.bottom = (localStorage.getItem('button1Bottom') || '40') + 'px';
     soundIndicator.style.left = (localStorage.getItem('button2Left') || '130') + 'px';
     soundIndicator.style.bottom = (localStorage.getItem('button2Bottom') || '40') + 'px';
-    locationIndicator.style.right = (localStorage.getItem('button3Right') || '130') + 'px';
-    locationIndicator.style.bottom = (localStorage.getItem('button3Bottom') || '40') + 'px';
-    colorIndicator.style.right = (localStorage.getItem('button4Right') || '30') + 'px';
-    colorIndicator.style.bottom = (localStorage.getItem('button4Bottom') || '40') + 'px';
+    colorIndicator.style.right = (localStorage.getItem('button3Right') || '130') + 'px';
+    colorIndicator.style.bottom = (localStorage.getItem('button3Bottom') || '40') + 'px';
+    locationIndicator.style.right = (localStorage.getItem('button4Right') || '30') + 'px';
+    locationIndicator.style.bottom = (localStorage.getItem('button4Bottom') || '40') + 'px';
 
     const buttonWidth = (localStorage.getItem('buttonWidth') || '80') + 'px';
     const buttonHeight = (localStorage.getItem('buttonHeight') || '80') + 'px';
@@ -1320,7 +1320,7 @@ function hexToRgba(hex, opacity) {
 // 이벤트 리스너 수정
 document.getElementById('openSettingsBtn').addEventListener('click', function() {
     document.getElementById('settingsPanel').style.display = 'block';
-    populateSettings(); // 설정창 열 때마다 UI 동기화
+    populateSettings(); // 설정창 UI 초기화
 });
 
 document.getElementById('closeSettingsBtn').addEventListener('click', function() {
