@@ -1,7 +1,7 @@
 // Web Audio Context Initialization
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-// Game State with Updated Initial Settings
+// Game State
 const gameState = {
     isPlaying: false,
     nBackLevel: 1,
@@ -48,7 +48,7 @@ const gameState = {
     nextStimulusInfo: null,
     consecutiveGames: 0,
     totalGamesToday: 0,
-    stimulusTypes: ["scene", "location"], // 초기 자극: scene, location
+    stimulusTypes: [],
     soundSource: "pianoTones",
     soundFiles: ['sounds/sound001.mp3', 'sounds/sound002.mp3', 'sounds/sound003.mp3'],
     audioLoader: new THREE.AudioLoader(),
@@ -67,10 +67,10 @@ const gameState = {
     isLevelLocked: false,
     imageSourceUrl: "images/",
     resultImageUrl: "",
-    sceneKey: "S",    // 장면 자극 단축키: S
-    locationKey: "A", // 위치 자극 단축키: A
-    soundKey: "L",    // 소리 자극 단축키: L
-    colorKey: "K",    // 색상 자극 단축키: K
+    sceneKey: "S",
+    locationKey: "L",
+    soundKey: "A",
+    colorKey: "D",
     soundSourceUrl: "sounds/"
 };
 
@@ -862,17 +862,26 @@ function startBlock() {
     gameState.consecutiveGames++;
     localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
     localStorage.setItem('lastGameDate', new Date().toDateString());
+
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('resultScreen').style.display = 'none';
+
+    // applySettings(); // 게임 시작 시마다 설정을 새로 적용하지 않음, loadSettings()로 초기화된 상태 사용
     sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
-    locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
     soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
+    locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
     colorIndicator.style.display = gameState.stimulusTypes.includes("color") ? 'flex' : 'none';
+
     resetStimulusCounter();
-    applySettings();
     setTimeout(() => {
         generateNextStimulus();
     }, 1000);
+
+    console.log("startBlock() - Applied settings:", {
+        stimulusTypes: gameState.stimulusTypes,
+        scenePos: { left: sceneIndicator.style.left, bottom: sceneIndicator.style.bottom },
+        soundPos: { left: soundIndicator.style.left, bottom: soundIndicator.style.bottom }
+    });
 }
 
 function endBlock() {
@@ -927,10 +936,6 @@ function cancelAllTimers() {
 
 function setBackgroundImageToResultScreen() {
     const backgroundImageDiv = document.getElementById('resultBackgroundImage');
-    if (!backgroundImageDiv) {
-        console.error("Error: 'resultBackgroundImage' element not found in HTML.");
-        return;
-    }
     if (gameState.resultImageUrl) {
         backgroundImageDiv.style.backgroundImage = `url('${gameState.resultImageUrl}')`;
     } else {
@@ -1093,59 +1098,122 @@ document.getElementById('lockLevelBtn').addEventListener('click', function() {
     if (gameState.isLevelLocked) {
         lockButton.classList.add('locked');
         lockButton.textContent = '해제';
+        localStorage.setItem('isLevelLocked', 'true');
     } else {
         lockButton.classList.remove('locked');
         lockButton.textContent = '고정';
+        localStorage.setItem('isLevelLocked', 'false');
     }
-    saveSettings(); // 설정 저장
 });
 
-document.getElementById('openSettingsBtn').addEventListener('click', function() {
-    document.getElementById('settingsPanel').style.display = 'block';
-    populateSettings();
-});
+// --- 수정된 설정 관련 함수 ---
 
-document.getElementById('closeSettingsBtn').addEventListener('click', function() {
-    document.getElementById('settingsPanel').style.display = 'none';
-});
+// 설정 로드 함수 추가
+function loadSettings() {
+    const storedStimulusTypes = localStorage.getItem('stimulusTypes');
+    gameState.stimulusTypes = storedStimulusTypes ? JSON.parse(storedStimulusTypes) : ["scene", "location"];
+    gameState.nBackLevel = parseInt(localStorage.getItem('nBackLevel')) || 1;
+    gameState.imageSourceUrl = localStorage.getItem('imageSourceUrl') || "images/";
+    gameState.resultImageUrl = localStorage.getItem('resultImageUrl') || "";
+    gameState.soundSource = localStorage.getItem('soundSource') || "pianoTones";
+    gameState.soundSourceUrl = localStorage.getItem('soundSourceUrl') || "sounds/";
+    gameState.sceneKey = localStorage.getItem('sceneKey') || "S";
+    gameState.locationKey = localStorage.getItem('locationKey') || "L";
+    gameState.soundKey = localStorage.getItem('soundKey') || "A";
+    gameState.colorKey = localStorage.getItem('colorKey') || "D";
+    gameState.isLevelLocked = localStorage.getItem('isLevelLocked') === 'true';
 
-document.getElementById('applySettingsBtn').addEventListener('click', function() {
-    applySettings();
-    saveSettings(); // 적용 후 저장
-    document.getElementById('settingsPanel').style.display = 'none';
-});
+    const storedTotalGames = localStorage.getItem('totalGamesToday');
+    const lastGameDate = localStorage.getItem('lastGameDate');
+    const today = new Date().toDateString();
+    if (storedTotalGames && lastGameDate === today) {
+        gameState.totalGamesToday = parseInt(storedTotalGames);
+    } else {
+        gameState.totalGamesToday = 0;
+        localStorage.setItem('totalGamesToday', '0');
+        localStorage.setItem('lastGameDate', today);
+    }
 
-function populateSettings() {
-    document.getElementById('sceneStimulus').checked = gameState.stimulusTypes.includes("scene");
-    document.getElementById('locationStimulus').checked = gameState.stimulusTypes.includes("location");
-    document.getElementById('soundStimulus').checked = gameState.stimulusTypes.includes("sound");
-    document.getElementById('colorStimulus').checked = gameState.stimulusTypes.includes("color");
-    document.getElementById('imageSourceUrl').value = gameState.imageSourceUrl;
-    document.getElementById('resultImageUrl').value = gameState.resultImageUrl;
-    document.getElementById('soundSourceSelect').value = gameState.soundSource;
-    document.getElementById('soundSourceUrl').value = gameState.soundSourceUrl;
-    document.getElementById('sceneKey').value = gameState.sceneKey;
-    document.getElementById('locationKey').value = gameState.locationKey;
-    document.getElementById('soundKey').value = gameState.soundKey;
-    document.getElementById('colorKey').value = gameState.colorKey;
-    document.getElementById('button1Assignment').value = gameState.stimulusTypes.includes("scene") ? "scene" : "none";
-    document.getElementById('button2Assignment').value = gameState.stimulusTypes.includes("sound") ? "sound" : "none";
-    document.getElementById('button3Assignment').value = gameState.stimulusTypes.includes("color") ? "color" : "none";
-    document.getElementById('button4Assignment').value = gameState.stimulusTypes.includes("location") ? "location" : "none";
-    document.getElementById('button1Left').value = parseInt(sceneIndicator.style.left) || 30;
-    document.getElementById('button1Bottom').value = parseInt(sceneIndicator.style.bottom) || 40;
-    document.getElementById('button2Left').value = parseInt(soundIndicator.style.left) || 130;
-    document.getElementById('button2Bottom').value = parseInt(soundIndicator.style.bottom) || 40;
-    document.getElementById('button3Right').value = parseInt(colorIndicator.style.right) || 130;
-    document.getElementById('button3Bottom').value = parseInt(colorIndicator.style.bottom) || 40;
-    document.getElementById('button4Right').value = parseInt(locationIndicator.style.right) || 30;
-    document.getElementById('button4Bottom').value = parseInt(locationIndicator.style.bottom) || 40;
-    document.getElementById('buttonWidth').value = parseInt(sceneIndicator.style.width) || 80;
-    document.getElementById('buttonHeight').value = parseInt(sceneIndicator.style.height) || 80;
-    document.getElementById('buttonBgOpacity').value = parseFloat(sceneIndicator.style.backgroundColor.match(/[\d.]+(?=\)$)/)?.[0]) || 0.5;
-    document.getElementById('buttonTextOpacity').value = parseFloat(sceneIndicator.style.color.match(/[\d.]+(?=\)$)/)?.[0]) || 0;
+    // UI 동기화
+    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    document.getElementById('customLevel').value = gameState.nBackLevel;
+    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+    if (gameState.isLevelLocked) {
+        document.getElementById('lockLevelBtn').classList.add('locked');
+        document.getElementById('lockLevelBtn').textContent = '해제';
+    }
+
+    // 인디케이터 스타일 초기화
+    sceneIndicator.style.left = (localStorage.getItem('button1Left') || '30') + 'px';
+    sceneIndicator.style.bottom = (localStorage.getItem('button1Bottom') || '40') + 'px';
+    soundIndicator.style.left = (localStorage.getItem('button2Left') || '130') + 'px';
+    soundIndicator.style.bottom = (localStorage.getItem('button2Bottom') || '40') + 'px';
+    locationIndicator.style.right = (localStorage.getItem('button3Right') || '130') + 'px';
+    locationIndicator.style.bottom = (localStorage.getItem('button3Bottom') || '40') + 'px';
+    colorIndicator.style.right = (localStorage.getItem('button4Right') || '30') + 'px';
+    colorIndicator.style.bottom = (localStorage.getItem('button4Bottom') || '40') + 'px';
+
+    const buttonWidth = (localStorage.getItem('buttonWidth') || '80') + 'px';
+    const buttonHeight = (localStorage.getItem('buttonHeight') || '80') + 'px';
+    sceneIndicator.style.width = buttonWidth;
+    sceneIndicator.style.height = buttonHeight;
+    soundIndicator.style.width = buttonWidth;
+    soundIndicator.style.height = buttonHeight;
+    locationIndicator.style.width = buttonWidth;
+    locationIndicator.style.height = buttonHeight;
+    colorIndicator.style.width = buttonWidth;
+    colorIndicator.style.height = buttonHeight;
+
+    const bgColor = localStorage.getItem('buttonBgColor') || '#ffffff';
+    const bgOpacity = localStorage.getItem('buttonBgOpacity') || '0.1';
+    const textColor = localStorage.getItem('buttonTextColor') || '#ffffff';
+    const textOpacity = localStorage.getItem('buttonTextOpacity') || '0.0';
+    sceneIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
+    soundIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
+    locationIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
+    colorIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
+    sceneIndicator.style.color = hexToRgba(textColor, textOpacity);
+    soundIndicator.style.color = hexToRgba(textColor, textOpacity);
+    locationIndicator.style.color = hexToRgba(textColor, textOpacity);
+    colorIndicator.style.color = hexToRgba(textColor, textOpacity);
+
+    console.log("loadSettings() - Loaded settings from localStorage:", gameState);
 }
 
+// 설정창 UI 반영 함수 수정
+function populateSettings() {
+    const storedStimulusTypes = JSON.parse(localStorage.getItem('stimulusTypes') || '["scene", "location"]');
+    document.getElementById('sceneStimulus').checked = storedStimulusTypes.includes("scene");
+    document.getElementById('locationStimulus').checked = storedStimulusTypes.includes("location");
+    document.getElementById('soundStimulus').checked = storedStimulusTypes.includes("sound");
+    document.getElementById('colorStimulus').checked = storedStimulusTypes.includes("color");
+    document.getElementById('imageSourceUrl').value = localStorage.getItem('imageSourceUrl') || "images/";
+    document.getElementById('resultImageUrl').value = localStorage.getItem('resultImageUrl') || "";
+    document.getElementById('soundSourceSelect').value = localStorage.getItem('soundSource') || "pianoTones";
+    document.getElementById('soundSourceUrl').value = localStorage.getItem('soundSourceUrl') || "sounds/";
+    document.getElementById('sceneKey').value = localStorage.getItem('sceneKey') || "S";
+    document.getElementById('locationKey').value = localStorage.getItem('locationKey') || "L";
+    document.getElementById('soundKey').value = localStorage.getItem('soundKey') || "A";
+    document.getElementById('colorKey').value = localStorage.getItem('colorKey') || "D";
+    document.getElementById('button1Left').value = localStorage.getItem('button1Left') || '30';
+    document.getElementById('button1Bottom').value = localStorage.getItem('button1Bottom') || '40';
+    document.getElementById('button2Left').value = localStorage.getItem('button2Left') || '130';
+    document.getElementById('button2Bottom').value = localStorage.getItem('button2Bottom') || '40';
+    document.getElementById('button3Right').value = localStorage.getItem('button3Right') || '130';
+    document.getElementById('button3Bottom').value = localStorage.getItem('button3Bottom') || '40';
+    document.getElementById('button4Right').value = localStorage.getItem('button4Right') || '30';
+    document.getElementById('button4Bottom').value = localStorage.getItem('button4Bottom') || '40';
+    document.getElementById('buttonWidth').value = localStorage.getItem('buttonWidth') || '80';
+    document.getElementById('buttonHeight').value = localStorage.getItem('buttonHeight') || '80';
+    document.getElementById('buttonBgColor').value = localStorage.getItem('buttonBgColor') || '#ffffff';
+    document.getElementById('buttonBgOpacity').value = localStorage.getItem('buttonBgOpacity') || '0.1';
+    document.getElementById('buttonTextColor').value = localStorage.getItem('buttonTextColor') || '#ffffff';
+    document.getElementById('buttonTextOpacity').value = localStorage.getItem('buttonTextOpacity') || '0.0';
+
+    console.log("populateSettings() - Populated UI with:", storedStimulusTypes);
+}
+
+// 설정 적용 함수 수정
 function applySettings() {
     const newStimulusTypes = [];
     if (document.getElementById('sceneStimulus').checked) newStimulusTypes.push("scene");
@@ -1167,21 +1235,22 @@ function applySettings() {
     gameState.soundSource = document.getElementById('soundSourceSelect').value;
     gameState.soundSourceUrl = document.getElementById('soundSourceUrl').value || "sounds/";
     gameState.sceneKey = document.getElementById('sceneKey').value.toUpperCase() || "S";
-    gameState.locationKey = document.getElementById('locationKey').value.toUpperCase() || "A";
-    gameState.soundKey = document.getElementById('soundKey').value.toUpperCase() || "L";
-    gameState.colorKey = document.getElementById('colorKey').value.toUpperCase() || "K";
+    gameState.locationKey = document.getElementById('locationKey').value.toUpperCase() || "L";
+    gameState.soundKey = document.getElementById('soundKey').value.toUpperCase() || "A";
+    gameState.colorKey = document.getElementById('colorKey').value.toUpperCase() || "D";
 
-    sceneIndicator.style.left = document.getElementById('button1Left').value + 'px';
-    sceneIndicator.style.bottom = document.getElementById('button1Bottom').value + 'px';
-    soundIndicator.style.left = document.getElementById('button2Left').value + 'px';
-    soundIndicator.style.bottom = document.getElementById('button2Bottom').value + 'px';
-    colorIndicator.style.right = document.getElementById('button3Right').value + 'px';
-    colorIndicator.style.bottom = document.getElementById('button3Bottom').value + 'px';
-    locationIndicator.style.right = document.getElementById('button4Right').value + 'px';
-    locationIndicator.style.bottom = document.getElementById('button4Bottom').value + 'px';
+    // 인디케이터 스타일 적용
+    sceneIndicator.style.left = (document.getElementById('button1Left').value || '30') + 'px';
+    sceneIndicator.style.bottom = (document.getElementById('button1Bottom').value || '40') + 'px';
+    soundIndicator.style.left = (document.getElementById('button2Left').value || '130') + 'px';
+    soundIndicator.style.bottom = (document.getElementById('button2Bottom').value || '40') + 'px';
+    locationIndicator.style.right = (document.getElementById('button3Right').value || '130') + 'px';
+    locationIndicator.style.bottom = (document.getElementById('button3Bottom').value || '40') + 'px';
+    colorIndicator.style.right = (document.getElementById('button4Right').value || '30') + 'px';
+    colorIndicator.style.bottom = (document.getElementById('button4Bottom').value || '40') + 'px';
 
-    const buttonWidth = document.getElementById('buttonWidth').value + 'px';
-    const buttonHeight = document.getElementById('buttonHeight').value + 'px';
+    const buttonWidth = (document.getElementById('buttonWidth').value || '80') + 'px';
+    const buttonHeight = (document.getElementById('buttonHeight').value || '80') + 'px';
     sceneIndicator.style.width = buttonWidth;
     sceneIndicator.style.height = buttonHeight;
     soundIndicator.style.width = buttonWidth;
@@ -1192,9 +1261,9 @@ function applySettings() {
     colorIndicator.style.height = buttonHeight;
 
     const bgColor = document.getElementById('buttonBgColor').value || '#ffffff';
-    const bgOpacity = document.getElementById('buttonBgOpacity').value || '0.5';
+    const bgOpacity = document.getElementById('buttonBgOpacity').value || '0.1';
     const textColor = document.getElementById('buttonTextColor').value || '#ffffff';
-    const textOpacity = document.getElementById('buttonTextOpacity').value || '0';
+    const textOpacity = document.getElementById('buttonTextOpacity').value || '0.0';
     sceneIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
     soundIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
     locationIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
@@ -1204,12 +1273,41 @@ function applySettings() {
     locationIndicator.style.color = hexToRgba(textColor, textOpacity);
     colorIndicator.style.color = hexToRgba(textColor, textOpacity);
 
-    sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
-    soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
-    locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
-    colorIndicator.style.display = gameState.stimulusTypes.includes("color") ? 'flex' : 'none';
+    // localStorage에 저장
+    localStorage.setItem('stimulusTypes', JSON.stringify(gameState.stimulusTypes));
+    localStorage.setItem('imageSourceUrl', gameState.imageSourceUrl);
+    localStorage.setItem('resultImageUrl', gameState.resultImageUrl);
+    localStorage.setItem('soundSource', gameState.soundSource);
+    localStorage.setItem('soundSourceUrl', gameState.soundSourceUrl);
+    localStorage.setItem('sceneKey', gameState.sceneKey);
+    localStorage.setItem('locationKey', gameState.locationKey);
+    localStorage.setItem('soundKey', gameState.soundKey);
+    localStorage.setItem('colorKey', gameState.colorKey);
+    localStorage.setItem('button1Left', document.getElementById('button1Left').value || '30');
+    localStorage.setItem('button1Bottom', document.getElementById('button1Bottom').value || '40');
+    localStorage.setItem('button2Left', document.getElementById('button2Left').value || '130');
+    localStorage.setItem('button2Bottom', document.getElementById('button2Bottom').value || '40');
+    localStorage.setItem('button3Right', document.getElementById('button3Right').value || '130');
+    localStorage.setItem('button3Bottom', document.getElementById('button3Bottom').value || '40');
+    localStorage.setItem('button4Right', document.getElementById('button4Right').value || '30');
+    localStorage.setItem('button4Bottom', document.getElementById('button4Bottom').value || '40');
+    localStorage.setItem('buttonWidth', document.getElementById('buttonWidth').value || '80');
+    localStorage.setItem('buttonHeight', document.getElementById('buttonHeight').value || '80');
+    localStorage.setItem('buttonBgColor', bgColor);
+    localStorage.setItem('buttonBgOpacity', bgOpacity);
+    localStorage.setItem('buttonTextColor', textColor);
+    localStorage.setItem('buttonTextOpacity', textOpacity);
+
+    // UI 즉시 업데이트
+    populateSettings();
 
     loadImageTextures();
+    console.log("applySettings() - Settings applied and saved:", gameState);
+    console.log("applySettings() - localStorage after applySettings:", {
+        stimulusTypes: localStorage.getItem('stimulusTypes'),
+        imageSourceUrl: localStorage.getItem('imageSourceUrl'),
+        soundSource: localStorage.getItem('soundSource')
+    });
 }
 
 function hexToRgba(hex, opacity) {
@@ -1219,146 +1317,59 @@ function hexToRgba(hex, opacity) {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-// 새로운 설정 저장 함수
-function saveSettings() {
-    const settings = {
-        stimulusTypes: gameState.stimulusTypes,
-        imageSourceUrl: gameState.imageSourceUrl,
-        resultImageUrl: gameState.resultImageUrl,
-        soundSource: gameState.soundSource,
-        soundSourceUrl: gameState.soundSourceUrl,
-        sceneKey: gameState.sceneKey,
-        locationKey: gameState.locationKey,
-        soundKey: gameState.soundKey,
-        colorKey: gameState.colorKey,
-        isLevelLocked: gameState.isLevelLocked,
-        button1Left: sceneIndicator.style.left,
-        button1Bottom: sceneIndicator.style.bottom,
-        button2Left: soundIndicator.style.left,
-        button2Bottom: soundIndicator.style.bottom,
-        button3Right: colorIndicator.style.right,
-        button3Bottom: colorIndicator.style.bottom,
-        button4Right: locationIndicator.style.right,
-        button4Bottom: locationIndicator.style.bottom,
-        buttonWidth: sceneIndicator.style.width,
-        buttonHeight: sceneIndicator.style.height,
-        buttonBgColor: document.getElementById('buttonBgColor')?.value || '#ffffff',
-        buttonBgOpacity: document.getElementById('buttonBgOpacity')?.value || '0.5',
-        buttonTextColor: document.getElementById('buttonTextColor')?.value || '#ffffff',
-        buttonTextOpacity: document.getElementById('buttonTextOpacity')?.value || '0'
-    };
-    localStorage.setItem('settings', JSON.stringify(settings));
-    console.log("Settings saved:", settings);
-}
+// 이벤트 리스너 수정
+document.getElementById('openSettingsBtn').addEventListener('click', function() {
+    document.getElementById('settingsPanel').style.display = 'block';
+    populateSettings(); // 설정창 열 때마다 UI 동기화
+});
 
-// 새로운 설정 로드 함수
-function loadSettings() {
-    const savedSettings = localStorage.getItem('settings');
-    if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        Object.assign(gameState, {
-            stimulusTypes: settings.stimulusTypes || ["scene", "location"],
-            imageSourceUrl: settings.imageSourceUrl || "images/",
-            resultImageUrl: settings.resultImageUrl || "",
-            soundSource: settings.soundSource || "pianoTones",
-            soundSourceUrl: settings.soundSourceUrl || "sounds/",
-            sceneKey: settings.sceneKey || "S",
-            locationKey: settings.locationKey || "A",
-            soundKey: settings.soundKey || "L",
-            colorKey: settings.colorKey || "K",
-            isLevelLocked: settings.isLevelLocked || false
-        });
-        sceneIndicator.style.left = settings.button1Left || '30px';
-        sceneIndicator.style.bottom = settings.button1Bottom || '40px';
-        soundIndicator.style.left = settings.button2Left || '130px';
-        soundIndicator.style.bottom = settings.button2Bottom || '40px';
-        colorIndicator.style.right = settings.button3Right || '130px';
-        colorIndicator.style.bottom = settings.button3Bottom || '40px';
-        locationIndicator.style.right = settings.button4Right || '30px';
-        locationIndicator.style.bottom = settings.button4Bottom || '40px';
-        sceneIndicator.style.width = settings.buttonWidth || '80px';
-        sceneIndicator.style.height = settings.buttonHeight || '80px';
-        soundIndicator.style.width = settings.buttonWidth || '80px';
-        soundIndicator.style.height = settings.buttonHeight || '80px';
-        locationIndicator.style.width = settings.buttonWidth || '80px';
-        locationIndicator.style.height = settings.buttonHeight || '80px';
-        colorIndicator.style.width = settings.buttonWidth || '80px';
-        colorIndicator.style.height = settings.buttonHeight || '80px';
-        const bgColor = settings.buttonBgColor || '#ffffff';
-        const bgOpacity = settings.buttonBgOpacity || '0.5';
-        const textColor = settings.buttonTextColor || '#ffffff';
-        const textOpacity = settings.buttonTextOpacity || '0';
-        sceneIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
-        soundIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
-        locationIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
-        colorIndicator.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
-        sceneIndicator.style.color = hexToRgba(textColor, textOpacity);
-        soundIndicator.style.color = hexToRgba(textColor, textOpacity);
-        locationIndicator.style.color = hexToRgba(textColor, textOpacity);
-        colorIndicator.style.color = hexToRgba(textColor, textOpacity);
-        if (gameState.isLevelLocked) {
-            document.getElementById('lockLevelBtn').classList.add('locked');
-            document.getElementById('lockLevelBtn').textContent = '해제';
-        }
-        console.log("Settings loaded:", settings);
-    } else {
-        // 기본값 적용
-        sceneIndicator.style.left = '30px';
-        sceneIndicator.style.bottom = '40px';
-        soundIndicator.style.left = '130px';
-        soundIndicator.style.bottom = '40px';
-        colorIndicator.style.right = '130px';
-        colorIndicator.style.bottom = '40px';
-        locationIndicator.style.right = '30px';
-        locationIndicator.style.bottom = '40px';
-        sceneIndicator.style.width = '80px';
-        sceneIndicator.style.height = '80px';
-        soundIndicator.style.width = '80px';
-        soundIndicator.style.height = '80px';
-        locationIndicator.style.width = '80px';
-        locationIndicator.style.height = '80px';
-        colorIndicator.style.width = '80px';
-        colorIndicator.style.height = '80px';
-        sceneIndicator.style.backgroundColor = hexToRgba('#ffffff', 0.5);
-        soundIndicator.style.backgroundColor = hexToRgba('#ffffff', 0.5);
-        locationIndicator.style.backgroundColor = hexToRgba('#ffffff', 0.5);
-        colorIndicator.style.backgroundColor = hexToRgba('#ffffff', 0.5);
-        sceneIndicator.style.color = hexToRgba('#ffffff', 0);
-        soundIndicator.style.color = hexToRgba('#ffffff', 0);
-        locationIndicator.style.color = hexToRgba('#ffffff', 0);
-        colorIndicator.style.color = hexToRgba('#ffffff', 0);
-        console.log("No saved settings found, using defaults.");
-    }
-}
+document.getElementById('closeSettingsBtn').addEventListener('click', function() {
+    document.getElementById('settingsPanel').style.display = 'none';
+});
 
+document.getElementById('applySettingsBtn').addEventListener('click', function() {
+    applySettings();
+    document.getElementById('settingsPanel').style.display = 'none';
+});
+
+// 페이지 로드 시 설정 초기화 수정
 window.addEventListener('load', function() {
-    const storedLevel = localStorage.getItem('nBackLevel');
-    if (storedLevel) {
-        gameState.nBackLevel = parseInt(storedLevel);
-        document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
-        document.getElementById('customLevel').value = gameState.nBackLevel;
-    }
-
-    const storedTotalGames = localStorage.getItem('totalGamesToday');
-    const lastGameDate = localStorage.getItem('lastGameDate');
-    const today = new Date().toDateString();
-    if (storedTotalGames && lastGameDate === today) {
-        gameState.totalGamesToday = parseInt(storedTotalGames);
-    } else {
-        gameState.totalGamesToday = 0;
-        localStorage.setItem('totalGamesToday', '0');
-        localStorage.setItem('lastGameDate', today);
-    }
-    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
-
-    loadSettings(); // 설정 로드
-    sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
-    soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
-    locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
-    colorIndicator.style.display = gameState.stimulusTypes.includes("color") ? 'flex' : 'none';
-
-    loadImageTextures();
+    loadSettings();
+    populateSettings(); // 설정창 UI 초기화
     showTitleScreen();
+    checkLocalStorageChange();
+    loadImageTextures(); // 이미지 로드
+    console.log("Loaded gameState from localStorage:", gameState);
+});
+
+function checkLocalStorageChange() {
+    let previousStimulusTypes = localStorage.getItem('stimulusTypes');
+    setInterval(() => {
+        const currentStimulusTypes = localStorage.getItem('stimulusTypes');
+        if (previousStimulusTypes !== currentStimulusTypes) {
+            console.warn("localStorage changed:", {
+                previous: previousStimulusTypes,
+                current: currentStimulusTypes
+            });
+            previousStimulusTypes = currentStimulusTypes;
+        }
+    }, 1000);
+}
+
+function checkLocalStorage() {
+    console.log("Current localStorage values:", {
+        stimulusTypes: localStorage.getItem('stimulusTypes'),
+        imageSourceUrl: localStorage.getItem('imageSourceUrl'),
+        resultImageUrl: localStorage.getItem('resultImageUrl'),
+        soundSource: localStorage.getItem('soundSource'),
+        sceneKey: localStorage.getItem('sceneKey'),
+        buttonWidth: localStorage.getItem('buttonWidth')
+    });
+}
+
+document.getElementById('applySettingsBtn').addEventListener('click', function() {
+    applySettings();
+    setTimeout(checkLocalStorage, 100);
 });
 
 function animate() {
