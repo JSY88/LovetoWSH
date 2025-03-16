@@ -38,7 +38,7 @@ const gameState = {
     currentIsColorTarget: false,
     inResponseWindow: false,
     canRespond: true,
-    interferenceType: "none",
+    interferenceType: "random",
     randomInterferenceProbabilities: {
         "previous": 0.33,
         "cyclic": 0.33,
