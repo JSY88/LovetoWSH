@@ -508,6 +508,25 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
         console.log("Adaptive interference off or no checks yet, using base chance:", interferenceChance);
     }
 
+
+// 간섭 유형 확률 정규화 (선택 사항)
+    const totalTypeChance = interferenceConfig.types.previous + interferenceConfig.types.cyclic +
+                            interferenceConfig.types.next + interferenceConfig.types.nearMissShort +
+                            interferenceConfig.types.nearMissLate;
+    if (totalTypeChance > 0) {
+        const scale = 1.0 / totalTypeChance;
+        const normalizedTypes = {
+            previous: interferenceConfig.types.previous * scale,
+            cyclic: interferenceConfig.types.cyclic * scale,
+            next: interferenceConfig.types.next * scale,
+            nearMissShort: interferenceConfig.types.nearMissShort * scale,
+            nearMissLate: interferenceConfig.types.nearMissLate * scale
+        };
+        // 이후 로직에서 normalizedTypes 사용 가능
+    }
+
+
+
     // 기존 간섭 로직 (적응형 확률 적용)
     if (Math.random() < interferenceChance) {
         if (currentInterferenceType === "early") {
@@ -675,6 +694,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
                     interferedColorIndex = gameState.nextStimulusInfo.colorIndex;
                     affectedAttributes.push("color");
                 }
+
                 console.log("Interference applied (random - next): Affected attributes -", affectedAttributes);
             }
         }
@@ -1456,6 +1476,21 @@ function populateSettings() {
 document.getElementById('stimuliPerBlock').value = gameState.stimuliPerBlock;
     document.getElementById('stimulusDuration').value = gameState.stimulusDuration;
     document.getElementById('stimulusInterval').value = gameState.stimulusInterval;
+document.getElementById('enableInterference').checked = interferenceConfig.baseChance > 0;
+    document.getElementById('adaptiveInterference').checked = interferenceConfig.adaptive;
+    document.getElementById('baseInterferenceChance').value = interferenceConfig.baseChance;
+    document.getElementById('thresholdHigh').value = interferenceConfig.thresholdHigh;
+    document.getElementById('thresholdLow').value = interferenceConfig.thresholdLow;
+    document.getElementById('previousChance').value = interferenceConfig.types.previous;
+    document.getElementById('cyclicChance').value = interferenceConfig.types.cyclic;
+    document.getElementById('nextChance').value = interferenceConfig.types.next;
+    document.getElementById('nearMissShortChance').value = interferenceConfig.types.nearMissShort;
+    document.getElementById('nearMissLateChance').value = interferenceConfig.types.nearMissLate;
+    document.getElementById('imageAttrChance').value = interferenceConfig.attributes.image;
+    document.getElementById('locationAttrChance').value = interferenceConfig.attributes.location;
+    document.getElementById('soundAttrChance').value = interferenceConfig.attributes.sound;
+    document.getElementById('colorAttrChance').value = interferenceConfig.attributes.color;
+    document.getElementById('maxAttributes').value = interferenceConfig.maxAttributes;
 }
 
 function applySettings() {
@@ -1481,6 +1516,54 @@ function applySettings() {
     gameState.colorKey = document.getElementById('colorKey').value.toUpperCase();
     gameState.soundSource = document.getElementById('soundSourceSelect').value;
     gameState.soundSourceUrl = document.getElementById('soundSourceUrl').value;
+ 
+// 간섭 설정 적용
+    const enableInterference = document.getElementById('enableInterference').checked;
+    interferenceConfig.adaptive = document.getElementById('adaptiveInterference').checked;
+    interferenceConfig.baseChance = enableInterference ? parseFloat(document.getElementById('baseInterferenceChance').value) : 0;
+    interferenceConfig.thresholdHigh = parseFloat(document.getElementById('thresholdHigh').value);
+    interferenceConfig.thresholdLow = parseFloat(document.getElementById('thresholdLow').value);
+
+    // 간섭 유형 확률
+    const typesSum = parseFloat(document.getElementById('previousChance').value) +
+                     parseFloat(document.getElementById('cyclicChance').value) +
+                     parseFloat(document.getElementById('nextChance').value) +
+                     parseFloat(document.getElementById('nearMissShortChance').value) +
+                     parseFloat(document.getElementById('nearMissLateChance').value);
+
+    if (typesSum > 1.0) {
+        document.getElementById('settingsError').textContent = '간섭 유형 확률의 합은 1을 초과할 수 없습니다.';
+        document.getElementById('settingsError').style.display = 'block';
+        return;
+    }
+
+    interferenceConfig.types.previous = parseFloat(document.getElementById('previousChance').value);
+    interferenceConfig.types.cyclic = parseFloat(document.getElementById('cyclicChance').value);
+    interferenceConfig.types.next = parseFloat(document.getElementById('nextChance').value);
+    interferenceConfig.types.nearMissShort = parseFloat(document.getElementById('nearMissShortChance').value);
+    interferenceConfig.types.nearMissLate = parseFloat(document.getElementById('nearMissLateChance').value);
+
+    // 속성별 간섭 확률
+    interferenceConfig.attributes.image = parseFloat(document.getElementById('imageAttrChance').value);
+    interferenceConfig.attributes.location = parseFloat(document.getElementById('locationAttrChance').value);
+    interferenceConfig.attributes.sound = parseFloat(document.getElementById('soundAttrChance').value);
+    interferenceConfig.attributes.color = parseFloat(document.getElementById('colorAttrChance').value);
+    interferenceConfig.maxAttributes = parseInt(document.getElementById('maxAttributes').value);
+
+    // 유효성 검사
+    if (interferenceConfig.baseChance < 0 || interferenceConfig.baseChance > 1 ||
+        interferenceConfig.thresholdHigh < 0 || interferenceConfig.thresholdHigh > 1 ||
+        interferenceConfig.thresholdLow < 0 || interferenceConfig.thresholdLow > 1 ||
+        interferenceConfig.thresholdLow >= interferenceConfig.thresholdHigh) {
+        document.getElementById('settingsError').textContent = '간섭 확률 및 임계값은 0-1 사이여야 하며, 하한은 상한보다 작아야 합니다.';
+        document.getElementById('settingsError').style.display = 'block';
+        return;
+    }
+
+    // localStorage에 저장
+    localStorage.setItem('interferenceConfig', JSON.stringify(interferenceConfig));
+
+
 
     // 인디케이터 위치 설정
     sceneIndicator.style.left = `${document.getElementById('button1Left').value}px`;
@@ -1564,7 +1647,11 @@ function loadSettings() {
         document.getElementById('customLevel').value = gameState.nBackLevel;
     }
 
-
+// 간섭 설정 불러오기
+    const savedInterferenceConfig = localStorage.getItem('interferenceConfig');
+    if (savedInterferenceConfig) {
+        Object.assign(interferenceConfig, JSON.parse(savedInterferenceConfig));
+    }
 
     // 게임 횟수 및 날짜 불러오기
     const lastGameDate = localStorage.getItem('lastGameDate');
