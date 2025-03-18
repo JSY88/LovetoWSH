@@ -1,5 +1,5 @@
 // Web Audio Context Initialization
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let audioContext;
 
 // Game State
 const gameState = {
@@ -747,6 +747,68 @@ function isColorTarget(colorIndex) {
 
 
 
+function startBlock() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log("AudioContext initialized");
+    }
+
+    gameState.isPlaying = true;
+    gameState.isPaused = false;
+    gameState.currentStimulus = 0;
+    gameState.sceneHistory = [];
+    gameState.locationHistory = [];
+    gameState.soundHistory = [];
+    gameState.colorHistory = [];
+    gameState.sceneTargets = 0;
+    gameState.locationTargets = 0;
+    gameState.soundTargets = 0;
+    gameState.colorTargets = 0;
+    gameState.bothTargets = 0;
+    gameState.sceneResponses = 0;
+    gameState.locationResponses = 0;
+    gameState.soundResponses = 0;
+    gameState.colorResponses = 0;
+    gameState.sceneErrors = 0;
+    gameState.locationErrors = 0;
+    gameState.soundErrors = 0;
+    gameState.colorErrors = 0;
+    gameState.correctChecks = 0;
+    gameState.totalChecks = 0;
+    gameState.consecutiveGames++;
+
+    // applySettings 호출 전 devOptions 상태 저장
+    const devOptions = document.getElementById('devOptions');
+    const devOptionsDisplay = devOptions.style.display;
+
+    applySettings(); // 설정 적용
+    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
+    localStorage.setItem('lastGameDate', new Date().toDateString());
+
+    document.getElementById('titleScreen').style.display = 'none';
+    document.getElementById('resultScreen').style.display = 'none';
+
+    // 인디케이터 표시 설정
+    console.log("Setting indicators - stimulusTypes:", gameState.stimulusTypes);
+    sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
+    soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
+    locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
+    colorIndicator.style.display = gameState.stimulusTypes.includes("color") ? 'flex' : 'none';
+
+    // devOptions 상태 복원
+    devOptions.style.display = devOptionsDisplay;
+
+    resetStimulusCounter();
+    setTimeout(() => {
+        generateNextStimulus();
+    }, 1000);
+
+    console.log("startBlock() - Applied settings:", {
+        stimulusTypes: gameState.stimulusTypes,
+        scenePos: { left: sceneIndicator.style.left, bottom: sceneIndicator.style.bottom },
+        soundPos: { left: soundIndicator.style.left, bottom: soundIndicator.style.bottom }
+    });
+}
 
 
 
@@ -1224,63 +1286,6 @@ function handleColorResponse() {
         gameState.colorErrors++;
         console.log("handleColorResponse() - Color error, colorErrors:", gameState.colorErrors);
     }
-}
-function startBlock() {
-    gameState.isPlaying = true;
-    gameState.isPaused = false;
-    gameState.currentStimulus = 0;
-    gameState.sceneHistory = [];
-    gameState.locationHistory = [];
-    gameState.soundHistory = [];
-    gameState.colorHistory = [];
-    gameState.sceneTargets = 0;
-    gameState.locationTargets = 0;
-    gameState.soundTargets = 0;
-    gameState.colorTargets = 0;
-    gameState.bothTargets = 0;
-    gameState.sceneResponses = 0;
-    gameState.locationResponses = 0;
-    gameState.soundResponses = 0;
-    gameState.colorResponses = 0;
-    gameState.sceneErrors = 0;
-    gameState.locationErrors = 0;
-    gameState.soundErrors = 0;
-    gameState.colorErrors = 0;
-    gameState.correctChecks = 0;
-    gameState.totalChecks = 0;
-    gameState.consecutiveGames++;
-
-    // applySettings 호출 전 devOptions 상태 저장
-    const devOptions = document.getElementById('devOptions');
-    const devOptionsDisplay = devOptions.style.display;
-
-    applySettings(); // 설정 적용
-    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
-    localStorage.setItem('lastGameDate', new Date().toDateString());
-
-    document.getElementById('titleScreen').style.display = 'none';
-    document.getElementById('resultScreen').style.display = 'none';
-
-    // 인디케이터 표시 설정
-    console.log("Setting indicators - stimulusTypes:", gameState.stimulusTypes);
-    sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
-    soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
-    locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
-    colorIndicator.style.display = gameState.stimulusTypes.includes("color") ? 'flex' : 'none';
-
-    // devOptions 상태 복원
-    devOptions.style.display = devOptionsDisplay;
-
-    resetStimulusCounter();
-    setTimeout(() => {
-        generateNextStimulus();
-    }, 1000);
-
-    console.log("startBlock() - Applied settings:", {
-        stimulusTypes: gameState.stimulusTypes,
-        scenePos: { left: sceneIndicator.style.left, bottom: sceneIndicator.style.bottom },
-        soundPos: { left: soundIndicator.style.left, bottom: soundIndicator.style.bottom }
-    });
 }
 	
 document.getElementById('toggleDevOptionsBtn').addEventListener('click', () => {
