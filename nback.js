@@ -108,7 +108,7 @@ const roomHeight = 3;
 const roomDepth = 5;
 
 const interferenceConfig = {
-  baseChance: 0.35,
+  baseChance: 0.4,
   types: {
     previous: 0.25,
     cyclic: 0.25,
@@ -496,7 +496,7 @@ console.log("Current nBackLevel:", gameState.nBackLevel); // 디버깅용
         };
     }
 
-    if (Math.random() < interferenceChance) {
+    if (Math.random() < interferenceConfig.baseChance) {
         if (currentInterferenceType === "early") {
             const type = Math.random();
             if (type < 0.33) {
@@ -628,6 +628,8 @@ console.log("Current nBackLevel:", gameState.nBackLevel); // 디버깅용
         affectedAttributes: affectedAttributes
     };
 }
+
+
 
 
 
