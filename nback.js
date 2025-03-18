@@ -4,8 +4,6 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 // Game State
 const gameState = {
     isPlaying: false,
-    isPaused: false, // ⏸️ 일시정지 상태 추가
-    isFullscreen: false, // 🖼️ 전체화면 상태 추가
     nBackLevel: 1,
     currentBlock: 0,
     maxBlocks: 12,
@@ -40,7 +38,7 @@ const gameState = {
     currentIsColorTarget: false,
     inResponseWindow: false,
     canRespond: true,
-    interferenceType: "none",
+    interferenceType: "random",
     randomInterferenceProbabilities: {
         "previous": 0.33,
         "cyclic": 0.33,
@@ -52,7 +50,7 @@ const gameState = {
     totalGamesToday: 0,
     stimulusTypes: [],
     soundSource: "pianoTones",
-    soundFiles: ['sounds/sound001.mp3', 'sounds/sound001.mp3', 'sounds/sound003.mp3'],
+    soundFiles: ['sounds/sound001.mp3', 'sounds/sound002.mp3', 'sounds/sound003.mp3'],
     audioLoader: new THREE.AudioLoader(),
     soundStimulus: null,
     pianoTones: ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"],
@@ -291,7 +289,7 @@ function loadImageTextures() {
     const baseUrl = gameState.imageSourceUrl || "images/";
     for (let i = 1; i <= 101; i++) {
         const filename = `image${String(i).padStart(3, '0')}.png`;
-        const texture = imageLoader.load(`${baseUrl}${filename}`,
+        const texture = imageLoader.load(`${baseUrl}${filename}`, 
             () => console.log(`Loaded: ${baseUrl}${filename}`),
             undefined,
             (err) => console.error(`Error loading ${baseUrl}${filename}:`, err)
@@ -449,7 +447,6 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
 }
 
 function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 stimuli 표시 방지
     resetIndicators();
     const panel = panels[panelIndex];
     console.log("showStimulus() - imageIndex (before interference):", imageIndex, "panelIndex:", panelIndex, "soundIndex:", soundIndex, "colorIndex:", colorIndex);
@@ -491,12 +488,10 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
     gameState.soundHistory.push(soundIndex);
     gameState.colorHistory.push(colorIndex);
     if (gameState.currentStimulus >= gameState.nBackLevel) {
-        // Bug fix: Use gameState.currentStimulus - 1 to access the last stimulus in history
-        gameState.currentIsSceneTarget = gameState.stimulusTypes.includes("scene") && gameState.sceneHistory[gameState.currentStimulus - 1] === gameState.sceneHistory[gameState.currentStimulus - 1 - gameState.nBackLevel];
-        gameState.currentIsLocationTarget = gameState.stimulusTypes.includes("location") && gameState.locationHistory[gameState.currentStimulus - 1] === gameState.locationHistory[gameState.currentStimulus - 1 - gameState.nBackLevel];
-        gameState.currentIsSoundTarget = gameState.stimulusTypes.includes("sound") && gameState.soundHistory[gameState.currentStimulus - 1] === gameState.soundHistory[gameState.currentStimulus - 1 - gameState.nBackLevel];
-        gameState.currentIsColorTarget = gameState.stimulusTypes.includes("color") && gameState.colorHistory[gameState.currentStimulus - 1] === gameState.colorHistory[gameState.currentStimulus - 1 - gameState.nBackLevel];
-
+        gameState.currentIsSceneTarget = gameState.stimulusTypes.includes("scene") && gameState.sceneHistory[gameState.currentStimulus] === gameState.sceneHistory[gameState.currentStimulus - gameState.nBackLevel];
+        gameState.currentIsLocationTarget = gameState.stimulusTypes.includes("location") && gameState.locationHistory[gameState.currentStimulus] === gameState.locationHistory[gameState.currentStimulus - gameState.nBackLevel];
+        gameState.currentIsSoundTarget = gameState.stimulusTypes.includes("sound") && gameState.soundHistory[gameState.currentStimulus] === gameState.soundHistory[gameState.currentStimulus - gameState.nBackLevel];
+        gameState.currentIsColorTarget = gameState.stimulusTypes.includes("color") && gameState.colorHistory[gameState.currentStimulus] === gameState.colorHistory[gameState.currentStimulus - gameState.nBackLevel];
         if (gameState.currentIsSceneTarget) gameState.sceneTargets++;
         if (gameState.currentIsLocationTarget) gameState.locationTargets++;
         if (gameState.currentIsSoundTarget) gameState.soundTargets++;
@@ -660,7 +655,7 @@ function clearAllSounds() {
 }
 
 function generateNextStimulus() {
-    if (!gameState.isPlaying || gameState.isPaused) return; // ⏸️ paused 상태일 때 stimuli 생성 방지
+    if (!gameState.isPlaying) return;
     let shouldBeSceneTarget = false;
     let shouldBeLocationTarget = false;
     let shouldBeSoundTarget = false;
@@ -770,8 +765,6 @@ function handleKeyPress(e) {
         }
         return;
     }
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 키 입력 무시
-
     if (gameState.stimulusTypes.includes("scene") && e.key.toUpperCase() === gameState.sceneKey && !gameState.sceneTargetProcessed && gameState.canRespond) {
         handleSceneResponse();
     }
@@ -787,7 +780,6 @@ function handleKeyPress(e) {
 }
 
 function handleSceneResponse() {
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 반응 무시
     gameState.sceneTargetProcessed = true;
     if (gameState.currentStimulus <= gameState.nBackLevel) {
         showEarlyResponseFeedback(sceneIndicator);
@@ -803,7 +795,6 @@ function handleSceneResponse() {
 }
 
 function handleLocationResponse() {
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 반응 무시
     gameState.locationTargetProcessed = true;
     if (gameState.currentStimulus <= gameState.nBackLevel) {
         showEarlyResponseFeedback(locationIndicator);
@@ -819,7 +810,6 @@ function handleLocationResponse() {
 }
 
 function handleSoundResponse() {
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 반응 무시
     gameState.soundTargetProcessed = true;
     if (gameState.currentStimulus <= gameState.nBackLevel) {
         showEarlyResponseFeedback(soundIndicator);
@@ -835,7 +825,6 @@ function handleSoundResponse() {
 }
 
 function handleColorResponse() {
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 반응 무시
     gameState.colorTargetProcessed = true;
     if (gameState.currentStimulus <= gameState.nBackLevel) {
         showEarlyResponseFeedback(colorIndicator);
@@ -852,7 +841,6 @@ function handleColorResponse() {
 
 function startBlock() {
     gameState.isPlaying = true;
-    gameState.isPaused = false; // ⏸️ 게임 시작 시 paused 상태 해제
     gameState.currentStimulus = 0;
     gameState.sceneHistory = [];
     gameState.locationHistory = [];
@@ -878,7 +866,6 @@ function startBlock() {
 
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('resultScreen').style.display = 'none';
-    document.getElementById('pauseScreen').style.display = 'none'; // ⏸️ pause screen 숨기기
 
     sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
     soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
@@ -899,7 +886,6 @@ function startBlock() {
 
 function endBlock() {
     gameState.isPlaying = false;
-    gameState.isPaused = false; // ⏸️ 게임 종료 시 paused 상태 해제
     gameState.currentBlock++;
     gameState.totalGamesToday++;
     localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
@@ -962,34 +948,12 @@ function showTitleScreen() {
     clearAllStimuli();
     clearAllSounds();
     gameState.isPlaying = false;
-    gameState.isPaused = false; // ⏸️ 메인화면으로 돌아갈 때 paused 상태 해제
     document.getElementById('titleScreen').style.display = 'flex';
     document.getElementById('resultScreen').style.display = 'none';
-    document.getElementById('pauseScreen').style.display = 'none'; // ⏸️ pause screen 숨기기
     sceneIndicator.style.display = 'none';
     locationIndicator.style.display = 'none';
     soundIndicator.style.display = 'none';
     colorIndicator.style.display = 'none';
-}
-
-// ⏸️ 일시정지 기능
-function pauseGame() {
-    if (!gameState.isPlaying || gameState.isPaused) return;
-    gameState.isPaused = true;
-    cancelAllTimers();
-    clearAllStimuli();
-    stopSound();
-    document.getElementById('pauseScreen').style.display = 'flex';
-    gameState.isPlaying = false; // generateNextStimulus() 중지
-}
-
-// ⏸️ 게임 재개 기능
-function resumeGame() {
-    if (!gameState.isPaused) return;
-    gameState.isPaused = false;
-    document.getElementById('pauseScreen').style.display = 'none';
-    gameState.isPlaying = true; // generateNextStimulus() 다시 시작 가능하도록
-    generateNextStimulus(); // 즉시 다음 stimuli 표시
 }
 
 function updateStimulusCounter() {
@@ -1007,7 +971,10 @@ document.addEventListener('touchstart', function(e) {
     const now = new Date().getTime();
     const timeSince = now - lastTap;
     if (timeSince < 300 && timeSince > 0) {
-        toggleFullscreen(); // 🖼️ 더블탭으로 전체화면 토글
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+            console.log('전체화면 모드 활성화! 🌕');
+        }
     }
     lastTap = now;
 });
@@ -1020,52 +987,52 @@ window.addEventListener('resize', function() {
 
 sceneIndicator.addEventListener('touchstart', function(e) {
     e.preventDefault();
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("scene") && !gameState.sceneTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("scene") && !gameState.sceneTargetProcessed && gameState.canRespond) {
         handleSceneResponse();
     }
 });
 
 locationIndicator.addEventListener('touchstart', function(e) {
     e.preventDefault();
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("location") && !gameState.locationTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("location") && !gameState.locationTargetProcessed && gameState.canRespond) {
         handleLocationResponse();
     }
 });
 
 soundIndicator.addEventListener('touchstart', function(e) {
     e.preventDefault();
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("sound") && !gameState.soundTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("sound") && !gameState.soundTargetProcessed && gameState.canRespond) {
         handleSoundResponse();
     }
 });
 
 colorIndicator.addEventListener('touchstart', function(e) {
     e.preventDefault();
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("color") && !gameState.colorTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("color") && !gameState.colorTargetProcessed && gameState.canRespond) {
         handleColorResponse();
     }
 });
 
 sceneIndicator.addEventListener('click', function() {
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("scene") && !gameState.sceneTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("scene") && !gameState.sceneTargetProcessed && gameState.canRespond) {
         handleSceneResponse();
     }
 });
 
 locationIndicator.addEventListener('click', function() {
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("location") && !gameState.locationTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("location") && !gameState.locationTargetProcessed && gameState.canRespond) {
         handleLocationResponse();
     }
 });
 
 soundIndicator.addEventListener('click', function() {
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("sound") && !gameState.soundTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("sound") && !gameState.soundTargetProcessed && gameState.canRespond) {
         handleSoundResponse();
     }
 });
 
 colorIndicator.addEventListener('click', function() {
-    if (gameState.isPlaying && gameState.stimulusTypes.includes("color") && !gameState.colorTargetProcessed && gameState.canRespond && !gameState.isPaused) { // ⏸️ paused 상태에서 반응 방지
+    if (gameState.isPlaying && gameState.stimulusTypes.includes("color") && !gameState.colorTargetProcessed && gameState.canRespond) {
         handleColorResponse();
     }
 });
@@ -1364,57 +1331,6 @@ document.getElementById('applySettingsBtn').addEventListener('click', function()
     applySettings();
     document.getElementById('settingsPanel').style.display = 'none';
 });
-
-// ⏸️ 일시정지 버튼 이벤트 리스너
-document.getElementById('pauseBtn').addEventListener('click', function() {
-    pauseGame();
-});
-
-// ⏸️ 재개 버튼 이벤트 리스너
-document.getElementById('resumeGameBtn').addEventListener('click', function() {
-    resumeGame();
-});
-
-// ⏸️ 메인 메뉴 버튼 이벤트 리스너
-document.getElementById('mainMenuBtn').addEventListener('click', function() {
-    showTitleScreen();
-});
-
-// 🖼️ 전체화면 버튼 이벤트 리스너
-document.getElementById('fullscreenBtn').addEventListener('click', function() {
-    toggleFullscreen();
-});
-
-// 🖼️ 전체화면 토글 함수
-function toggleFullscreen() {
-    if (!gameState.isFullscreen) {
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen();
-        } else if (document.documentElement.mozRequestFullScreen) { /* Firefox */
-            document.documentElement.mozRequestFullScreen();
-        } else if (document.documentElement.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
-            document.documentElement.webkitRequestFullscreen();
-        } else if (document.documentElement.msRequestFullscreen) { /* IE/Edge */
-            document.documentElement.msRequestFullscreen();
-        }
-        gameState.isFullscreen = true;
-        document.getElementById('fullscreenBtn').textContent = 'Normal';
-        console.log('전체화면 모드 활성화! 🌕');
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.mozCancelFullScreen) { /* Firefox */
-            document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { /* IE/Edge */
-            document.msExitFullscreen();
-        }
-        gameState.isFullscreen = false;
-        document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
-        console.log('일반 화면 모드! ☀️');
-    }
-}
 
 // 페이지 로드 시 설정 초기화 수정
 window.addEventListener('load', function() {
