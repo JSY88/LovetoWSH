@@ -1,217 +1,489 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>😉행복한 N-Back♥️</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <canvas></canvas>
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
 
-    <!-- 🌟 메인 화면 -->
-    <div id="titleScreen">
-        <div id="uploadingMessage" style="color: lightgreen; margin-top: 10px;"></div>
-        <h1>😉행복한 N-Back♥️</h1>
-        <div>Current Level: <span id="nBackLevel">1</span>-back</div>
-        <div class="level-input">
-            <label for="customLevel">Start at level: </label>
-            <input type="number" id="customLevel" min="1" max="9" value="1">
-            <button id="setLevelBtn">Set</button>
-            <button id="lockLevelBtn">고정</button>
-        </div>
-        <div></div>
-        <div>하루 20분이면 </div>
-        <div>기억력과 정신적 체력이 증진돼요</div>
-        <div>화이팅!</div>
-        <div></div>
+/* 🌟 캔버스와 인디케이터 겹침 방지 */
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
 
-        <div class="main-buttons-container">
-            <div id="pressSpace">Press SPACE to begin</div>
-            <button id="openSettingsBtn">설정</button>
-        </div>
+.level-input {
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
 
-        <div id="totalGamesTodayCounter">
-            오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번
-        </div>
-    </div>
+.level-input input {
+    width: 60px;
+    padding: 10px;
+    text-align: center;
+    font-size: 18px;
+    background-color: rgba(255,255,255,0.9);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
 
-    <!-- 📊 결과 화면 -->
-    <div id="resultScreen">
-        <h1></h1>
-        <div id="resultBackgroundImage"></div>
-        <div id="stats">
-            <div>Scene Errors: <span id="sceneErrors">0</span></div>
-            <div>Location Errors: <span id="locationErrors">0</span></div>
-            <div>Sound Errors: <span id="soundErrors">0</span></div>
-            <div>Color Errors: <span id="colorErrors">0</span></div>
-            <div>N-Back Level: <span id="resultNLevel">1</span></div>
-            <div id="levelChange"></div>
-        </div>
-        <div id="pressSpaceResult">Press SPACE to continue</div>
-        <div id="consecutiveGamesCounter">
-            연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번
-        </div>
-    </div>
+.level-input button {
+    padding: 10px 20px;
+    background-color: rgba(255,255,255,0.9);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    min-width: 70px;
+}
 
-    <!-- ⏸️ 일시정지 화면 -->
-    <div id="pauseScreen">
-        <h2>잠시 쉬어갈게요~</h2>
-        <div class="pause-buttons">
-            <button id="resumeGameBtn">계속하기</button>
-            <button id="mainMenuBtn">메인 메뉴</button>
-        </div>
-    </div>
+.level-input button:hover {
+    background-color: rgba(255,255,255,1);
+}
 
-    <!-- 🌟 자극 인디케이터 (겹침 방지 위해 위치 명확히) -->
-    <div id="scene-indicator" class="indicator-box">S</div>
-    <div id="sound-indicator" class="indicator-box">A</div>
-    <div id="location-indicator" class="indicator-box">L</div>
-    <div id="color-indicator" class="indicator-box">D</div>
+.level-input button#lockLevelBtn.locked {
+    background-color: #a3bffa; /* Pastel blue */
+}
 
-    <div id="stimulus-counter">Stimulus: 0 / 30</div>
+#titleScreen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,0.3);
+    padding: 40px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 400px;
+    z-index: 10;
+}
 
-    <!-- 🕹️ 게임 컨트롤 버튼 -->
-    <div id="gameControlButtons">
-        <button id="pauseBtn" class="gameControlButton">⏸︎</button>
-        <button id="fullscreenBtn" class="gameControlButton">Full</button>
-    </div>
+#titleScreen h1 {
+    margin-top: 0;
+    font-size: 2em;
+}
 
-    <!-- ⚙️ 설정 패널 -->
-    <div id="settingsPanel">
-        <h2>설정</h2>
-        <div class="settings-group">
-            <label>자극 유형 선택 (최소 2개, 최대 4개):</label>
-            <div>
-                <input type="checkbox" id="sceneStimulus" value="scene" checked> <label for="sceneStimulus">장면 (이미지)</label><br>
-                <input type="checkbox" id="locationStimulus" value="location" checked> <label for="locationStimulus">위치</label><br>
-                <input type="checkbox" id="soundStimulus" value="sound"> <label for="soundStimulus">소리</label><br>
-                <input type="checkbox" id="colorStimulus" value="color"> <label for="colorStimulus">색상</label>
-            </div>
-        </div>
-<div class="settings-group">
-    <button id="toggleDevOptionsBtn">개발자 옵션</button>
-    <div id="devOptions" style="display: none;">
-        <label>한 라운드 자극 개수 (기본 30):</label>
-        <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
-        <label>자극 제시 지속시간 (ms, 기본 1000):</label>
-        <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
-        <label>자극 간 간격 시간 (ms, 기본 2500):</label>
-        <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
-    </div>
-</div>
-        <div class="settings-group">
-            <label>이미지 소스 URL (폴더 경로):</label>
-            <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/">
-        </div>
-        <div class="settings-group">
-            <label>결과 배경 이미지 URL:</label>
-            <input type="text" id="resultImageUrl" value="" placeholder="URL 입력">
-        </div>
-        <div class="settings-group">
-            <label>버튼 자극 할당:</label>
-            <select id="button1Assignment">
-                <option value="scene">장면 (S)</option>
-                <option value="location">위치 (L)</option>
-                <option value="sound">소리 (A)</option>
-                <option value="color">색상 (D)</option>
-            </select>
-            <select id="button2Assignment">
-                <option value="sound">소리 (A)</option>
-                <option value="scene">장면 (S)</option>
-                <option value="location">위치 (L)</option>
-                <option value="color">색상 (D)</option>
-            </select>
-            <select id="button3Assignment">
-                <option value="location">위치 (L)</option>
-                <option value="scene">장면 (S)</option>
-                <option value="sound">소리 (A)</option>
-                <option value="color">색상 (D)</option>
-            </select>
-            <select id="button4Assignment">
-                <option value="color">색상 (D)</option>
-                <option value="scene">장면 (S)</option>
-                <option value="location">위치 (L)</option>
-                <option value="sound">소리 (A)</option>
-            </select>
-        </div>
-        <!-- 🎛️ 고급 설정 -->
-        <div class="settings-group" id="advancedSettings">
-            <label>고급 옵션:</label>
-            <div>
-<label>간섭 설정:</label><br>
-            <input type="checkbox" id="enableInterference" checked> <label for="enableInterference">간섭 활성화</label><br>
-            <input type="checkbox" id="adaptiveInterference" checked> <label for="adaptiveInterference">적응형 간섭</label><br>
-            <label>기본 간섭 확률 (0-1):</label>
-            <input type="number" id="baseInterferenceChance" min="0" max="1" step="0.1" value="0.4"><br>
-            <label>적응형 상한 임계값 (0-1):</label>
-            <input type="number" id="thresholdHigh" min="0" max="1" step="0.1" value="0.8"><br>
-            <label>적응형 하한 임계값 (0-1):</label>
-            <input type="number" id="thresholdLow" min="0" max="1" step="0.1" value="0.5"><br>
-            <label>간섭 유형 확률:</label><br>
-            <input type="number" id="previousChance" min="0" max="1" step="0.1" value="0.25"> <label for="previousChance">이전</label><br>
-            <input type="number" id="cyclicChance" min="0" max="1" step="0.1" value="0.25"> <label for="cyclicChance">주기적</label><br>
-            <input type="number" id="nextChance" min="0" max="1" step="0.1" value="0.1"> <label for="nextChance">다음</label><br>
-            <input type="number" id="nearMissShortChance" min="0" max="1" step="0.1" value="0.25"> <label for="nearMissShortChance">근소 차이 (짧음)</label><br>
-            <input type="number" id="nearMissLateChance" min="0" max="1" step="0.1" value="0.15"> <label for="nearMissLateChance">근소 차이 (늦음)</label><br>
-            <label>속성별 간섭 확률:</label><br>
-            <input type="number" id="imageAttrChance" min="0" max="1" step="0.1" value="0.3"> <label for="imageAttrChance">이미지</label><br>
-            <input type="number" id="locationAttrChance" min="0" max="1" step="0.1" value="0.2"> <label for="locationAttrChance">위치</label><br>
-            <input type="number" id="soundAttrChance" min="0" max="1" step="0.1" value="0.4"> <label for="soundAttrChance">소리</label><br>
-            <input type="number" id="colorAttrChance" min="0" max="1" step="0.1" value="0.3"> <label for="colorAttrChance">색상</label><br>
-            <label>최대 간섭 속성 수 (1-4):</label>
-<input type="number" id="maxAttributes" min="1" max="4" value="2"><br>
-                <!-- 단축키 설정 -->
-                <label>단축키 설정:</label><br>
-                <input type="text" id="sceneKey" maxlength="1" value="S" placeholder="장면 단축키"> 장면<br>
-                <input type="text" id="locationKey" maxlength="1" value="L" placeholder="위치 단축키"> 위치<br>
-                <input type="text" id="soundKey" maxlength="1" value="A" placeholder="소리 단축키"> 소리<br>
-                <input type="text" id="colorKey" maxlength="1" value="D" placeholder="색상 단축키"> 색상<br>
-                <!-- 사운드 소스 선택 -->
-                <label>사운드 소스:</label>
-                <select id="soundSourceSelect">
-                    <option value="soundFiles">URL (파일)</option>
-                    <option value="pianoTones" selected>합성 피아노음</option>
-                </select><br>
-                <label>사운드 URL (폴더 경로):</label>
-                <input type="text" id="soundSourceUrl" value="sounds/" placeholder="예: sounds/">
-            </div>
-            <!-- 기존 고급 옵션 유지 -->
-            <div>
-                <label>버튼 위치 조정:</label><br>
-                <input type="number" id="button1Left" value="30" style="width: 50px;">,
-                <input type="number" id="button1Bottom" value="40" style="width: 50px;"><br>
-                <input type="number" id="button2Left" value="130" style="width: 50px;">,
-                <input type="number" id="button2Bottom" value="40" style="width: 50px;"><br>
-                <input type="number" id="button3Right" value="130" style="width: 50px;">,
-                <input type="number" id="button3Bottom" value="40" style="width: 50px;"><br>
-                <input type="number" id="button4Right" value="30" style="width: 50px;">,
-                <input type="number" id="button4Bottom" value="40" style="width: 50px;">
-            </div>
-            <div>
-                <label>버튼 배경색:</label>
-                <input type="color" id="buttonBgColor" value="#ffffff"><br>
-                <label>배경 투명도 (0-1):</label>
-                <input type="number" id="buttonBgOpacity" min="0" max="1" step="0.1" value="0.1" style="width: 50px;"><br>
-                <label>텍스트 색상:</label>
-                <input type="color" id="buttonTextColor" value="#ffffff"><br>
-                <label>텍스트 투명도 (0-1):</label>
-                <input type="number" id="buttonTextOpacity" min="0" max="1" step="0.1" value="0.0" style="width: 50px;">
-            </div>
-            <div>
-                <label>버튼 크기 (width, height):</label><br>
-                <input type="number" id="buttonWidth" value="80" style="width: 50px;">,
-                <input type="number" id="buttonHeight" value="80" style="width: 50px;">
-            </div>
-        </div>
-        <div class="settings-buttons">
-            <button id="applySettingsBtn">적용</button>
-            <button id="closeSettingsBtn">닫기</button>
-        </div>
-        <div id="settingsError"></div>
-    </div>
+#nBackLevel {
+    font-size: 48px;
+    margin: 20px 0;
+}
 
-    <script src="ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="nback.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'922419878ca91803',t:'MTc0MjI5NDI5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+#pressSpace, #pressSpaceResult {
+    cursor: pointer;
+    padding: 10px 15px;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 5px;
+    margin-top: 20px;
+    font-size: 24px;
+    animation: blink 1.5s infinite;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#pressSpace:active, #pressSpaceResult:active {
+    background-color: rgba(255,255,255,0.4);
+}
+
+/* 📊 결과창 겹침 방지 */
+#resultScreen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,0.2);
+    padding: 40px;
+    border-radius: 10px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 400px;
+    z-index: 10;
+}
+
+#resultScreen h1, #stats, #pressSpaceResult, #consecutiveGamesCounter {
+    position: relative;
+    z-index: 2;
+}
+
+#resultBackgroundImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 1;
+    opacity: 0.7;
+}
+
+#stats {
+    margin: 20px 0;
+    text-align: left;
+    width: 100%;
+}
+
+/* ⏸️ 일시정지 화면 스타일 */
+#pauseScreen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,0.5);
+    padding: 40px;
+    border-radius: 10px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+    z-index: 100;
+}
+
+#pauseScreen h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.pause-buttons button {
+    padding: 10px 20px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border: none;
+    background-color: rgba(255,255,255,0.9);
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.pause-buttons button:hover {
+    background-color: rgba(255,255,255,1);
+}
+
+/* 🕹️ 게임 컨트롤 버튼 스타일 */
+#gameControlButtons {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 50; /* Ensure buttons are above canvas */
+}
+
+.gameControlButton {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: none;
+    background-color: rgba(128, 128, 128, 0.1); /* 눈에 띄지 않는 색, 투명도 0.1 */
+    color: rgba(200, 200, 200, 0.5); /* 은은한 색상 */
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.8; /* 살짝 더 잘 보이게 조정 */
+}
+
+.gameControlButton:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.gameControlButton:active {
+    opacity: 1;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+/* 🌟 인디케이터 박스 (겹침 방지) */
+.indicator-box {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background-color: transparent;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 32px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.5);
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    touch-action: manipulation;
+    z-index: 10;
+}
+
+#scene-indicator { left: 30px; bottom: 40px; }
+#sound-indicator { left: 130px; bottom: 40px; }
+#location-indicator { right: 130px; bottom: 40px; }
+#color-indicator { right: 30px; bottom: 40px; }
+
+.indicator-box:active {
+    opacity: 0.8;
+    transform: scale(0.95);
+}
+
+.correct { background-color: rgba(0, 180, 0, 0.8) !important; }
+.incorrect { background-color: rgba(200, 0, 0, 0.8) !important; }
+.missed { background-color: rgba(200, 0, 0, 0.8) !important; }
+.early { background-color: rgba(0, 100, 255, 0.8) !important; }
+
+#stimulus-counter {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    font-size: 20px;
+    color: white;
+    opacity: 0.0;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.main-buttons-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.upload-button-label {
+    padding: 8px 12px;
+    background-color: rgba(255,255,255,0.5);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 16px;
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.5);
+    text-align: center;
+    min-width: 60px;
+    user-select: none;
+}
+
+.upload-button-label:hover {
+    background-color: rgba(255,255,255,1);
+}
+
+.upload-button-label:active {
+    background-color: rgba(255,255,255,0.8);
+}
+
+#consecutiveGamesCounter, #totalGamesTodayCounter {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    color: white;
+    text-align: center;
+}
+
+#consecutiveGamesCount, #totalGamesTodayCountValue {
+    color: lightskyblue;
+}
+
+@media screen and (max-width: 480px) {
+    #titleScreen {
+        width: 90%;
+        max-width: 300px;
+        padding: 20px;
+    }
+    #titleScreen h1 {
+        font-size: 1.5em;
+    }
+    #nBackLevel {
+        font-size: 36px;
+        margin: 15px 0;
+    }
+    #pressSpace, #pressSpaceResult {
+        font-size: 18px;
+        padding: 8px 12px;
+        margin-top: 15px;
+    }
+    .level-input label, .level-input button, .level-input input {
+        font-size: 14px;
+        padding: 8px;
+    }
+    .image-upload-container {
+        margin-top: 15px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    #pressSpace {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+    }
+    .upload-button-label {
+        font-size: 14px;
+        padding: 10px;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .indicator-box {
+        background-color: rgba(255, 255, 255, 0.6);
+        color: rgba(255, 255, 255, 0);
+    }
+}
+
+#settingsPanel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0,0,0,0.8);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    z-index: 1000;
+    width: 350px;
+    box-sizing: border-box;
+    display: none;
+    overflow-y: auto;
+    max-height: 80vh;
+}
+
+#settingsPanel h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#advancedSettings {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-group {
+    margin-bottom: 15px;
+}
+
+.settings-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.settings-group input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.settings-group select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: rgba(255,255,255,0.9);
+}
+
+.settings-group input[type="text"] {
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    width: 100%;
+}
+
+.settings-buttons {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.settings-buttons button {
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    background-color: rgba(255,255,255,0.9);
+    cursor: pointer;
+    font-size: 16px;
+    margin: 0 5px;
+}
+
+.settings-buttons button:hover {
+    background-color: rgba(255,255,255,1);
+}
+
+#settingsError {
+    color: red;
+    margin-top: 10px;
+    text-align: center;
+    display: none;
+}
+
+#devOptions {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#toggleDevOptionsBtn {
+    width: 100%;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#toggleDevOptionsBtn:hover {
+    background-color: rgba(255, 255, 255, 1);
+}
+
+#devOptions label {
+    display: block;
+    margin: 10px 0 5px;
+}
+
+#devOptions input[type="number"] {
+    width: 100%;
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
+}
+#advancedSettings input[type="number"] {
+    width: 60px;
+    margin-right: 10px;
+}
+
+#advancedSettings label {
+    display: inline-block;
+    margin: 5px 0;
+}
+
+@media screen and (max-width: 480px) {
+    #advancedSettings input[type="number"] {
+        width: 50px;
+    }
+    #advancedSettings label {
+        font-size: 14px;
+    }
+}
