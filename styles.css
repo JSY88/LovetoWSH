@@ -135,6 +135,74 @@ canvas {
     width: 100%;
 }
 
+/* ⏸️ 일시정지 화면 스타일 */
+#pauseScreen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,0.5);
+    padding: 40px;
+    border-radius: 10px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+    z-index: 100;
+}
+
+#pauseScreen h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.pause-buttons button {
+    padding: 10px 20px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border: none;
+    background-color: rgba(255,255,255,0.9);
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.pause-buttons button:hover {
+    background-color: rgba(255,255,255,1);
+}
+
+/* 🕹️ 게임 컨트롤 버튼 스타일 */
+#gameControlButtons {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 50; /* Ensure buttons are above canvas */
+}
+
+.gameControlButton {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: none;
+    background-color: rgba(128, 128, 128, 0.1); /* 눈에 띄지 않는 색, 투명도 0.1 */
+    color: rgba(200, 200, 200, 0.5); /* 은은한 색상 */
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.8; /* 살짝 더 잘 보이게 조정 */
+}
+
+.gameControlButton:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.gameControlButton:active {
+    opacity: 1;
+}
+
 @keyframes blink {
     0% { opacity: 1; }
     50% { opacity: 0.3; }
@@ -365,4 +433,39 @@ canvas {
     margin-top: 10px;
     text-align: center;
     display: none;
+}
+
+#devOptions {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#toggleDevOptionsBtn {
+    width: 100%;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#toggleDevOptionsBtn:hover {
+    background-color: rgba(255, 255, 255, 1);
+}
+
+#devOptions label {
+    display: block;
+    margin: 10px 0 5px;
+}
+
+#devOptions input[type="number"] {
+    width: 100%;
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
 }
