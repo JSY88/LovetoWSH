@@ -54,6 +54,15 @@
         </div>
     </div>
 
+    <!-- ⏸️ 일시정지 화면 -->
+    <div id="pauseScreen">
+        <h2>잠시 쉬어갈게요~</h2>
+        <div class="pause-buttons">
+            <button id="resumeGameBtn">계속하기</button>
+            <button id="mainMenuBtn">메인 메뉴</button>
+        </div>
+    </div>
+
     <!-- 🌟 자극 인디케이터 (겹침 방지 위해 위치 명확히) -->
     <div id="scene-indicator" class="indicator-box">S</div>
     <div id="sound-indicator" class="indicator-box">A</div>
@@ -61,6 +70,12 @@
     <div id="color-indicator" class="indicator-box">D</div>
 
     <div id="stimulus-counter">Stimulus: 0 / 30</div>
+
+    <!-- 🕹️ 게임 컨트롤 버튼 -->
+    <div id="gameControlButtons">
+        <button id="pauseBtn" class="gameControlButton">⏸︎</button>
+        <button id="fullscreenBtn" class="gameControlButton">Full</button>
+    </div>
 
     <!-- ⚙️ 설정 패널 -->
     <div id="settingsPanel">
@@ -74,6 +89,17 @@
                 <input type="checkbox" id="colorStimulus" value="color"> <label for="colorStimulus">색상</label>
             </div>
         </div>
+<div class="settings-group">
+    <button id="toggleDevOptionsBtn">개발자 옵션</button>
+    <div id="devOptions" style="display: none;">
+        <label>한 라운드 자극 개수 (기본 30):</label>
+        <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
+        <label>자극 제시 지속시간 (ms, 기본 1000):</label>
+        <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
+        <label>자극 간 간격 시간 (ms, 기본 2500):</label>
+        <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
+    </div>
+</div>
         <div class="settings-group">
             <label>이미지 소스 URL (폴더 경로):</label>
             <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/">
@@ -165,5 +191,5 @@
 
     <script src="ajax/libs/three.js/r128/three.min.js"></script>
     <script src="nback.js"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'922419878ca91803',t:'MTc0MjI5NDI5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
