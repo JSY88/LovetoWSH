@@ -1132,12 +1132,16 @@ function toggleFullscreen() {
     }
 }
 
+
+
+
 function handleKeyPress(e) {
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 키 입력 무시
-    if (e.key === 'Escape') {
-        showTitleScreen();
-        return;
-    }
+console.log("Key pressed:", e.key, "Current keys:", {
+        sceneKey: gameState.sceneKey,
+        locationKey: gameState.locationKey,
+        soundKey: gameState.soundKey,
+        colorKey: gameState.colorKey
+    });
     if (!gameState.isPlaying) {
         if (e.code === 'Space') {
             startBlock();
@@ -1171,8 +1175,9 @@ function handleSceneResponse() {
     if (!isCorrect) {
         gameState.sceneErrors++;
         console.log("handleSceneResponse() - Scene error, sceneErrors:", gameState.sceneErrors);
-	console.log("Scene response:", { isCorrect, errors: gameState.sceneErrors });
+        console.log("Scene response:", { isCorrect, errors: gameState.sceneErrors });
     }
+}
 
 function handleLocationResponse() {
     if (gameState.isPaused) return; // ⏸️ paused 상태일 때 반응 무시
@@ -1186,8 +1191,8 @@ function handleLocationResponse() {
     showIndicatorFeedback(locationIndicator, isCorrect);
     if (!isCorrect) {
         gameState.locationErrors++;
-	console.log("Location response:", { isCorrect, errors: gameState.locationErrors });
         console.log("handleLocationResponse() - Location error, locationErrors:", gameState.locationErrors);
+        console.log("Location response:", { isCorrect, errors: gameState.locationErrors });
     }
 }
 
@@ -1221,7 +1226,6 @@ function handleColorResponse() {
         gameState.colorErrors++;
         console.log("handleColorResponse() - Color error, colorErrors:", gameState.colorErrors);
     }
-}
 }
 function startBlock() {
     gameState.isPlaying = true;
