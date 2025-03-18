@@ -802,7 +802,6 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
                 gameState.inResponseWindow = false;
                 console.log("Response window closed");
 
-                // 반응이 없으면 reactionTime을 0으로 설정
                 if (reactionTime === 0) {
                     const isCorrect = expectedTargetType === "non-target";
                     logTargetCheckResult(isCorrect, expectedTargetType, reactionTime);
@@ -818,7 +817,7 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
         clearTimeout(gameState.currentTimer);
         clearAllStimuli();
         stopSound();
-        showEndBlockFeedback();
+        endBlock(); // showEndBlockFeedback 대신 endBlock 호출
     }
 
     // 키 입력 핸들러에서 reactionTime 계산
@@ -829,7 +828,6 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
         logTargetCheckResult(isCorrect, expectedTargetType, reactionTime);
     }
 
-    // 임시로 handleKeyPress에 연결 (실제로는 별도 이벤트 리스너 필요)
     document.addEventListener('keydown', function tempHandler(e) {
         if (gameState.canRespond) {
             handleResponse();
