@@ -1061,7 +1061,7 @@ function generateNextStimulus() {
     // 타겟 생성 여부 결정
     if (Math.random() < targetProbability && gameState.currentStimulus >= nBackLevel) {
         // 타겟을 강제로 생성
-        const possibleTargetTypes = ["scene", "location", "sound", "color"];
+        const possibleTargetTypes = gameState.stimulusTypes; // 설정된 stimulusTypes만 사용
         const targetType = possibleTargetTypes[Math.floor(Math.random() * possibleTargetTypes.length)];
 
         // 기본적으로 무작위 값 생성
@@ -1093,10 +1093,10 @@ function generateNextStimulus() {
     }
 
     // 타겟 여부 확인
-    const isSceneTargetVal = isSceneTarget(imageIndex);
-    const isLocationTargetVal = isLocationTarget(panelIndex);
-    const isSoundTargetVal = isSoundTarget(soundIndex);
-    const isColorTargetVal = isColorTarget(colorIndex);
+    const isSceneTargetVal = gameState.stimulusTypes.includes("scene") && isSceneTarget(imageIndex);
+    const isLocationTargetVal = gameState.stimulusTypes.includes("location") && isLocationTarget(panelIndex);
+    const isSoundTargetVal = gameState.stimulusTypes.includes("sound") && isSoundTarget(soundIndex);
+    const isColorTargetVal = gameState.stimulusTypes.includes("color") && isColorTarget(colorIndex);
 
     let targetType = "non-target";
     if (gameState.currentStimulus >= nBackLevel) {
@@ -1123,6 +1123,13 @@ function generateNextStimulus() {
         targetType
     };
 
+    // 타겟 카운터 업데이트
+    if (targetType === "scene") gameState.sceneTargets++;
+    else if (targetType === "location") gameState.locationTargets++;
+    else if (targetType === "sound") gameState.soundTargets++;
+    else if (targetType === "color") gameState.colorTargets++;
+    else if (targetType === "both") gameState.bothTargets++;
+
     console.log(`generateNextStimulus() - Generated: image=${imageIndex}, panel=${panelIndex}, sound=${soundIndex}, color=${colorIndex}`);
     console.log(`${nBackLevel}-back comparison - Scene: ${isSceneTargetVal}, Location: ${isLocationTargetVal}, Sound: ${isSoundTargetVal}, Color: ${isColorTargetVal}`);
     console.log(`Target result: ${targetType}`);
@@ -1132,6 +1139,19 @@ function generateNextStimulus() {
     } catch (e) {
         console.error("generateNextStimulus() - Error in showStimulus:", e);
     }
+}
+
+
+
+// ⏸️ 일시정지 기능
+function pauseGame() {
+    if (!gameState.isPlaying || gameState.isPaused) return;
+    gameState.isPaused = true;
+    cancelAllTimers();
+    clearAllStimuli();
+    stopSound();
+    document.getElementById('pauseScreen').style.display = 'flex';
+    gameState.isPlaying = false; // generateNextStimulus() 중지
 }
 
 // ⏸️ 게임 재개 기능
