@@ -82,7 +82,6 @@ const wallColor = 0x262626;
 const floorColor = 0x393734;
 const panelColor = 0x000000;
 const imageScale = 1.0;
-const randomizeStimulusColor = true;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf0f0f0);
@@ -363,14 +362,15 @@ function getRandomColor() {
 function loadImageTextures() {
     imageTextures.length = 0;
     const baseUrl = gameState.imageSourceUrl || "images/";
-    for (let i = 1; i <= 102; i++) {
+    for (let i = 1; i <= 101; i++) {
         const filename = `image${String(i).padStart(3, '0')}.png`;
         const texture = imageLoader.load(`${baseUrl}${filename}`, 
             () => console.log(`Loaded: ${baseUrl}${filename}`),
             undefined,
             (err) => console.error(`Error loading ${baseUrl}${filename}:`, err)
         );
-        let color = randomizeStimulusColor ? getRandomColor() : null;
+        // 색상 자극 미선택 시에만 고정 색상 할당
+        let color = !gameState.stimulusTypes.includes("color") ? getRandomColor() : null;
         imageTextures.push({ texture: texture, color: color });
     }
 }
@@ -383,18 +383,23 @@ function createStimulusImage(imageIndex, panel, colorIndex) {
         transparent: true,
         blending: THREE.NormalBlending
     });
+
     if (gameState.stimulusTypes.includes("color")) {
-        const colors = distinctColors;
-        if (colors[colorIndex]) {
-            imageMaterial.color = colors[colorIndex];
-            gameState.currentColorStimulusColor = colors[colorIndex];
-        } else if (imageTextures[imageIndex].color && randomizeStimulusColor) {
-            imageMaterial.color = imageTextures[imageIndex].color;
-            gameState.currentColorStimulusColor = imageTextures[imageIndex].color;
+        // 색상 자극 선택 시: 매 자극마다 새 랜덤 색상 적용
+        const randomColor = getRandomColor();
+        imageMaterial.color = randomColor;
+        gameState.currentColorStimulusColor = randomColor;
+    } else {
+        // 색상 자극 미선택 시: 이미지에 고정된 색상 사용
+        const fixedColor = imageTextures[imageIndex].color;
+        if (fixedColor) {
+            imageMaterial.color = fixedColor;
+            gameState.currentColorStimulusColor = fixedColor;
         } else {
             gameState.currentColorStimulusColor = null;
         }
     }
+
     const imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
     imagePlane.position.set(0, 0, panelDepth / 2 + 0.01);
     panel.group.add(imagePlane);
