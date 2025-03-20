@@ -363,7 +363,7 @@ function getRandomColor() {
 function loadImageTextures() {
     imageTextures.length = 0;
     const baseUrl = gameState.imageSourceUrl || "images/";
-    for (let i = 1; i <= 101; i++) {
+    for (let i = 1; i <= 102; i++) {
         const filename = `image${String(i).padStart(3, '0')}.png`;
         const texture = imageLoader.load(`${baseUrl}${filename}`, 
             () => console.log(`Loaded: ${baseUrl}${filename}`),
