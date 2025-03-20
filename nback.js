@@ -69,10 +69,10 @@ const gameState = {
     isLevelLocked: false,
     imageSourceUrl: "images/",
     resultImageUrl: "",
-    sceneKey: "S",
+    sceneKey: "K",
     locationKey: "A",
     soundKey: "L",
-    colorKey: "K",
+    colorKey: "S",
     soundSourceUrl: "sounds/",
     isPaused: false, // ⏸️ 일시정지 상태 추가
     isFullscreen: false // 🖼️ 전체화면 상태 추가
@@ -1487,10 +1487,10 @@ function populateSettings() {
     document.getElementById('button1Bottom').value = parseInt(sceneIndicator.style.bottom) || 40;
     document.getElementById('button2Left').value = parseInt(soundIndicator.style.left) || 130;
     document.getElementById('button2Bottom').value = parseInt(soundIndicator.style.bottom) || 40;
-    document.getElementById('button3Right').value = parseInt(locationIndicator.style.right) || 130;
-    document.getElementById('button3Bottom').value = parseInt(locationIndicator.style.bottom) || 40;
-    document.getElementById('button4Right').value = parseInt(colorIndicator.style.right) || 30;
-    document.getElementById('button4Bottom').value = parseInt(colorIndicator.style.bottom) || 40;
+    document.getElementById('button3Right').value = parseInt(colorIndicator.style.right) || 130;
+    document.getElementById('button3Bottom').value = parseInt(colorIndicator.style.bottom) || 40;
+    document.getElementById('button4Right').value = parseInt(locationIndicator.style.right) || 30;
+    document.getElementById('button4Bottom').value = parseInt(locationIndicator.style.bottom) || 40;
     document.getElementById('buttonBgColor').value = '#ffffff';
     document.getElementById('buttonBgOpacity').value = 0.1;
     document.getElementById('buttonTextColor').value = '#ffffff';
