@@ -1383,7 +1383,7 @@ function setBackgroundImageToResultScreen() {
 
 document.getElementById('pressSpaceResult').addEventListener('click', () => {
     if (!gameState.isPlaying) {
-        showTitleScreen();
+        startBlock(); // [MODIFIED] showTitleScreen() -> startBlock() 로 변경
     }
 });
 
