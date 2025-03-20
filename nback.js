@@ -1487,10 +1487,10 @@ function populateSettings() {
     document.getElementById('button1Bottom').value = parseInt(sceneIndicator.style.bottom) || 40;
     document.getElementById('button2Left').value = parseInt(soundIndicator.style.left) || 130;
     document.getElementById('button2Bottom').value = parseInt(soundIndicator.style.bottom) || 40;
-    document.getElementById('button3Right').value = parseInt(locationIndicator.style.right) || 130; // 수정: color -> location
-    document.getElementById('button3Bottom').value = parseInt(locationIndicator.style.bottom) || 40; // 수정: color -> location
-    document.getElementById('button4Right').value = parseInt(colorIndicator.style.right) || 30; // 수정: location -> color
-    document.getElementById('button4Bottom').value = parseInt(colorIndicator.style.bottom) || 40; // 수정: location -> color
+    document.getElementById('button3Right').value = parseInt(colorIndicator.style.right) || 130; 
+    document.getElementById('button3Bottom').value = parseInt(colorIndicator.style.bottom) || 40;
+    document.getElementById('button4Right').value = parseInt(locationIndicator.style.right) || 30; 
+    document.getElementById('button4Bottom').value = parseInt(locationIndicator.style.bottom) || 40;
 
     const buttonStyles = JSON.parse(localStorage.getItem('buttonStyles')) || {
         bgColor: '#ffffff',
@@ -1714,8 +1714,8 @@ function loadSettings() {
 
     const scenePos = JSON.parse(localStorage.getItem('sceneIndicatorPos')) || { left: '30px', bottom: '40px' };
     const soundPos = JSON.parse(localStorage.getItem('soundIndicatorPos')) || { left: '130px', bottom: '40px' };
-    const locationPos = JSON.parse(localStorage.getItem('locationIndicatorPos')) || { right: '130px', bottom: '40px' };
-    const colorPos = JSON.parse(localStorage.getItem('colorIndicatorPos')) || { right: '30px', bottom: '40px' };
+    const locationPos = JSON.parse(localStorage.getItem('colorIndicatorPos')) || { right: '130px', bottom: '40px' };
+    const colorPos = JSON.parse(localStorage.getItem('locationIndicatorPos')) || { right: '30px', bottom: '40px' };
     sceneIndicator.style.left = scenePos.left;
     sceneIndicator.style.bottom = scenePos.bottom;
     soundIndicator.style.left = soundPos.left;
@@ -1730,8 +1730,8 @@ function loadSettings() {
         bgOpacity: 0.1,
         textColor: '#ffffff',
         textOpacity: 0.0,
-        width: 80,
-        height: 80
+        width: '80',
+        height: '80'
     };
     [sceneIndicator, soundIndicator, locationIndicator, colorIndicator].forEach(indicator => {
         indicator.style.backgroundColor = hexToRgba(buttonStyles.bgColor, buttonStyles.bgOpacity);
@@ -1740,13 +1740,26 @@ function loadSettings() {
         indicator.style.height = `${buttonStyles.height}px`;
     });
 
+    // 한글 매핑 객체
+    const stimulusNames = {
+        'scene': '모양',
+        'sound': '소리',
+        'location': '위치',
+        'color': '색상'
+    };
+
+    // 버튼 텍스트를 한글로 설정
+    sceneIndicator.textContent = stimulusNames[document.getElementById('button1Assignment').value] || '모양';
+    soundIndicator.textContent = stimulusNames[document.getElementById('button2Assignment').value] || '소리';
+    locationIndicator.textContent = stimulusNames[document.getElementById('button3Assignment').value] || '위치';
+    colorIndicator.textContent = stimulusNames[document.getElementById('button4Assignment').value] || '색상';
+
     gameState.stimuliPerBlock = parseInt(localStorage.getItem('stimuliPerBlock')) || 30;
     gameState.stimulusDuration = parseInt(localStorage.getItem('stimulusDuration')) || 1000;
     gameState.stimulusInterval = parseInt(localStorage.getItem('stimulusInterval')) || 2500;
 
     populateSettings();
 }
-
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
