@@ -797,7 +797,7 @@ function startBlock() {
     document.getElementById('scene-indicator').textContent = '모양';
     document.getElementById('sound-indicator').textContent = '소리';
     document.getElementById('location-indicator').textContent = '위치';
-    document.getElementById('color-indicator').textContent = '색';
+    document.getElementById('color-indicator').textContent = '색상';
 
 
     document.getElementById('titleScreen').style.display = 'none';
