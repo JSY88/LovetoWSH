@@ -1220,7 +1220,7 @@ function populateSettings() {
     document.getElementById('buttonBgColor').value = '#ffffff';
     document.getElementById('buttonBgOpacity').value = 0.1;
     document.getElementById('buttonTextColor').value = '#ffffff';
-    document.getElementById('buttonTextOpacity').value = 0.0;
+    document.getElementById('buttonTextOpacity').value = 0.2;
     document.getElementById('buttonWidth').value = 80;
     document.getElementById('buttonHeight').value = 80;
 document.getElementById('stimuliPerBlock').value = gameState.stimuliPerBlock;
