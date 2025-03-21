@@ -1,4 +1,4 @@
-// Web Audio Context Initialization
+ // Web Audio Context Initialization
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 // Game State
