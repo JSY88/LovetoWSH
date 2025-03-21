@@ -1061,24 +1061,46 @@ function generateNextStimulus() {
     }
 
     const nBackLevel = gameState.nBackLevel;
-    const targetProbability = 0.4; // 타겟 생성 확률 40%로 설정 (필요에 따라 조정 가능)
+    const targetProbability = 0.4; // 전체 타겟 생성 확률 40%
+    
+    // 유형별 타겟 생성 확률 (필요에 따라 조정 가능)
+    const targetTypeProbabilities = {
+        "scene": 0.25,    // 25% (전체 타겟 중)
+        "location": 0.25, // 25%
+        "sound": 0.25,    // 25%
+        "color": 0.25     // 25%
+    };
+    
     let imageIndex, panelIndex, soundIndex, colorIndex;
+    let targetType = "non-target";
 
     // 타겟 생성 여부 결정
-    if (Math.random() < targetProbability && gameState.currentStimulus >= nBackLevel) {
-        // 타겟을 강제로 생성
-        const possibleTargetTypes = gameState.stimulusTypes; // 설정된 stimulusTypes만 사용
-        const targetType = possibleTargetTypes[Math.floor(Math.random() * possibleTargetTypes.length)];
+    const isTargetStimulus = Math.random() < targetProbability && gameState.currentStimulus >= nBackLevel;
 
-        // 기본적으로 무작위 값 생성
-        imageIndex = Math.floor(Math.random() * imageTextures.length);
-        panelIndex = Math.floor(Math.random() * panels.length);
-        soundIndex = gameState.soundSource === "soundFiles" 
-            ? Math.floor(Math.random() * gameState.soundFiles.length) 
-            : Math.floor(Math.random() * gameState.pianoTones.length);
-        colorIndex = Math.floor(Math.random() * distinctColors.length);
+    if (isTargetStimulus) {
+        const possibleTargetTypes = gameState.stimulusTypes;
+        // 유형별 확률을 기반으로 타겟 유형 선택
+        const rand = Math.random();
+        let cumulativeProb = 0;
+        for (const type of possibleTargetTypes) {
+            cumulativeProb += targetTypeProbabilities[type] || 0;
+            if (rand < cumulativeProb) {
+                targetType = type;
+                break;
+            }
+        }
+    }
 
-        // 선택된 타겟 유형에 따라 n-back 단계 이전 값으로 설정
+    // 모든 속성에 대해 기본적으로 무작위 값 생성
+    imageIndex = Math.floor(Math.random() * imageTextures.length);
+    panelIndex = Math.floor(Math.random() * panels.length);
+    soundIndex = gameState.soundSource === "soundFiles" 
+        ? Math.floor(Math.random() * gameState.soundFiles.length) 
+        : Math.floor(Math.random() * gameState.pianoTones.length);
+    colorIndex = Math.floor(Math.random() * distinctColors.length);
+
+    // 선택된 타겟 유형에 따라 n-back 값 설정
+    if (isTargetStimulus && gameState.currentStimulus >= nBackLevel) {
         if (targetType === "scene" && gameState.sceneHistory.length >= nBackLevel) {
             imageIndex = gameState.sceneHistory[gameState.currentStimulus - nBackLevel];
         } else if (targetType === "location" && gameState.locationHistory.length >= nBackLevel) {
@@ -1088,37 +1110,29 @@ function generateNextStimulus() {
         } else if (targetType === "color" && gameState.colorHistory.length >= nBackLevel) {
             colorIndex = gameState.colorHistory[gameState.currentStimulus - nBackLevel];
         }
-    } else {
-        // 비타겟 자극 생성
-        imageIndex = Math.floor(Math.random() * imageTextures.length);
-        panelIndex = Math.floor(Math.random() * panels.length);
-        soundIndex = gameState.soundSource === "soundFiles" 
-            ? Math.floor(Math.random() * gameState.soundFiles.length) 
-            : Math.floor(Math.random() * gameState.pianoTones.length);
-        colorIndex = Math.floor(Math.random() * distinctColors.length);
     }
 
-    // 타겟 여부 확인
-    const isSceneTargetVal = gameState.stimulusTypes.includes("scene") && isSceneTarget(imageIndex);
-    const isLocationTargetVal = gameState.stimulusTypes.includes("location") && isLocationTarget(panelIndex);
-    const isSoundTargetVal = gameState.stimulusTypes.includes("sound") && isSoundTarget(soundIndex);
-    const isColorTargetVal = gameState.stimulusTypes.includes("color") && isColorTarget(colorIndex);
+    // 타겟 여부 확인 (선택된 유형만 타겟으로 인정)
+    const isSceneTargetVal = targetType === "scene" && gameState.stimulusTypes.includes("scene") && isSceneTarget(imageIndex);
+    const isLocationTargetVal = targetType === "location" && gameState.stimulusTypes.includes("location") && isLocationTarget(panelIndex);
+    const isSoundTargetVal = targetType === "sound" && gameState.stimulusTypes.includes("sound") && isSoundTarget(soundIndex);
+    const isColorTargetVal = targetType === "color" && gameState.stimulusTypes.includes("color") && isColorTarget(colorIndex);
 
-    let targetType = "non-target";
-    if (gameState.currentStimulus >= nBackLevel) {
-        if (isSceneTargetVal && (isLocationTargetVal || isSoundTargetVal || isColorTargetVal)) {
-            targetType = "both";
-        } else if (isSceneTargetVal) {
+    // 타겟 유형 최종 설정
+    if (isTargetStimulus && gameState.currentStimulus >= nBackLevel) {
+        if (targetType === "scene" && isSceneTargetVal) {
             targetType = "scene";
-        } else if (isLocationTargetVal) {
+        } else if (targetType === "location" && isLocationTargetVal) {
             targetType = "location";
-        } else if (isSoundTargetVal) {
+        } else if (targetType === "sound" && isSoundTargetVal) {
             targetType = "sound";
-        } else if (isColorTargetVal) {
+        } else if (targetType === "color" && isColorTargetVal) {
             targetType = "color";
+        } else {
+            targetType = "non-target"; // 타겟 설정 실패 시 비타겟으로 처리
         }
     } else {
-        targetType = "initial";
+        targetType = gameState.currentStimulus < nBackLevel ? "initial" : "non-target";
     }
 
     gameState.nextStimulusInfo = {
@@ -1134,7 +1148,7 @@ function generateNextStimulus() {
     else if (targetType === "location") gameState.locationTargets++;
     else if (targetType === "sound") gameState.soundTargets++;
     else if (targetType === "color") gameState.colorTargets++;
-    else if (targetType === "both") gameState.bothTargets++;
+    // "both" 유형은 제거됨
 
     console.log(`generateNextStimulus() - Generated: image=${imageIndex}, panel=${panelIndex}, sound=${soundIndex}, color=${colorIndex}`);
     console.log(`${nBackLevel}-back comparison - Scene: ${isSceneTargetVal}, Location: ${isLocationTargetVal}, Sound: ${isSoundTargetVal}, Color: ${isColorTargetVal}`);
@@ -1146,7 +1160,6 @@ function generateNextStimulus() {
         console.error("generateNextStimulus() - Error in showStimulus:", e);
     }
 }
-
 
 
 // ⏸️ 일시정지 기능
