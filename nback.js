@@ -453,16 +453,16 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
     console.log("Current nBackLevel:", gameState.nBackLevel); // 디버깅용
 
     // N-back 레벨 1에서 간섭 비활성화
-    if (gameState.nBackLevel === 1) {
-        console.log("Interference skipped due to nBackLevel 1");
-        return {
-            imageIndex: currentImageIndex,
-            panelIndex: currentPanelIndex,
-            soundIndex: currentSoundIndex,
-            colorIndex: currentColorIndex,
-            affectedAttributes: []
-        };
-    }
+   // if (gameState.nBackLevel === 1) {
+    //     console.log("Interference skipped due to nBackLevel 1");
+    //     return {
+    //         imageIndex: currentImageIndex,
+    //         panelIndex: currentPanelIndex,
+    //         soundIndex: currentSoundIndex,
+    //         colorIndex: currentColorIndex,
+    //         affectedAttributes: []
+    //     };
+    // }
 
     let currentInterferenceType = gameState.interferenceType;
 
