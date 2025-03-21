@@ -219,7 +219,7 @@ canvas {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 20px;
+    font-size: 32px;
     font-weight: bold;
     color: rgba(255, 255, 255, 0.5);
     transition: background-color 0.2s ease;
@@ -487,3 +487,12 @@ canvas {
         font-size: 14px;
     }
 }
+
+.indicator.missed {
+    background-color: #ffcccc; /* 연한 빨간색 배경 */
+    color: #333; /* 짙은 회색 글씨 */
+    /* 필요에 따라 추가 스타일 (테두리, 애니메이션 등) */
+}
+
+.correct { background-color: #00ff00; }
+.incorrect { background-color: #ff0000; }
