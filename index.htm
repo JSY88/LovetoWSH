@@ -64,10 +64,10 @@
     </div>
 
     <!-- 🌟 자극 인디케이터 (겹침 방지 위해 위치 명확히) -->
-    <div id="scene-indicator" class="indicator-box">모양</div>
-    <div id="sound-indicator" class="indicator-box">소리</div>
-    <div id="color-indicator" class="indicator-box">색상</div>
-    <div id="location-indicator" class="indicator-box">위치</div>
+    <div id="scene-indicator" class="indicator-box">S</div>
+    <div id="sound-indicator" class="indicator-box">A</div>
+    <div id="location-indicator" class="indicator-box">L</div>
+    <div id="color-indicator" class="indicator-box">D</div>
 
     <div id="stimulus-counter">Stimulus: 0 / 30</div>
 
@@ -79,49 +79,73 @@
 
     <!-- ⚙️ 설정 패널 -->
     <div id="settingsPanel">
-    <h2>설정</h2>
-    <!-- 아코디언 그룹 -->
-    <div class="accordion">
-        <button class="accordion-btn">자극 설정</button>
-        <div class="accordion-content" style="display: none;">
-            <div class="settings-group">
-                <label>자극 유형 선택 (최소 2개, 최대 4개):</label>
-                <div>
-                    <input type="checkbox" id="sceneStimulus" value="scene" checked> <label for="sceneStimulus">장면 (이미지)</label><br>
-                    <input type="checkbox" id="locationStimulus" value="location" checked> <label for="locationStimulus">위치</label><br>
-                    <input type="checkbox" id="soundStimulus" value="sound"> <label for="soundStimulus">소리</label><br>
-                    <input type="checkbox" id="colorStimulus" value="color"> <label for="colorStimulus">색상</label>
-                </div>
-            </div>
-            <div class="settings-group">
-                <label>타겟 생성 확률 (0-1, 합계 ≤ 1):</label>
-                <input type="number" id="sceneTargetProb" min="0" max="1" step="0.01" value="0.25"> <label for="sceneTargetProb">장면</label><br>
-                <input type="number" id="locationTargetProb" min="0" max="1" step="0.01" value="0.25"> <label for="locationTargetProb">위치</label><br>
-                <input type="number" id="soundTargetProb" min="0" max="1" step="0.01" value="0.25"> <label for="soundTargetProb">소리</label><br>
-                <input type="number" id="colorTargetProb" min="0" max="1" step="0.01" value="0.25"> <label for="colorTargetProb">색상</label>
-            </div>
-            <div class="settings-group">
-                <label>한 라운드 자극 개수 (10-100):</label>
-                <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
-                <label>자극 제시 지속시간 (ms, 500-5000):</label>
-                <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
-                <label>자극 간 간격 시간 (ms, 1000-10000):</label>
-                <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
+        <h2>설정</h2>
+        <div class="settings-group">
+            <label>자극 유형 선택 (최소 2개, 최대 4개):</label>
+            <div>
+                <input type="checkbox" id="sceneStimulus" value="scene" checked> <label for="sceneStimulus">장면 (이미지)</label><br>
+                <input type="checkbox" id="locationStimulus" value="location" checked> <label for="locationStimulus">위치</label><br>
+                <input type="checkbox" id="soundStimulus" value="sound"> <label for="soundStimulus">소리</label><br>
+                <input type="checkbox" id="colorStimulus" value="color"> <label for="colorStimulus">색상</label>
             </div>
         </div>
+<div class="settings-group">
+    <button id="toggleDevOptionsBtn">개발자 옵션</button>
+    <div id="devOptions" style="display: none;">
+        <label>한 라운드 자극 개수 (기본 30):</label>
+        <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
+        <label>자극 제시 지속시간 (ms, 기본 1000):</label>
+        <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
+        <label>자극 간 간격 시간 (ms, 기본 2500):</label>
+        <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
     </div>
-    <div class="accordion">
-        <button class="accordion-btn">리소스 설정</button>
-        <div class="accordion-content" style="display: none;">
-            <div class="settings-group">
-                <label>이미지 소스 URL (폴더 경로):</label>
-                <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/">
-            </div>
-            <div class="settings-group">
-                <label>결과 배경 이미지 URL:</label>
-                <input type="text" id="resultImageUrl" value="" placeholder="URL 입력">
-            </div>
-            <div class="settings-group">
+</div>
+        <div class="settings-group">
+            <label>이미지 소스 URL (폴더 경로):</label>
+            <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/">
+        </div>
+        <div class="settings-group">
+            <label>결과 배경 이미지 URL:</label>
+            <input type="text" id="resultImageUrl" value="" placeholder="URL 입력">
+        </div>
+        <div class="settings-group">
+            <label>버튼 자극 할당:</label>
+            <select id="button1Assignment">
+                <option value="scene">장면 (S)</option>
+                <option value="location">위치 (L)</option>
+                <option value="sound">소리 (A)</option>
+                <option value="color">색상 (D)</option>
+            </select>
+            <select id="button2Assignment">
+                <option value="sound">소리 (A)</option>
+                <option value="scene">장면 (S)</option>
+                <option value="location">위치 (L)</option>
+                <option value="color">색상 (D)</option>
+            </select>
+            <select id="button3Assignment">
+                <option value="location">위치 (L)</option>
+                <option value="scene">장면 (S)</option>
+                <option value="sound">소리 (A)</option>
+                <option value="color">색상 (D)</option>
+            </select>
+            <select id="button4Assignment">
+                <option value="color">색상 (D)</option>
+                <option value="scene">장면 (S)</option>
+                <option value="location">위치 (L)</option>
+                <option value="sound">소리 (A)</option>
+            </select>
+        </div>
+        <!-- 🎛️ 고급 설정 -->
+        <div class="settings-group" id="advancedSettings">
+            <label>고급 옵션:</label>
+            <div>
+                <!-- 단축키 설정 -->
+                <label>단축키 설정:</label><br>
+                <input type="text" id="sceneKey" maxlength="1" value="S" placeholder="장면 단축키"> 장면<br>
+                <input type="text" id="locationKey" maxlength="1" value="L" placeholder="위치 단축키"> 위치<br>
+                <input type="text" id="soundKey" maxlength="1" value="A" placeholder="소리 단축키"> 소리<br>
+                <input type="text" id="colorKey" maxlength="1" value="D" placeholder="색상 단축키"> 색상<br>
+                <!-- 사운드 소스 선택 -->
                 <label>사운드 소스:</label>
                 <select id="soundSourceSelect">
                     <option value="soundFiles">URL (파일)</option>
@@ -130,63 +154,19 @@
                 <label>사운드 URL (폴더 경로):</label>
                 <input type="text" id="soundSourceUrl" value="sounds/" placeholder="예: sounds/">
             </div>
-        </div>
-    </div>
-    <div class="accordion">
-        <button class="accordion-btn">단축키 설정</button>
-        <div class="accordion-content" style="display: none;">
-            <div class="settings-group">
-                <label>단축키 설정:</label><br>
-                <input type="text" id="sceneKey" maxlength="1" value="K" placeholder="장면 단축키"> 장면<br>
-                <input type="text" id="locationKey" maxlength="1" value="A" placeholder="위치 단축키"> 위치<br>
-                <input type="text" id="soundKey" maxlength="1" value="L" placeholder="소리 단축키"> 소리<br>
-                <input type="text" id="colorKey" maxlength="1" value="S" placeholder="색상 단축키"> 색상
-            </div>
-        </div>
-    </div>
-    <div class="accordion">
-        <button class="accordion-btn">간섭 설정</button>
-        <div class="accordion-content" style="display: none;">
-            <div class="settings-group">
-                <input type="checkbox" id="enableInterference" checked> <label for="enableInterference">간섭 활성화</label><br>
-                <input type="checkbox" id="adaptiveInterference" checked> <label for="adaptiveInterference">적응형 간섭</label><br>
-                <label>기본 간섭 확률 (0-1):</label>
-                <input type="number" id="baseInterferenceChance" min="0" max="1" step="0.1" value="0.4"><br>
-                <label>적응형 상한 임계값 (0-1):</label>
-                <input type="number" id="thresholdHigh" min="0" max="1" step="0.1" value="0.8"><br>
-                <label>적응형 하한 임계값 (0-1):</label>
-                <input type="number" id="thresholdLow" min="0" max="1" step="0.1" value="0.5"><br>
-                <label>간섭 유형 확률 (합계 ≤ 1):</label><br>
-                <input type="number" id="previousChance" min="0" max="1" step="0.1" value="0.25"> <label for="previousChance">이전</label><br>
-                <input type="number" id="cyclicChance" min="0" max="1" step="0.1" value="0.25"> <label for="cyclicChance">주기적</label><br>
-                <input type="number" id="nextChance" min="0" max="1" step="0.1" value="0.1"> <label for="nextChance">다음</label><br>
-                <input type="number" id="nearMissShortChance" min="0" max="1" step="0.1" value="0.25"> <label for="nearMissShortChance">근소 차이 (짧음)</label><br>
-                <input type="number" id="nearMissLateChance" min="0" max="1" step="0.1" value="0.15"> <label for="nearMissLateChance">근소 차이 (늦음)</label><br>
-                <label>속성별 간섭 확률:</label><br>
-                <input type="number" id="imageAttrChance" min="0" max="1" step="0.1" value="0.3"> <label for="imageAttrChance">이미지</label><br>
-                <input type="number" id="locationAttrChance" min="0" max="1" step="0.1" value="0.2"> <label for="locationAttrChance">위치</label><br>
-                <input type="number" id="soundAttrChance" min="0" max="1" step="0.1" value="0.4"> <label for="soundAttrChance">소리</label><br>
-                <input type="number" id="colorAttrChance" min="0" max="1" step="0.1" value="0.3"> <label for="colorAttrChance">색상</label><br>
-                <label>최대 간섭 속성 수 (1-4):</label>
-                <input type="number" id="maxAttributes" min="1" max="4" value="2">
-            </div>
-        </div>
-    </div>
-    <div class="accordion">
-        <button class="accordion-btn">UI 설정</button>
-        <div class="accordion-content" style="display: none;">
-            <div class="settings-group">
-                <label>버튼 위치 조정 (px):</label><br>
+            <!-- 기존 고급 옵션 유지 -->
+            <div>
+                <label>버튼 위치 조정:</label><br>
                 <input type="number" id="button1Left" value="30" style="width: 50px;">,
-                <input type="number" id="button1Bottom" value="40" style="width: 50px;"> (장면)<br>
+                <input type="number" id="button1Bottom" value="40" style="width: 50px;"><br>
                 <input type="number" id="button2Left" value="130" style="width: 50px;">,
-                <input type="number" id="button2Bottom" value="40" style="width: 50px;"> (소리)<br>
+                <input type="number" id="button2Bottom" value="40" style="width: 50px;"><br>
                 <input type="number" id="button3Right" value="130" style="width: 50px;">,
-                <input type="number" id="button3Bottom" value="40" style="width: 50px;"> (위치)<br>
+                <input type="number" id="button3Bottom" value="40" style="width: 50px;"><br>
                 <input type="number" id="button4Right" value="30" style="width: 50px;">,
-                <input type="number" id="button4Bottom" value="40" style="width: 50px;"> (색상)
+                <input type="number" id="button4Bottom" value="40" style="width: 50px;">
             </div>
-            <div class="settings-group">
+            <div>
                 <label>버튼 배경색:</label>
                 <input type="color" id="buttonBgColor" value="#ffffff"><br>
                 <label>배경 투명도 (0-1):</label>
@@ -196,19 +176,18 @@
                 <label>텍스트 투명도 (0-1):</label>
                 <input type="number" id="buttonTextOpacity" min="0" max="1" step="0.1" value="0.0" style="width: 50px;">
             </div>
-            <div class="settings-group">
-                <label>버튼 크기 (width, height, px):</label><br>
+            <div>
+                <label>버튼 크기 (width, height):</label><br>
                 <input type="number" id="buttonWidth" value="80" style="width: 50px;">,
                 <input type="number" id="buttonHeight" value="80" style="width: 50px;">
             </div>
         </div>
+        <div class="settings-buttons">
+            <button id="applySettingsBtn">적용</button>
+            <button id="closeSettingsBtn">닫기</button>
+        </div>
+        <div id="settingsError"></div>
     </div>
-    <div class="settings-buttons">
-        <button id="applySettingsBtn">적용</button>
-        <button id="closeSettingsBtn">닫기</button>
-    </div>
-    <div id="settingsError"></div>
-</div>
 
     <script src="ajax/libs/three.js/r128/three.min.js"></script>
     <script src="nback.js"></script>
