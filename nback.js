@@ -1061,20 +1061,20 @@ function generateNextStimulus() {
     }
 
     const nBackLevel = gameState.nBackLevel;
-    const targetProbability = 0.4; // 전체 타겟 생성 확률 40%
+    const targetProbability = 0.4; // 타겟 자극 생성 확률 40% (조정 가능)
     
-    // 유형별 타겟 생성 확률 (필요에 따라 조정 가능)
+    // 유형별 타겟 선택 확률 (타겟 자극일 때 유형 선택 시 사용)
     const targetTypeProbabilities = {
-        "scene": 0.25,    // 25% (전체 타겟 중)
-        "location": 0.25, // 25%
-        "sound": 0.25,    // 25%
-        "color": 0.25     // 25%
+        "scene": 0.25,
+        "location": 0.25,
+        "sound": 0.25,
+        "color": 0.25
     };
     
     let imageIndex, panelIndex, soundIndex, colorIndex;
     let targetType = "non-target";
 
-    // 타겟 생성 여부 결정
+    // 타겟 자극 여부 결정 (독립적으로 결정)
     const isTargetStimulus = Math.random() < targetProbability && gameState.currentStimulus >= nBackLevel;
 
     if (isTargetStimulus) {
@@ -1148,7 +1148,6 @@ function generateNextStimulus() {
     else if (targetType === "location") gameState.locationTargets++;
     else if (targetType === "sound") gameState.soundTargets++;
     else if (targetType === "color") gameState.colorTargets++;
-    // "both" 유형은 제거됨
 
     console.log(`generateNextStimulus() - Generated: image=${imageIndex}, panel=${panelIndex}, sound=${soundIndex}, color=${colorIndex}`);
     console.log(`${nBackLevel}-back comparison - Scene: ${isSceneTargetVal}, Location: ${isLocationTargetVal}, Sound: ${isSoundTargetVal}, Color: ${isColorTargetVal}`);
@@ -1160,7 +1159,6 @@ function generateNextStimulus() {
         console.error("generateNextStimulus() - Error in showStimulus:", e);
     }
 }
-
 
 // ⏸️ 일시정지 기능
 function pauseGame() {
