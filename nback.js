@@ -1241,12 +1241,6 @@ function applySettings() {
         return;
     }
 
-
-    const sceneText = document.getElementById('sceneText').value || '모양';
-    const locationText = document.getElementById('locationText').value || '위치';
-    const soundText = document.getElementById('soundText').value || '소리';
-    const colorText = document.getElementById('colorText').value || '색상';
-    
     gameState.stimulusTypes = newStimulusTypes;
     gameState.imageSourceUrl = document.getElementById('imageSourceUrl').value;
     gameState.resultImageUrl = document.getElementById('resultImageUrl').value;
