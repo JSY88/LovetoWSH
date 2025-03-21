@@ -4,7 +4,7 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 // Game State
 const gameState = {
     stimulusDuration: 1000,      // 자극 제시 지속시간 (ms)
-    stimulusInterval: 2500,      // 자극 간 간격 시간 (ms)
+    stimulusInterval: 1500,      // 자극 간 간격 시간 (ms)
     isPlaying: false,
     nBackLevel: 1,
     currentBlock: 0,
@@ -1315,7 +1315,7 @@ function applySettings() {
 
     gameState.stimuliPerBlock = parseInt(document.getElementById('stimuliPerBlock').value) || 30;
     gameState.stimulusDuration = parseInt(document.getElementById('stimulusDuration').value) || 1000;
-    gameState.stimulusInterval = parseInt(document.getElementById('stimulusInterval').value) || 2500;
+    gameState.stimulusInterval = parseInt(document.getElementById('stimulusInterval').value) || 1500;
 
     localStorage.setItem('stimuliPerBlock', gameState.stimuliPerBlock);
     localStorage.setItem('stimulusDuration', gameState.stimulusDuration);
@@ -1399,7 +1399,7 @@ function loadSettings() {
 
 gameState.stimuliPerBlock = parseInt(localStorage.getItem('stimuliPerBlock')) || 30;
     gameState.stimulusDuration = parseInt(localStorage.getItem('stimulusDuration')) || 1000;
-    gameState.stimulusInterval = parseInt(localStorage.getItem('stimulusInterval')) || 2500;
+    gameState.stimulusInterval = parseInt(localStorage.getItem('stimulusInterval')) || 1500;
 
     // 설정 UI 동기화
     populateSettings();
