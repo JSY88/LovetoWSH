@@ -80,6 +80,9 @@
     <!-- ⚙️ 설정 패널 -->
     <div id="settingsPanel">
         <h2>설정</h2>
+
+<div id="settingsPanel" style="display:none;">
+</div>
         <div class="settings-group">
             <label>자극 유형 선택 (최소 2개, 최대 4개):</label>
             <div>
@@ -89,6 +92,28 @@
                 <input type="checkbox" id="colorStimulus" value="color"> <label for="colorStimulus">색상</label>
             </div>
         </div>
+<div class="settings-group">
+<label>Interference Probability:</label>
+    <div><input type="number" id="interferenceChance" min="0" max="1" step="0.01" value="0.225"><br>
+    <label>Interference Type:</label>
+    <select id="interferenceType">
+        <option value="none">None</option>
+        <option value="random">Random</option>
+        <option value="previous">Previous</option>
+        <option value="cyclic">Cyclic</option>
+        <option value="next">Next</option>
+        <option value="near-miss">Near-Miss</option>
+    </select><br>
+    <label>Random Interference Probabilities:</label>
+    <input type="number" id="previousProbability" min="0" max="1" step="0.01" value="0.33"> Previous<br>
+    <input type="number" id="cyclicProbability" min="0" max="1" step="0.01" value="0.33"> Cyclic<br>
+    <input type="number" id="nextProbability" min="0" max="1" step="0.01" value="0.34"> Next<br>
+    <label>Cyclic Interference N-Back Level:</label>
+    <input type="number" id="cyclicInterferenceNBackLevel" min="1" value="2"><br>
+    <label>Interference Strength:</label>
+    <input type="number" id="interferenceStrength" min="0" max="1" step="0.01" value="1.0"><br>
+</div>
+</div>
 <div class="settings-group">
     <button id="toggleDevOptionsBtn">개발자 옵션</button>
     <div id="devOptions" style="display: none;">
