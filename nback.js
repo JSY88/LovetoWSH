@@ -425,7 +425,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
         // 디버깅 로그: 랜덤 간섭 타입 선택
         console.log("Random interference type selected:", currentInterferenceType);
     }
-    const interferenceChance = 0.35;
+    const interferenceChance = 0.0;
     if (Math.random() < interferenceChance) {
         let interferedImageIndex = currentImageIndex;
         let interferedPanelIndex = currentPanelIndex;
@@ -1255,7 +1255,7 @@ function generateStimulusSequence() {
 
         // 간섭 적용
         const previousWasTarget = targetType !== "non-target";
-        let interferenceChance = previousWasTarget ? 0.175 : 0.225;
+        let interferenceChance = previousWasTarget ? 0.175 : 0.0;
         if (recentInterferenceCount < maxConsecutiveInterference && Math.random() < interferenceChance) {
             recentInterferenceCount++;
             targetType = "interference";
