@@ -230,11 +230,6 @@ canvas {
     z-index: 10;
 }
 
-#scene-indicator { left: 30px; bottom: 40px; }
-#sound-indicator { left: 130px; bottom: 40px; }
-#location-indicator { right: 130px; bottom: 40px; }
-#color-indicator { right: 30px; bottom: 40px; }
-
 .indicator-box:active {
     opacity: 0.8;
     transform: scale(0.95);
@@ -245,16 +240,6 @@ canvas {
 .missed { background-color: rgba(200, 0, 0, 0.8) !important; }
 .early { background-color: rgba(0, 100, 255, 0.8) !important; }
 
-#stimulus-counter {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    font-size: 20px;
-    color: white;
-    opacity: 0.0;
-    z-index: 10;
-    pointer-events: none;
-}
 
 .main-buttons-container {
     display: flex;
@@ -468,4 +453,43 @@ canvas {
     border-radius: 3px;
     border: 1px solid #ccc;
     background: rgba(255, 255, 255, 0.9);
+}
+
+#gameScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    z-index: 10;
+}
+
+#blockCount {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 11;
+}
+
+/* 인디케이터 위치는 기존 스타일 유지, z-index만 조정 */
+#scene-indicator { left: 30px; bottom: 40px; z-index: 11; }
+#sound-indicator { left: 130px; bottom: 40px; z-index: 11; }
+#color-indicator { right: 130px; bottom: 40px; z-index: 11; }
+#location-indicator { right: 30px; bottom: 40px; z-index: 11; }
+
+#stimulus-counter {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    font-size: 20px;
+    color: white;
+    opacity: 0.7; /* 디버깅용으로 가시성 높임 */
+    z-index: 11;
+    pointer-events: none;
 }
