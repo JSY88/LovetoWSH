@@ -368,15 +368,11 @@ function resetIndicators() {
 }
 
 
-function showIndicatorFeedback(indicator, isCorrect) {
-    console.log("showIndicatorFeedback() - Applying feedback to", indicator.id, "isCorrect:", isCorrect);
-    if (isCorrect) {
-        indicator.classList.add('correct');
-        console.log("showIndicatorFeedback() - Correct feedback applied for", indicator.id);
-    } else {
-        indicator.classList.add('incorrect');
-        console.log("showIndicatorFeedback() - Incorrect feedback applied for", indicator.id);
-    }
+function showIndicatorFeedback(indicatorId, isCorrect) {
+    console.log(`적용: ${indicatorId}, 정답 여부: ${isCorrect}`);
+    const indicator = document.getElementById(indicatorId);
+    indicator.classList.remove('correct', 'incorrect');
+    indicator.classList.add(isCorrect ? 'correct' : 'incorrect');
 }
 
 function showEarlyResponseFeedback(indicator) {
