@@ -25,16 +25,24 @@
         <div>기억력과 정신적 체력이 증진돼요</div>
         <div>화이팅!</div>
         <div></div>
-
         <div class="main-buttons-container">
             <div id="pressSpace">Press SPACE to begin</div>
             <button id="openSettingsBtn">설정</button>
         </div>
-
         <div id="totalGamesTodayCounter">
             오늘 게임 횟수 <span id="totalGamesTodayCountValue">0</span>번
         </div>
     </div>
+
+    <!-- 🕹️ 게임 화면 -->
+<div id="gameScreen" style="display: none;">
+    <div id="blockCount">0</div>
+    <div id="scene-indicator" class="indicator-box">S</div>
+    <div id="sound-indicator" class="indicator-box">A</div>
+    <div id="location-indicator" class="indicator-box">L</div>
+    <div id="color-indicator" class="indicator-box">D</div>
+    <div id="stimulus-counter">Stimulus: 0 / 30</div>
+</div>
 
     <!-- 📊 결과 화면 -->
     <div id="resultScreen">
@@ -63,14 +71,6 @@
         </div>
     </div>
 
-    <!-- 🌟 자극 인디케이터 (겹침 방지 위해 위치 명확히) -->
-    <div id="scene-indicator" class="indicator-box">모양</div>
-    <div id="sound-indicator" class="indicator-box">소라</div>
-    <div id="location-indicator" class="indicator-box">위치</div>
-    <div id="color-indicator" class="indicator-box">색상</div>
-
-    <div id="stimulus-counter">Stimulus: 0 / 30</div>
-
     <!-- 🕹️ 게임 컨트롤 버튼 -->
     <div id="gameControlButtons">
         <button id="pauseBtn" class="gameControlButton">⏸︎</button>
@@ -79,6 +79,7 @@
 
     <!-- ⚙️ 설정 패널 -->
     <div id="settingsPanel">
+        <!-- 기존 설정 패널 내용 유지 -->
         <h2>설정</h2>
         <div class="settings-group">
             <label>자극 유형 선택 (최소 2개, 최대 4개):</label>
@@ -89,17 +90,17 @@
                 <input type="checkbox" id="colorStimulus" value="color"> <label for="colorStimulus">색상</label>
             </div>
         </div>
-<div class="settings-group">
-    <button id="toggleDevOptionsBtn">개발자 옵션</button>
-    <div id="devOptions" style="display: none;">
-        <label>한 라운드 자극 개수 (기본 30):</label>
-        <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
-        <label>자극 제시 지속시간 (ms, 기본 1000):</label>
-        <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
-        <label>자극 간 간격 시간 (ms, 기본 2500):</label>
-        <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
-    </div>
-</div>
+        <div class="settings-group">
+            <button id="toggleDevOptionsBtn">개발자 옵션</button>
+            <div id="devOptions" style="display: none;">
+                <label>한 라운드 자극 개수 (기본 30):</label>
+                <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
+                <label>자극 제시 지속시간 (ms, 기본 1000):</label>
+                <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
+                <label>자극 간 간격 시간 (ms, 기본 2500):</label>
+                <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
+            </div>
+        </div>
         <div class="settings-group">
             <label>이미지 소스 URL (폴더 경로):</label>
             <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/">
@@ -189,7 +190,7 @@
         <div id="settingsError"></div>
     </div>
 
-    <script src="ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="nback.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'922419878ca91803',t:'MTc0MjI5NDI5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    <script defer src="ajax/libs/three.js/r128/three.min.js"></script>
+    <script defer src="nback.js"></script>
+</body>
 </html>
