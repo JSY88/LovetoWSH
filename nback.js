@@ -1011,10 +1011,10 @@ function startBlock() {
     gameState.recentInterferenceCount = 0;
 
     // 타겟 목표 설정
-    setTargetGoal("scene", 5);
-    setTargetGoal("location", 5);
+    setTargetGoal("scene", 6);
+    setTargetGoal("location", 6);
     setTargetGoal("sound", 3);
-    setTargetGoal("color", 5);
+    setTargetGoal("color", 6);
 
     // 자극 시퀀스 생성
     gameState.stimulusSequence = generateStimulusSequence();
