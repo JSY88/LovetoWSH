@@ -41,7 +41,7 @@ const gameState = {
     inResponseWindow: false,
     canRespond: true,
     presentedStimulusHistory: [],
-    interferenceType: "random",
+    interferenceType: "none",
     randomInterferenceProbabilities: {
         "previous": 0.33,
         "cyclic": 0.33,
@@ -411,8 +411,20 @@ function showMissedTargetFeedback(indicatorId) {
 function introduceInterference(currentImageIndex, currentPanelIndex, currentSoundIndex, currentColorIndex) {
     let currentInterferenceType = gameState.interferenceType;
     console.log("introduceInterference() - Starting with type:", currentInterferenceType, "currentStimulus:", gameState.currentStimulus);
+
+
+       // 간섭 비활성화 조건 추가
     if (currentInterferenceType === "none") {
-        console.log("introduceInterference() - No interference applied");
+        console.log("introduceInterference() - Interference disabled by setting interferenceType to 'none'");
+        return { 
+            imageIndex: currentImageIndex, 
+            panelIndex: currentPanelIndex, 
+            soundIndex: currentSoundIndex, 
+            colorIndex: currentColorIndex 
+        };
+    }
+
+ console.log("introduceInterference() - No interference applied");
         return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex, soundIndex: currentSoundIndex, colorIndex: currentColorIndex };
     }
     if (currentInterferenceType === "random") {
@@ -427,7 +439,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
         }
         console.log("introduceInterference() - Random interference type selected:", currentInterferenceType, "rand:", rand);
     }
-    const interferenceChance = 0.9;
+    const interferenceChance = 0.0;
     if (Math.random() < interferenceChance) {
         let interferedImageIndex = currentImageIndex;
         let interferedPanelIndex = currentPanelIndex;
