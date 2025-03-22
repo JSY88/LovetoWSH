@@ -4,7 +4,7 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 // Game State
 const gameState = {
     stimulusDuration: 1000,      // 자극 제시 지속시간 (ms)
-    stimulusInterval: 2500,      // 자극 간 간격 시간 (ms)
+    stimulusInterval: 2000,      // 자극 간 간격 시간 (ms)
     isPlaying: false,
     nBackLevel: 1,
     currentBlock: 0,
@@ -698,9 +698,9 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
             gameState.canRespond = true;
 
             gameState.responseWindowTimer = setTimeout(() => {
-                console.log("Timer - Response window closed, currentStimulus:", gameState.currentStimulus, "timestamp:", Date.now());
+                console.log("Timer - Response window closed, currentStimulus:", gameState.currentStimulus, "stimulusInterval:", gameState.stimulusInterval, "timestamp:", Date.now());
                 gameState.inResponseWindow = false;
-                gameState.canRespond = false; // 응답 창 종료 시 명확히 비활성화
+                gameState.canRespond = false;
 
                 const lastPresented = gameState.presentedStimulusHistory[gameState.currentStimulus - 1];
                 if (gameState.stimulusTypes.includes("scene") && gameState.currentIsSceneTarget && !gameState.sceneTargetProcessed) {
@@ -741,7 +741,7 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
                 }
 
                 generateNextStimulus();
-            }, 2500); // stimulusInterval을 2500ms
+            }, gameState.stimulusInterval); // 하드코딩 3000ms 제거, gameState.stimulusInterval 사용
         }, gameState.stimulusDuration);
     } else {
         gameState.currentTimer = setTimeout(() => {
@@ -752,7 +752,7 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
             gameState.canRespond = true;
 
             gameState.responseWindowTimer = setTimeout(() => {
-                console.log("Timer - Response window closed (final), currentStimulus:", gameState.currentStimulus, "timestamp:", Date.now());
+                console.log("Timer - Response window closed (final), currentStimulus:", gameState.currentStimulus, "stimulusInterval:", gameState.stimulusInterval, "timestamp:", Date.now());
                 gameState.inResponseWindow = false;
                 gameState.canRespond = false;
 
@@ -797,11 +797,10 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
                 setTimeout(() => {
                     endBlock();
                 }, 500);
-            }, 3000); // stimulusInterval을 2500ms에서 3000ms로 연장
+            }, gameState.stimulusInterval); // 하드코딩 3000ms 제거, gameState.stimulusInterval 사용
         }, gameState.stimulusDuration);
     }
 }
-
 
 
 
