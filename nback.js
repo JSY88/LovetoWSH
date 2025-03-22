@@ -393,7 +393,13 @@ function showEarlyResponseFeedback(indicatorId) {
     indicator.classList.add('early');
 }
 
-function showMissedTargetFeedback(indicator) {
+
+function showMissedTargetFeedback(indicatorId) {
+    const indicator = typeof indicatorId === 'string' ? document.getElementById(indicatorId) : indicatorId;
+    if (!indicator) {
+        console.error(`showMissedTargetFeedback() - Indicator with ID '${indicatorId}' not found in DOM.`);
+        return;
+    }
     indicator.classList.add('missed');
 }
 
@@ -766,21 +772,37 @@ function generateNextStimulus() {
     if (!gameState.isPlaying || gameState.isPaused) return;
     console.log("generateNextStimulus() - Starting, currentStimulus:", gameState.currentStimulus);
 
-    if (gameState.currentStimulus >= gameState.stimulusSequence.length) {
-        console.error("generateNextStimulus() - Stimulus index out of bounds");
+    if (!gameState.stimulusSequence || gameState.currentStimulus >= gameState.stimulusSequence.length) {
+        console.error("generateNextStimulus() - Stimulus sequence is invalid or index out of bounds", {
+            stimulusSequence: gameState.stimulusSequence,
+            currentStimulus: gameState.currentStimulus
+        });
         endBlock();
         return;
     }
 
     const stimulus = gameState.stimulusSequence[gameState.currentStimulus];
-    const { imageIndex, panelIndex, soundIndex, colorIndex, targetType } = stimulus;
+    if (!stimulus || typeof stimulus !== 'object') {
+        console.error("generateNextStimulus() - Invalid stimulus object at index:", gameState.currentStimulus, "stimulus:", stimulus);
+        endBlock();
+        return;
+    }
+
+    // 속성 확인 및 기본값 설정
+    const { 
+        imageIndex = 0, 
+        panelIndex = 0, 
+        soundIndex = 0, 
+        colorIndex = 0, 
+        targetType = "non-target" 
+    } = stimulus;
+
+    console.log("generateNextStimulus() - Stimulus data:", { imageIndex, panelIndex, soundIndex, colorIndex, targetType });
 
     gameState.nextStimulusInfo = { imageIndex, panelIndex, soundIndex, colorIndex, targetType };
     updateStimulusCounter();
     showStimulus(imageIndex, panelIndex, soundIndex, colorIndex);
 }
-
-
 
 
 
@@ -937,18 +959,17 @@ function handleColorResponse() {
     if (gameState.isPaused) return; // ⏸️ paused 상태일 때 반응 무시
     gameState.colorTargetProcessed = true;
     if (gameState.currentStimulus <= gameState.nBackLevel) {
-        showEarlyResponseFeedback(colorIndicator);
+        showEarlyResponseFeedback('color-indicator'); // 문자열 ID로 수정
         return;
     }
     gameState.colorResponses++;
     const isCorrect = gameState.currentIsColorTarget;
-    showIndicatorFeedback(colorIndicator, isCorrect);
+    showIndicatorFeedback('color-indicator', isCorrect); // 문자열 ID로 수정
     if (!isCorrect) {
         gameState.colorErrors++;
         console.log("handleColorResponse() - Color error, colorErrors:", gameState.colorErrors);
     }
 }
-
 
 
 
