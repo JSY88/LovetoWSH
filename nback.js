@@ -276,13 +276,16 @@ panelPositions.forEach((pos, index) => {
 const imageLoader = new THREE.TextureLoader();
 const imageTextures = [];
 const distinctColors = [
-    new THREE.Color(0.8, 0.2, 0.2),
-    new THREE.Color(0.2, 0.6, 0.8),
-    new THREE.Color(0.3, 0.7, 0.3),
-    new THREE.Color(0.9, 0.5, 0.1),
-    new THREE.Color(0.6, 0.3, 0.7),
-    new THREE.Color(0.2, 0.4, 0.9),
-    new THREE.Color(0.7, 0.7, 0.2)
+    new THREE.Color(0xFF6B6B), // Vivid Red
+    new THREE.Color(0x1E90FF), // Dodger Blue
+    new THREE.Color(0x32CD32), // Lime Green
+    new THREE.Color(0xFFD700), // Gold
+    new THREE.Color(0x9932CC), // Dark Orchid
+    new THREE.Color(0xFF69B4), // Hot Pink
+    new THREE.Color(0x00CED1), // Dark Turquoise
+    new THREE.Color(0xFFA07A), // Light Salmon
+    new THREE.Color(0x9ACD32), // Yellow Green
+    new THREE.Color(0x87CEFA), // Light Sky Blue
 ];
 
 function getRandomColor() {
@@ -305,30 +308,31 @@ function loadImageTextures() {
 }
 
 function createStimulusImage(imageIndex, panel, colorIndex) {
-    clearStimulus(panel);
-    const imageGeometry = new THREE.PlaneGeometry(panelWidth * imageScale, panelHeight * imageScale);
-    const imageMaterial = new THREE.MeshBasicMaterial({
-        map: imageTextures[imageIndex].texture,
-        transparent: true,
-        blending: THREE.NormalBlending
-    });
-    if (gameState.stimulusTypes.includes("color")) {
-        const colors = distinctColors;
-        if (colors[colorIndex]) {
-            imageMaterial.color = colors[colorIndex];
-            gameState.currentColorStimulusColor = colors[colorIndex];
-        } else if (imageTextures[imageIndex].color && randomizeStimulusColor) {
-            imageMaterial.color = imageTextures[imageIndex].color;
-            gameState.currentColorStimulusColor = imageTextures[imageIndex].color;
-        } else {
-            gameState.currentColorStimulusColor = null;
-        }
-    }
-    const imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
-    imagePlane.position.set(0, 0, panelDepth / 2 + 0.01);
-    panel.group.add(imagePlane);
-    panel.stimulusObject = imagePlane;
-    return imagePlane;
+  clearStimulus(panel);
+  const imageGeometry = new THREE.PlaneGeometry(panelWidth * imageScale, panelHeight * imageScale);
+  const imageMaterial = new THREE.MeshBasicMaterial({
+      map: imageTextures[imageIndex].texture,
+      transparent: true,
+      blending: THREE.NormalBlending
+  });
+  if (gameState.stimulusTypes.includes("color")) {
+      const colors = distinctColors;
+      // colorIndex가 유효한 범위 내에 있는지 확인
+      if (colorIndex >= 0 && colorIndex < colors.length) {
+          imageMaterial.color = colors[colorIndex];
+          gameState.currentColorStimulusColor = colors[colorIndex];
+      } else if (imageTextures[imageIndex].color && randomizeStimulusColor) {
+          imageMaterial.color = imageTextures[imageIndex].color;
+          gameState.currentColorStimulusColor = imageTextures[imageIndex].color;
+      } else {
+          gameState.currentColorStimulusColor = null;
+      }
+  }
+  const imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
+  imagePlane.position.set(0, 0, panelDepth / 2 + 0.01);
+  panel.group.add(imagePlane);
+  panel.stimulusObject = imagePlane;
+  return imagePlane;
 }
 
 function clearStimulus(panel) {
@@ -601,123 +605,160 @@ function clearAllSounds() {
 
 
 function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
-    if (gameState.isPaused) return; // ⏸️ paused 상태일 때 stimuli 표시 방지
-    console.log("showStimulus() - Starting: imageIndex:", imageIndex, "panelIndex:", panelIndex, "soundIndex:", soundIndex, "colorIndex:", colorIndex);
-    resetIndicators();
-    const panel = panels[panelIndex];
-    console.log("showStimulus() - Before interference:", { imageIndex, panelIndex, soundIndex, colorIndex });
+  if (gameState.isPaused) return; // ⏸️ paused 상태일 때 stimuli 표시 방지
+  console.log("showStimulus() - Starting: imageIndex:", imageIndex, "panelIndex:", panelIndex, "soundIndex:", soundIndex, "colorIndex:", colorIndex);
+  resetIndicators();
+  const panel = panels[panelIndex];
 
-    const interferenceResult = introduceInterference(imageIndex, panelIndex, soundIndex, colorIndex);
-    imageIndex = interferenceResult.imageIndex;
-    panelIndex = interferenceResult.panelIndex;
-    soundIndex = interferenceResult.soundIndex;
-    colorIndex = interferenceResult.colorIndex;
-    console.log("showStimulus() - After interference:", { imageIndex, panelIndex, soundIndex, colorIndex });
+  // 간섭 적용 전에 타겟 여부 미리 판정 (nBackLevel 이전은 제외)
+  if (gameState.currentStimulus >= gameState.nBackLevel) {
+      gameState.currentIsSceneTarget = gameState.stimulusSequence[gameState.currentStimulus].isSceneTarget;
+      gameState.currentIsLocationTarget = gameState.stimulusSequence[gameState.currentStimulus].isLocationTarget;
+      gameState.currentIsSoundTarget = gameState.stimulusSequence[gameState.currentStimulus].isSoundTarget;
+      gameState.currentIsColorTarget = gameState.stimulusSequence[gameState.currentStimulus].isColorTarget;
+  } else {
+      // 초기 자극은 타겟이 아님
+      gameState.currentIsSceneTarget = false;
+      gameState.currentIsLocationTarget = false;
+      gameState.currentIsSoundTarget = false;
+      gameState.currentIsColorTarget = false;
+      console.log("showStimulus() - Initial stimulus, no targets set");
+  }
 
-    createStimulusImage(imageIndex, panel, colorIndex);
-    if (gameState.stimulusTypes.includes("sound")) {
-        playSound(soundIndex);
-    }
+  console.log("showStimulus() - Before interference: Object");
 
-    console.log("showStimulus() - Presented stimulus:", imageIndex, panelIndex, soundIndex, colorIndex);
-    gameState.sceneHistory.push(imageIndex);
-    gameState.locationHistory.push(panelIndex);
-    gameState.soundHistory.push(soundIndex);
-    gameState.colorHistory.push(colorIndex);
+  const interferenceResult = introduceInterference(imageIndex, panelIndex, soundIndex, colorIndex);
+  imageIndex = interferenceResult.imageIndex;
+  panelIndex = interferenceResult.panelIndex;
+  soundIndex = interferenceResult.soundIndex;
+  colorIndex = interferenceResult.colorIndex;
+  console.log("showStimulus() - After interference: Object");
 
-    // 미리 생성된 타겟 여부 사용
-    const stimulus = gameState.stimulusSequence[gameState.currentStimulus];
-    gameState.currentIsSceneTarget = stimulus.isSceneTarget;
-    gameState.currentIsLocationTarget = stimulus.isLocationTarget;
-    gameState.currentIsSoundTarget = stimulus.isSoundTarget;
-    gameState.currentIsColorTarget = stimulus.isColorTarget;
 
-    if (gameState.currentStimulus >= gameState.nBackLevel) {
-        if (gameState.currentIsSceneTarget) gameState.sceneTargets++;
-        if (gameState.currentIsLocationTarget) gameState.locationTargets++;
-        if (gameState.currentIsSoundTarget) gameState.soundTargets++;
-        if (gameState.currentIsColorTarget) gameState.colorTargets++;
-        if (gameState.currentIsSceneTarget && gameState.currentIsLocationTarget && gameState.currentIsSoundTarget && gameState.currentIsColorTarget) {
-            gameState.bothTargets++;
-            console.log("showStimulus() - Both targets detected, bothTargets:", gameState.bothTargets);
-        }
-        console.log("showStimulus() - Target check:", {
-            scene: gameState.currentIsSceneTarget,
-            location: gameState.currentIsLocationTarget,
-            sound: gameState.currentIsSoundTarget,
-            color: gameState.currentIsColorTarget,
-            both: gameState.bothTargets
-        });
-    } else {
-        console.log("showStimulus() - Initial stimulus, no targets set");
-    }
+  createStimulusImage(imageIndex, panel, colorIndex);
+  if (gameState.stimulusTypes.includes("sound")) {
+      playSound(soundIndex);
+  }
 
-    gameState.currentStimulus++;
+  console.log("showStimulus() - Presented stimulus:", imageIndex, panelIndex, soundIndex, colorIndex);
+  gameState.sceneHistory.push(imageIndex);
+  gameState.locationHistory.push(panelIndex);
+  gameState.soundHistory.push(soundIndex);
+  gameState.colorHistory.push(colorIndex);
 
+
+
+  if (gameState.currentStimulus >= gameState.nBackLevel) {
+
+    // 간섭 적용 전 미리 계산된 타겟 카운트 증가
+    if(gameState.currentIsSceneTarget) gameState.sceneTargets++;
+    if(gameState.currentIsLocationTarget) gameState.locationTargets++;
+    if(gameState.currentIsSoundTarget) gameState.soundTargets++;
+    if(gameState.currentIsColorTarget) gameState.colorTargets++;
+
+
+      if (gameState.currentIsSceneTarget && gameState.currentIsLocationTarget && gameState.currentIsSoundTarget && gameState.currentIsColorTarget) {
+          gameState.bothTargets++;
+          console.log("showStimulus() - Both targets detected, bothTargets:", gameState.bothTargets);
+      }
+      console.log("showStimulus() - Target check:", {
+          scene: gameState.currentIsSceneTarget,
+          location: gameState.currentIsLocationTarget,
+          sound: gameState.currentIsSoundTarget,
+          color: gameState.currentIsColorTarget,
+          both: gameState.bothTargets
+      });
+  }
+
+  gameState.currentStimulus++;
+
+  // 이후 타이머 및 응답 처리 로직은 동일하게 유지
     if (gameState.currentStimulus < gameState.stimuliPerBlock) {
-        gameState.currentTimer = setTimeout(() => {
-            console.log("Timer - Clearing stimuli and stopping sound, currentStimulus:", gameState.currentStimulus);
-            clearAllStimuli();
-            stopSound();
-            gameState.inResponseWindow = true;
-            gameState.canRespond = true;
-            gameState.responseWindowTimer = setTimeout(() => {
-                console.log("Timer - Response window closed, currentStimulus:", gameState.currentStimulus);
-                gameState.inResponseWindow = false;
-                if (gameState.stimulusTypes.includes("scene") && !gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
-                    showMissedTargetFeedback(sceneIndicator);
-                    gameState.sceneErrors++;
-                    console.log("Timer - Missed scene target, sceneErrors:", gameState.sceneErrors);
-                }
-                if (gameState.stimulusTypes.includes("location") && !gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
-                    showMissedTargetFeedback(locationIndicator);
-                    gameState.locationErrors++;
-                }
-                if (gameState.stimulusTypes.includes("sound") && !gameState.soundTargetProcessed && gameState.currentIsSoundTarget) {
-                    showMissedTargetFeedback(soundIndicator);
-                    gameState.soundErrors++;
-                }
-                if (gameState.stimulusTypes.includes("color") && !gameState.colorTargetProcessed && gameState.currentIsColorTarget) {
-                    showMissedTargetFeedback(colorIndicator);
-                    gameState.colorErrors++;
-                }
-                setTimeout(() => {
-                    generateNextStimulus();
-                }, 500);
-            }, gameState.stimulusInterval);
-        }, gameState.stimulusDuration);
-    } else {
-        gameState.currentTimer = setTimeout(() => {
-            console.log("Timer - Final stimulus cleared, ending block");
-            clearAllStimuli();
-            stopSound();
-            gameState.inResponseWindow = true;
-            gameState.canRespond = true;
-            gameState.responseWindowTimer = setTimeout(() => {
-                gameState.inResponseWindow = false;
-                if (gameState.stimulusTypes.includes("scene") && !gameState.sceneTargetProcessed && gameState.currentIsSceneTarget) {
-                    showMissedTargetFeedback(sceneIndicator);
-                    gameState.sceneErrors++;
-                }
-                if (gameState.stimulusTypes.includes("location") && !gameState.locationTargetProcessed && gameState.currentIsLocationTarget) {
-                    showMissedTargetFeedback(locationIndicator);
-                    gameState.locationErrors++;
-                }
-                if (gameState.stimulusTypes.includes("sound") && !gameState.soundTargetProcessed && gameState.currentIsSoundTarget) {
-                    showMissedTargetFeedback(soundIndicator);
-                    gameState.soundErrors++;
-                }
-                if (gameState.stimulusTypes.includes("color") && !gameState.colorTargetProcessed && gameState.currentIsColorTarget) {
-                    showMissedTargetFeedback(colorIndicator);
-                    gameState.colorErrors++;
-                }
-                setTimeout(() => {
-                    endBlock();
-                }, 500);
-            }, gameState.stimulusInterval);
-        }, gameState.stimulusDuration);
-    }
+      gameState.currentTimer = setTimeout(() => {
+          console.log("Timer - Clearing stimuli and stopping sound, currentStimulus:", gameState.currentStimulus);
+          clearAllStimuli();
+          stopSound();
+          gameState.inResponseWindow = true;
+
+          // 응답 윈도우가 열린 직후에 canRespond를 true로 설정
+          gameState.canRespond = true;
+
+          gameState.responseWindowTimer = setTimeout(() => {
+              console.log("Timer - Response window closed, currentStimulus:", gameState.currentStimulus);
+              gameState.inResponseWindow = false;
+
+              // 타겟 누락 여부 확인 및 처리 (간소화)
+              if (gameState.stimulusTypes.includes("scene") && gameState.currentIsSceneTarget && !gameState.sceneTargetProcessed) {
+                  showMissedTargetFeedback('scene-indicator');
+                  gameState.sceneErrors++;
+                  console.log("Timer - Missed scene target, sceneErrors:", gameState.sceneErrors);
+              }
+              if (gameState.stimulusTypes.includes("location") && gameState.currentIsLocationTarget && !gameState.locationTargetProcessed) {
+                  showMissedTargetFeedback('location-indicator');
+                  gameState.locationErrors++;
+                  console.log("Timer - Missed location target, locationErrors:", gameState.locationErrors);
+              }
+              if (gameState.stimulusTypes.includes("sound") && gameState.currentIsSoundTarget && !gameState.soundTargetProcessed) {
+                  showMissedTargetFeedback('sound-indicator');
+                  gameState.soundErrors++;
+                  console.log("Timer - Missed sound target, soundErrors:", gameState.soundErrors);
+              }
+              if (gameState.stimulusTypes.includes("color") && gameState.currentIsColorTarget && !gameState.colorTargetProcessed) {
+                  showMissedTargetFeedback('color-indicator');
+                  gameState.colorErrors++;
+                  console.log("Timer - Missed color target, colorErrors:", gameState.colorErrors);
+              }
+
+              // 다음 자극 생성, corrected function call.
+              generateNextStimulus();
+
+          }, gameState.stimulusInterval); // 응답 시간
+
+      }, gameState.stimulusDuration); // 자극 제시 시간
+
+  } else {
+      // 마지막 자극 처리
+      gameState.currentTimer = setTimeout(() => {
+        console.log("Timer - Final stimulus cleared, ending block");
+        clearAllStimuli();
+        stopSound();
+        gameState.inResponseWindow = true;
+        gameState.canRespond = true; // 마지막 자극 후 응답 가능
+
+        gameState.responseWindowTimer = setTimeout(() => {
+            gameState.inResponseWindow = false;
+            // 타겟 누락 여부 확인 및 처리
+            if (gameState.stimulusTypes.includes("scene") && gameState.currentIsSceneTarget && !gameState.sceneTargetProcessed) {
+                showMissedTargetFeedback('scene-indicator');
+                gameState.sceneErrors++;
+                console.log("Timer - Missed scene target, sceneErrors:", gameState.sceneErrors);
+            }
+            if (gameState.stimulusTypes.includes("location") && gameState.currentIsLocationTarget && !gameState.locationTargetProcessed) {
+                showMissedTargetFeedback('location-indicator');
+                gameState.locationErrors++;
+                console.log("Timer - Missed location target, locationErrors:", gameState.locationErrors);
+            }
+            if (gameState.stimulusTypes.includes("sound") && gameState.currentIsSoundTarget && !gameState.soundTargetProcessed) {
+                showMissedTargetFeedback('sound-indicator');
+                gameState.soundErrors++;
+                console.log("Timer - Missed sound target, soundErrors:", gameState.soundErrors);
+            }
+            if (gameState.stimulusTypes.includes("color") && gameState.currentIsColorTarget && !gameState.colorTargetProcessed) {
+                showMissedTargetFeedback('color-indicator');
+                gameState.colorErrors++;
+                console.log("Timer - Missed color target, colorErrors:", gameState.colorErrors);
+            }
+
+          // 블록 종료, corrected function call
+          setTimeout(() => {
+            endBlock();
+          }, 500);
+
+        }, gameState.stimulusInterval);
+      }, gameState.stimulusDuration);
+    }
 }
+
 
 function selectIndexAvoidingRecent(recentIndices, maxRange, recentLimit) {
     // 최근 인덱스가 recentLimit을 초과하면 오래된 항목 제거
@@ -809,13 +850,28 @@ function generateNextStimulus() {
 
 // ⏸️ 일시정지 기능
 function pauseGame() {
-    if (!gameState.isPlaying || gameState.isPaused) return;
+    if (!gameState.isPlaying || gameState.isPaused) {
+        console.log("pauseGame() - Aborted: Game not playing or already paused", {
+            isPlaying: gameState.isPlaying,
+            isPaused: gameState.isPaused
+        });
+        return;
+    }
     gameState.isPaused = true;
     cancelAllTimers();
     clearAllStimuli();
     stopSound();
-    document.getElementById('pauseScreen').style.display = 'flex';
-    gameState.isPlaying = false; // generateNextStimulus() 중지
+    const pauseScreen = document.getElementById('pauseScreen');
+    if (pauseScreen) {
+        pauseScreen.style.display = 'flex';
+        console.log("pauseGame() - pauseScreen displayed successfully");
+    } else {
+        console.error("pauseGame() - pauseScreen element not found in DOM");
+    }
+    gameState.isPlaying = false; // Prevent generateNextStimulus()
+    console.log("pauseGame() - Game paused, timers canceled, stimuli cleared", {
+        timestamp: Date.now()
+    });
 }
 
 // ⏸️ 게임 재개 기능
@@ -1047,9 +1103,20 @@ function startBlock() {
     locationIndicator.style.display = gameState.stimulusTypes.includes("location") ? 'flex' : 'none';
     colorIndicator.style.display = gameState.stimulusTypes.includes("color") ? 'flex' : 'none';
 
-    generateNextStimulus();
+    // 1초 후에 첫 자극 제시
+    setTimeout(() => {
+        if (!gameState.isPaused) {
+            generateNextStimulus();
+            console.log("startBlock() - First stimulus presented after 1-second delay", {
+                timestamp: Date.now()
+            });
+        } else {
+            console.log("startBlock() - Delayed stimulus skipped due to pause", {
+                isPaused: gameState.isPaused
+            });
+        }
+    }, 1000);
 }
-
 
 
 
@@ -1415,10 +1482,19 @@ function setBackgroundImageToResultScreen() {
 
 document.getElementById('pressSpaceResult').addEventListener('click', () => {
     if (!gameState.isPlaying) {
-        startBlock(); // 메인 화면 대신 게임 시작
+        const resultScreen = document.getElementById('resultScreen');
+        if (resultScreen) {
+            resultScreen.style.display = 'none';
+            console.log("pressSpaceResult - resultScreen hidden successfully");
+        } else {
+            console.error("pressSpaceResult - resultScreen element not found in DOM");
+        }
+        startBlock();
+        console.log("pressSpaceResult - Clicked '게임 계속', starting new block", {
+            timestamp: Date.now()
+        });
     }
 });
-
 document.getElementById('pressSpace').addEventListener('click', () => {
     if (!gameState.isPlaying) {
         startBlock();
