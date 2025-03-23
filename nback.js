@@ -948,18 +948,22 @@ function toggleFullscreen() {
 
 
 
-function handleKeyPress(e) {
-    if (gameState.isPaused) return;
-    if (e.key === 'Escape') {
-        showTitleScreen();
-        return;
+ function handleKeyPress(e) {
+  if (gameState.isPaused) return;
+  if (e.key === 'Escape') {
+  	showTitleScreen();
+  	return;
     }
-    if (!gameState.isPlaying) {
-        if (e.code === 'Space') {
-            startBlock(); // 결과 화면에서도 게임 시작
-        }
-        return;
-    }
+  if (!gameState.isPlaying) {
+      if (e.code === 'Space') {
+          const resultScreen = document.getElementById('resultScreen');
+            if (resultScreen) {
+                resultScreen.style.display = 'none'; //결과창 숨기기
+            }
+          startBlock(); // 결과 화면에서도 게임 시작
+      }
+      return;
+  }
     console.log("handleKeyPress() - Key pressed:", e.key, "timestamp:", Date.now(), "canRespond:", gameState.canRespond, "inResponseWindow:", gameState.inResponseWindow);
     if (gameState.stimulusTypes.includes("scene") && e.key.toUpperCase() === gameState.sceneKey && !gameState.sceneTargetProcessed && gameState.canRespond) {
         console.log("handleKeyPress() - Scene key pressed:", e.key, "calling handleSceneResponse()");
@@ -1199,10 +1203,6 @@ function startBlock() {
         }
     }, 1000);
 }
-
-
-
-
 
 
 
