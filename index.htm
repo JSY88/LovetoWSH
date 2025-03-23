@@ -35,14 +35,14 @@
     </div>
 
     <!-- 🕹️ 게임 화면 -->
-<div id="gameScreen" style="display: none;">
-    <div id="blockCount">0</div>
-    <div id="scene-indicator" class="indicator-box">S</div>
-    <div id="sound-indicator" class="indicator-box">A</div>
-    <div id="location-indicator" class="indicator-box">L</div>
-    <div id="color-indicator" class="indicator-box">D</div>
-    <div id="stimulus-counter">Stimulus: 0 / 30</div>
-</div>
+    <div id="gameScreen" style="display: none;">
+        <div id="blockCount">0</div>
+        <div id="scene-indicator" class="indicator-box">모양</div>
+        <div id="sound-indicator" class="indicator-box">소리</div>
+        <div id="location-indicator" class="indicator-box">위치</div>
+        <div id="color-indicator" class="indicator-box">색상</div>
+        <div id="stimulus-counter" style="display: none;">Stimulus: 0 / 30</div>
+    </div>
 
     <!-- 📊 결과 화면 -->
     <div id="resultScreen">
@@ -57,6 +57,7 @@
             <div id="levelChange"></div>
         </div>
         <div id="pressSpaceResult">Press SPACE to continue</div>
+        <button id="mainMenuResultBtn">Main Menu</button>
         <div id="consecutiveGamesCounter">
             연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번
         </div>
@@ -79,7 +80,6 @@
 
     <!-- ⚙️ 설정 패널 -->
     <div id="settingsPanel">
-        <!-- 기존 설정 패널 내용 유지 -->
         <h2>설정</h2>
         <div class="settings-group">
             <label>자극 유형 선택 (최소 2개, 최대 4개):</label>
@@ -91,25 +91,61 @@
             </div>
         </div>
         <div class="settings-group">
-            <button id="toggleDevOptionsBtn">개발자 옵션</button>
-            <div id="devOptions" style="display: none;">
-                <label>한 라운드 자극 개수 (기본 30):</label>
-                <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
-                <label>자극 제시 지속시간 (ms, 기본 1000):</label>
-                <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
-                <label>자극 간 간격 시간 (ms, 기본 2500):</label>
-                <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
-            </div>
+            <label>한 라운드 자극 개수 (기본 30):</label>
+            <input type="number" id="stimuliPerBlock" min="10" max="100" value="30"><br>
+            <label>자극 제시 지속시간 (ms, 기본 1000):</label>
+            <input type="number" id="stimulusDuration" min="500" max="5000" step="100" value="1000"><br>
+            <label>자극 간 간격 시간 (ms, 기본 2500):</label>
+            <input type="number" id="stimulusInterval" min="1000" max="10000" step="100" value="2500">
         </div>
         <div class="settings-group">
+            <label>자극 카운터 표시:</label>
+            <input type="checkbox" id="showStimulusCounter" value="showStimulusCounter">
+        </div>
+        <button id="toggleAdvancedSettingsBtn">고급 설정</button>
+        <div id="advancedSettings" style="display: none;">
+            <label>간섭 유형:</label>
+            <select id="interferenceType">
+                <option value="none">없음</option>
+                <option value="previous">이전 자극</option>
+                <option value="cyclic">순환 간섭</option>
+                <option value="next">다음 자극</option>
+                <option value="random" selected>무작위</option>
+            </select><br>
+            <label>순환 간섭 N-Back 레벨:</label>
+            <input type="number" id="cyclicInterferenceNBackLevel" min="1" max="5" value="2"><br>
+            <label>간섭 확률 (0-1):</label>
+            <input type="number" id="interferenceProbability" min="0" max="1" step="0.1" value="0.9"><br>
+            <label>목표 타겟 갯수 (장면):</label>
+            <input type="number" id="sceneTargetGoal" min="0" value="12"><br>
+            <label>목표 타겟 갯수 (위치):</label>
+            <input type="number" id="locationTargetGoal" min="0" value="12"><br>
+            <label>목표 타겟 갯수 (소리):</label>
+            <input type="number" id="soundTargetGoal" min="0" value="6"><br>
+            <label>목표 타겟 갯수 (색상):</label>
+            <input type="number" id="colorTargetGoal" min="0" value="12"><br>
+            <label>자극 랜덤성 (0-1):</label>
+            <input type="number" id="stimulusRandomness" min="0" max="1" step="0.1" value="0.5"><br>
+            <label>사운드 볼륨 (0-1):</label>
+            <input type="number" id="soundVolume" min="0" max="1" step="0.1" value="0.5"><br>
+            <label>이미지 밝기 (0-2):</label>
+            <input type="number" id="imageBrightness" min="0" max="2" step="0.1" value="1.0"><br>
+            <label>이미지 대비 (0-2):</label>
+            <input type="number" id="imageContrast" min="0" max="2" step="0.1" value="1.0"><br>
             <label>이미지 소스 URL (폴더 경로):</label>
-            <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/">
-        </div>
-        <div class="settings-group">
+            <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/"><br>
             <label>결과 배경 이미지 URL:</label>
-            <input type="text" id="resultImageUrl" value="" placeholder="URL 입력">
+            <input type="text" id="resultImageUrl" value="" placeholder="URL 입력"><br>
+            <label>사운드 소스:</label>
+            <select id="soundSourceSelect">
+                <option value="soundFiles">URL (파일)</option>
+                <option value="pianoTones" selected>합성 피아노음</option>
+            </select><br>
+            <label>사운드 URL (폴더 경로):</label>
+            <input type="text" id="soundSourceUrl" value="sounds/" placeholder="예: sounds/">
         </div>
-        <div class="settings-group">
+        <button id="toggleButtonSettingsBtn">버튼 설정</button>
+        <div id="buttonSettings" style="display: none;">
             <label>버튼 자극 할당:</label>
             <select id="button1Assignment">
                 <option value="scene">장면 (S)</option>
@@ -134,54 +170,32 @@
                 <option value="scene">장면 (S)</option>
                 <option value="location">위치 (L)</option>
                 <option value="sound">소리 (A)</option>
-            </select>
-        </div>
-        <!-- 🎛️ 고급 설정 -->
-        <div class="settings-group" id="advancedSettings">
-            <label>고급 옵션:</label>
-            <div>
-                <!-- 단축키 설정 -->
-                <label>단축키 설정:</label><br>
-                <input type="text" id="sceneKey" maxlength="1" value="S" placeholder="장면 단축키"> 장면<br>
-                <input type="text" id="locationKey" maxlength="1" value="L" placeholder="위치 단축키"> 위치<br>
-                <input type="text" id="soundKey" maxlength="1" value="A" placeholder="소리 단축키"> 소리<br>
-                <input type="text" id="colorKey" maxlength="1" value="D" placeholder="색상 단축키"> 색상<br>
-                <!-- 사운드 소스 선택 -->
-                <label>사운드 소스:</label>
-                <select id="soundSourceSelect">
-                    <option value="soundFiles">URL (파일)</option>
-                    <option value="pianoTones" selected>합성 피아노음</option>
-                </select><br>
-                <label>사운드 URL (폴더 경로):</label>
-                <input type="text" id="soundSourceUrl" value="sounds/" placeholder="예: sounds/">
-            </div>
-            <!-- 기존 고급 옵션 유지 -->
-            <div>
-                <label>버튼 위치 조정:</label><br>
-                <input type="number" id="button1Left" value="30" style="width: 50px;">,
-                <input type="number" id="button1Bottom" value="40" style="width: 50px;"><br>
-                <input type="number" id="button2Left" value="130" style="width: 50px;">,
-                <input type="number" id="button2Bottom" value="40" style="width: 50px;"><br>
-                <input type="number" id="button3Right" value="130" style="width: 50px;">,
-                <input type="number" id="button3Bottom" value="40" style="width: 50px;"><br>
-                <input type="number" id="button4Right" value="30" style="width: 50px;">,
-                <input type="number" id="button4Bottom" value="40" style="width: 50px;">
-            </div>
-            <div>
-                <label>버튼 배경색:</label>
-                <input type="color" id="buttonBgColor" value="#ffffff"><br>
-                <label>배경 투명도 (0-1):</label>
-                <input type="number" id="buttonBgOpacity" min="0" max="1" step="0.1" value="0.1" style="width: 50px;"><br>
-                <label>텍스트 색상:</label>
-                <input type="color" id="buttonTextColor" value="#ffffff"><br>
-                <label>텍스트 투명도 (0-1):</label>
-                <input type="number" id="buttonTextOpacity" min="0" max="1" step="0.1" value="0.0" style="width: 50px;">
-            </div>
-            <div>
-                <label>버튼 크기 (width, height):</label><br>
-                <input type="number" id="buttonWidth" value="80" style="width: 50px;">,
-                <input type="number" id="buttonHeight" value="80" style="width: 50px;">
-            </div>
+            </select><br>
+            <label>단축키 설정:</label><br>
+            <input type="text" id="sceneKey" maxlength="1" value="S" placeholder="장면 단축키"> 장면<br>
+            <input type="text" id="locationKey" maxlength="1" value="L" placeholder="위치 단축키"> 위치<br>
+            <input type="text" id="soundKey" maxlength="1" value="A" placeholder="소리 단축키"> 소리<br>
+            <input type="text" id="colorKey" maxlength="1" value="D" placeholder="색상 단축키"> 색상<br>
+            <label>버튼 위치 조정:</label><br>
+            <input type="number" id="button1Left" value="30" style="width: 50px;">,
+            <input type="number" id="button1Bottom" value="40" style="width: 50px;"><br>
+            <input type="number" id="button2Left" value="130" style="width: 50px;">,
+            <input type="number" id="button2Bottom" value="40" style="width: 50px;"><br>
+            <input type="number" id="button3Right" value="130" style="width: 50px;">,
+            <input type="number" id="button3Bottom" value="40" style="width: 50px;"><br>
+            <input type="number" id="button4Right" value="30" style="width: 50px;">,
+            <input type="number" id="button4Bottom" value="40" style="width: 50px;"><br>
+            <label>버튼 배경색:</label>
+            <input type="color" id="buttonBgColor" value="#ffffff"><br>
+            <label>배경 투명도 (0-1):</label>
+            <input type="number" id="buttonBgOpacity" min="0" max="1" step="0.1" value="0.1" style="width: 50px;"><br>
+            <label>텍스트 색상:</label>
+            <input type="color" id="buttonTextColor" value="#ffffff"><br>
+            <label>텍스트 투명도 (0-1):</label>
+            <input type="number" id="buttonTextOpacity" min="0" max="1" step="0.1" value="0.0" style="width: 50px;"><br>
+            <label>버튼 크기 (width, height):</label><br>
+            <input type="number" id="buttonWidth" value="80" style="width: 50px;">,
+            <input type="number" id="buttonHeight" value="80" style="width: 50px;">
         </div>
         <div class="settings-buttons">
             <button id="applySettingsBtn">적용</button>
@@ -189,7 +203,6 @@
         </div>
         <div id="settingsError"></div>
     </div>
-
     <script defer src="ajax/libs/three.js/r128/three.min.js"></script>
     <script defer src="nback.js"></script>
 </body>
