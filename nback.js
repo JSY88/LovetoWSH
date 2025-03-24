@@ -1307,7 +1307,7 @@ function generateStimulusSequence() {
     const maxAdjustments = 15; // 최대 조정 횟수
 
     // 타겟 목표 설정
-    gameState.targetCountGoals = { scene: 3, location: 3, sound: 2, color: 3 };
+    gameState.targetCountGoals = { scene: 6, location: 6, sound: 3, color: 6 };
     let sceneTargets = 0, locationTargets = 0, soundTargets = 0, colorTargets = 0;
     let recentTargetTypes = []; // 최근 타겟 타입 추적
     let patternAttempts = 0, patternPreventions = 0;
