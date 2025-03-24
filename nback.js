@@ -1030,15 +1030,20 @@ function toggleFullscreen() {
 
 function handleSceneResponse() {
     if (gameState.isPaused) return;
-    console.log("handleSceneResponse() - Before processing: canRespond:", gameState.canRespond, "sceneTargetProcessed:", gameState.sceneTargetProcessed, "currentStimulus:", gameState.currentStimulus);
+    console.log("handleSceneResponse() - Before processing: canRespondScene:", gameState.canRespondScene, "sceneTargetProcessed:", gameState.sceneTargetProcessed, "currentStimulus:", gameState.currentStimulus);
 
-    // 디버깅: 현재 타겟 상태 확인
     console.log("handleSceneResponse() - Current target state:", {
         currentIsSceneTarget: gameState.currentIsSceneTarget,
         inResponseWindow: gameState.inResponseWindow
     });
 
+    if (!gameState.canRespondScene || gameState.sceneTargetProcessed) {
+        console.log("handleSceneResponse() - Response blocked: canRespondScene:", gameState.canRespondScene, "sceneTargetProcessed:", gameState.sceneTargetProcessed);
+        return;
+    }
+
     gameState.sceneTargetProcessed = true;
+    gameState.canRespondScene = false; // 해당 타입만 비활성화
     if (gameState.currentStimulus <= gameState.nBackLevel) {
         showEarlyResponseFeedback('scene-indicator');
         console.log("handleSceneResponse() - Early response, stimulus:", gameState.currentStimulus, "nBackLevel:", gameState.nBackLevel);
@@ -1049,7 +1054,6 @@ function handleSceneResponse() {
     const currentPresented = gameState.presentedStimulusHistory[gameState.currentStimulus - 1];
     const nBackPresented = gameState.presentedStimulusHistory[gameState.currentStimulus - 1 - gameState.nBackLevel];
     
-    // 디버깅: 비교 대상 확인
     console.log("handleSceneResponse() - Comparing scene: current imageIndex:", currentPresented.imageIndex, "with N-back imageIndex:", nBackPresented.imageIndex);
 
     const isCorrect = currentPresented.imageIndex === nBackPresented.imageIndex;
@@ -1069,14 +1073,13 @@ function handleSceneResponse() {
             console.log("handleSceneResponse() - Correct scene response, isCorrect:", isCorrect);
         }
     } else {
-        // 논타겟 자극에 반응한 경우 (False Positive)
         gameState.sceneErrors++;
         console.log("handleSceneResponse() - Scene error (false positive on non-target): sceneErrors:", gameState.sceneErrors);
     }
 
-    // 디버깅: 오류 집계 확인
     console.log("handleSceneResponse() - After processing: sceneResponses:", gameState.sceneResponses, "sceneErrors:", gameState.sceneErrors, "sceneTargetProcessed:", gameState.sceneTargetProcessed);
 }
+
 
 function handleLocationResponse() {
     if (gameState.isPaused) return;
