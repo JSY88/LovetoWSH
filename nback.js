@@ -499,7 +499,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
         console.log("introduceInterference() - 무작위 간섭 타입 선택:", currentInterferenceType, "rand:", rand);
     }
 
-    const interferenceChance = 1.0; // 간섭 발생 확률 조정 (기존 0.0에서 테스트용으로 변경)
+    const interferenceChance = 0.0; // 간섭 발생 확률 조정 (기존 0.0에서 테스트용으로 변경)
     if (Math.random() < interferenceChance) {
         let interferedImageIndex = currentImageIndex;
         let interferedPanelIndex = currentPanelIndex;
