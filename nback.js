@@ -499,7 +499,7 @@ function introduceInterference(currentImageIndex, currentPanelIndex, currentSoun
         console.log("introduceInterference() - 무작위 간섭 타입 선택:", currentInterferenceType, "rand:", rand);
     }
 
-    const interferenceChance = 0.0; // 간섭 발생 확률 조정 
+    const interferenceChance = 1.0; // 간섭 발생 확률 조정 (기존 0.0에서 테스트용으로 변경)
     if (Math.random() < interferenceChance) {
         let interferedImageIndex = currentImageIndex;
         let interferedPanelIndex = currentPanelIndex;
@@ -1449,9 +1449,19 @@ function generateStimulusSequence() {
 }
 
 function selectTargetPositions(totalStimuli, targetCount, minInterval, maxInterval, strength) {
-    console.log(`selectTargetPositions() - 타겟 위치 선정: 총 자극=${totalStimuli}, 타겟 수=${targetCount}, 최소=${minInterval}, 최대=${maxInterval}, 강도=${strength}`);
+    // 디버깅: 함수 호출 시 입력값 확인
+    console.log("selectTargetPositions() - 타겟 위치 선정 시작", {
+        totalStimuli: totalStimuli,
+        targetCount: targetCount,
+        minInterval: minInterval,
+        maxInterval: maxInterval,
+        strength: strength,
+        timestamp: Date.now()
+    });
+
     const positions = [];
-    const maxAttempts = 200;
+    // strength에 따라 시도 횟수 조절 (0~10 값을 50~500으로 매핑)
+    const maxAttempts = 50 + (strength * 45); // 최소 50번, 최대 500번 시도
     let attempts = 0;
 
     while (positions.length < targetCount && attempts < maxAttempts) {
@@ -1467,9 +1477,30 @@ function selectTargetPositions(totalStimuli, targetCount, minInterval, maxInterv
     }
 
     positions.sort((a, b) => a - b);
-    console.log(`selectTargetPositions() - 선정된 위치:`, positions);
+
+    // 디버깅: 결과 확인
+    console.log("selectTargetPositions() - 타겟 위치 선정 완료", {
+        selectedPositions: positions,
+        attemptsUsed: attempts,
+        maxAttempts: maxAttempts,
+        achievedTargetCount: positions.length,
+        requestedTargetCount: targetCount,
+        timestamp: Date.now()
+    });
+
+    if (positions.length < targetCount) {
+        console.warn("selectTargetPositions() - 목표 타겟 수 미달성", {
+            achieved: positions.length,
+            requested: targetCount
+        });
+    }
+
     return positions;
 }
+
+
+
+
 
 
 
@@ -1964,7 +1995,7 @@ function applySettings() {
     if (newStimulusTypes.length < 2 || newStimulusTypes.length > 4) {
         document.getElementById('settingsError').textContent = '자극 유형은 최소 2개, 최대 4개 선택해야 합니다.';
         document.getElementById('settingsError').style.display = 'block';
-        console.log("applySettings() - Validation failed: Stimulus types must be between 2 and 4", {
+        console.log("applySettings() - 유효성 검사 실패: 자극 유형은 2~4개여야 함", {
             selectedTypes: newStimulusTypes,
             timestamp: Date.now()
         });
@@ -1984,6 +2015,11 @@ function applySettings() {
     gameState.resultImageUrl = document.getElementById('resultImageUrl').value;
     gameState.soundSource = document.getElementById('soundSourceSelect').value;
     gameState.soundSourceUrl = document.getElementById('soundSourceUrl').value;
+
+    // 패턴 방지 설정 적용
+    gameState.patternPreventionStrength = parseInt(document.getElementById('patternPreventionStrength').value) || 5;
+    gameState.minTargetInterval = parseInt(document.getElementById('minTargetInterval').value) || 2;
+    gameState.maxTargetInterval = parseInt(document.getElementById('maxTargetInterval').value) || 10;
 
     // 버튼 설정 적용
     gameState.sceneKey = document.getElementById('sceneKey').value.toUpperCase();
@@ -2027,6 +2063,9 @@ function applySettings() {
     localStorage.setItem('stimulusInterval', gameState.stimulusInterval);
     localStorage.setItem('interferenceType', gameState.interferenceType);
     localStorage.setItem('cyclicInterferenceNBackLevel', gameState.cyclicInterferenceNBackLevel);
+    localStorage.setItem('patternPreventionStrength', gameState.patternPreventionStrength);
+    localStorage.setItem('minTargetInterval', gameState.minTargetInterval);
+    localStorage.setItem('maxTargetInterval', gameState.maxTargetInterval);
     localStorage.setItem('imageSourceUrl', gameState.imageSourceUrl);
     localStorage.setItem('resultImageUrl', gameState.resultImageUrl);
     localStorage.setItem('soundSource', gameState.soundSource);
@@ -2050,16 +2089,25 @@ function applySettings() {
 
     document.getElementById('settingsError').style.display = 'none';
     loadImageTextures();
-    console.log("applySettings() - Settings applied successfully", {
+
+    // 디버깅: 설정이 제대로 저장되었는지 확인
+    console.log("applySettings() - 설정 적용 및 저장 완료", {
         stimulusTypes: gameState.stimulusTypes,
         stimuliPerBlock: gameState.stimuliPerBlock,
         stimulusDuration: gameState.stimulusDuration,
         stimulusInterval: gameState.stimulusInterval,
         interferenceType: gameState.interferenceType,
         cyclicInterferenceNBackLevel: gameState.cyclicInterferenceNBackLevel,
+        patternPreventionStrength: gameState.patternPreventionStrength,
+        minTargetInterval: gameState.minTargetInterval,
+        maxTargetInterval: gameState.maxTargetInterval,
         timestamp: Date.now()
     });
 }
+
+
+
+
 function hexToRgba(hex, opacity) {
     let r = 0, g = 0, b = 0;
     if (hex.length === 7) {
@@ -2079,8 +2127,6 @@ function loadSettings() {
         document.getElementById('customLevel').value = gameState.nBackLevel;
     }
 
-
-
     // 게임 횟수 및 날짜 불러오기
     const lastGameDate = localStorage.getItem('lastGameDate');
     const today = new Date().toDateString();
@@ -2094,14 +2140,23 @@ function loadSettings() {
 
     // 설정 불러오기 (기본값 제공)
     gameState.stimulusTypes = JSON.parse(localStorage.getItem('stimulusTypes')) || ['scene', 'location'];
+    gameState.stimuliPerBlock = parseInt(localStorage.getItem('stimuliPerBlock')) || 30;
+    gameState.stimulusDuration = parseInt(localStorage.getItem('stimulusDuration')) || 1000;
+    gameState.stimulusInterval = parseInt(localStorage.getItem('stimulusInterval')) || 2500;
+    gameState.interferenceType = localStorage.getItem('interferenceType') || 'random';
+    gameState.cyclicInterferenceNBackLevel = parseInt(localStorage.getItem('cyclicInterferenceNBackLevel')) || 2;
+    // 패턴 방지 설정 불러오기 추가
+    gameState.patternPreventionStrength = parseInt(localStorage.getItem('patternPreventionStrength')) || 5;
+    gameState.minTargetInterval = parseInt(localStorage.getItem('minTargetInterval')) || 2;
+    gameState.maxTargetInterval = parseInt(localStorage.getItem('maxTargetInterval')) || 10;
     gameState.imageSourceUrl = localStorage.getItem('imageSourceUrl') || 'images/';
     gameState.resultImageUrl = localStorage.getItem('resultImageUrl') || '';
+    gameState.soundSource = localStorage.getItem('soundSource') || 'pianoTones';
+    gameState.soundSourceUrl = localStorage.getItem('soundSourceUrl') || 'sounds/';
     gameState.sceneKey = localStorage.getItem('sceneKey') || 'S';
     gameState.locationKey = localStorage.getItem('locationKey') || 'A';
     gameState.soundKey = localStorage.getItem('soundKey') || 'L';
     gameState.colorKey = localStorage.getItem('colorKey') || 'K';
-    gameState.soundSource = localStorage.getItem('soundSource') || 'pianoTones';
-    gameState.soundSourceUrl = localStorage.getItem('soundSourceUrl') || 'sounds/';
 
     // 인디케이터 위치 불러오기
     const scenePos = JSON.parse(localStorage.getItem('sceneIndicatorPos')) || { left: '30px', bottom: '40px' };
@@ -2133,13 +2188,20 @@ function loadSettings() {
         indicator.style.height = `${buttonStyles.height}px`;
     });
 
-gameState.stimuliPerBlock = parseInt(localStorage.getItem('stimuliPerBlock')) || 30;
-    gameState.stimulusDuration = parseInt(localStorage.getItem('stimulusDuration')) || 1000;
-    gameState.stimulusInterval = parseInt(localStorage.getItem('stimulusInterval')) || 2500;
-
     // 설정 UI 동기화
     populateSettings();
+
+    // 디버깅: 패턴 방지 설정이 제대로 불러와졌는지 확인
+    console.log("loadSettings() - 저장된 설정 불러오기 완료", {
+        patternPreventionStrength: gameState.patternPreventionStrength,
+        minTargetInterval: gameState.minTargetInterval,
+        maxTargetInterval: gameState.maxTargetInterval,
+        timestamp: Date.now()
+    });
 }
+
+
+
 
 
 window.addEventListener('resize', () => {
