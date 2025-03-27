@@ -46,7 +46,7 @@ accuracyHistory: [], // 정확도 기록 배열 추가
     inResponseWindow: false,
     canRespond: true,
     presentedStimulusHistory: [],
-    interferenceType: "random",
+    interferenceType: "none",
     randomInterferenceProbabilities: {
         "previous": 0.33,
         "cyclic": 0.33,
@@ -294,20 +294,16 @@ const imageLoader = new THREE.TextureLoader();
 const imageTextures = [];
 //랜덤 색상 종류표
 const distinctColors = [
-    new THREE.Color(0xFF6B6B), // Vivid Red
-    new THREE.Color(0x1E90FF), // Dodger Blue
-    new THREE.Color(0x32CD32), // Lime Green
-    new THREE.Color(0xFFD700), // Gold
-    new THREE.Color(0x9932CC), // Dark Orchid
-    new THREE.Color(0xFF69B4), // Hot Pink
-    new THREE.Color(0x00CED1), // Dark Turquoise
-    new THREE.Color(0xFFA07A), // Light Salmon
-    new THREE.Color(0x9ACD32), // Yellow Green
-    new THREE.Color(0x87CEFA), // Light Sky Blue
-    new THREE.Color(0xFFFFFF), // White
-    new THREE.Color(0xFFFF00), // Yellow
-    new THREE.Color(0x00FF00), // Green
-    new THREE.Color(0x00FFFF), // Cyan
+new THREE.Color(0xFF8C00), // 선명한 주황 (Vivid Orange)
+new THREE.Color(0x00008B), // 짙은 파랑 (Deep Blue)
+new THREE.Color(0xFFD700), // 황금색 (Gold)
+new THREE.Color(0x8B008B), // 진한 자주색 (Dark Magenta)
+new THREE.Color(0xFF69B4), // 핫핑크 (Hot Pink)
+new THREE.Color(0x008080), // 청록색 (Teal)
+new THREE.Color(0xFF7F50), // 코랄 (Coral)
+new THREE.Color(0x32CD32), // 연두색 (Lime Green)
+new THREE.Color(0x87CEEB), // 하늘색 (Sky Blue)
+new THREE.Color(0xFFFFFF), // 흰색 (White)
 ];
 
 function getRandomColor() {
