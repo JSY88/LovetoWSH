@@ -1,7 +1,12 @@
 body {
-    margin: 0;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
+    overflow-y: auto; /* 콘텐츠가 넘치면 스크롤 활성화 */
+    -ms-overflow-style: none; /* IE/Edge 스크롤 막대 숨김 */
+    scrollbar-width: none; /* Firefox 스크롤 막대 숨김 */
+}
+
+/* Webkit 브라우저에서 스크롤 막대 숨김 */
+body::-webkit-scrollbar {
+    display: none;
 }
 
 /* 🌟 캔버스와 인디케이터 겹침 방지 */
@@ -288,10 +293,13 @@ canvas {
 }
 
 @media screen and (max-width: 480px) {
-    #titleScreen {
+#titleScreen {
         width: 90%;
         max-width: 300px;
         padding: 20px;
+        box-sizing: border-box;
+        max-height: 90vh;
+        overflow-y: auto;
     }
     #titleScreen h1 {
         font-size: 1.5em;
@@ -314,6 +322,7 @@ canvas {
         flex-direction: column;
         align-items: stretch;
     }
+
     #pressSpace {
         width: 100%;
         box-sizing: border-box;
@@ -493,3 +502,20 @@ canvas {
     z-index: 11;
     pointer-events: none;
 }
+
+#mainMenuResultBtn {
+    position: absolute;
+    top: 20px; /* 위쪽으로 이동 */
+    right: 20px;
+    padding: 10px 20px;
+    background-color: rgba(255,255,255,0.9);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    z-index: 11; /* 캔버스 위에 표시 */
+}
+
+
+
+
