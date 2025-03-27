@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>😉행복한 N-Back♥️</title>
     <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
     <canvas></canvas>
+
+<div id="fullscreenGuide" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px;">
+    전체화면 모드로 전환하려면 Safari에서 '공유' 버튼을 누르고 '홈 화면에 추가'를 선택하세요.
+</div>
+
 
     <!-- 🌟 메인 화면 -->
     <div id="titleScreen">
@@ -103,35 +109,57 @@
             <input type="checkbox" id="showStimulusCounter" value="showStimulusCounter">
         </div>
         <button id="toggleAdvancedSettingsBtn">고급 설정</button>
-        <div id="advancedSettings" style="display: none;">
-            <label>간섭 유형:</label>
-            <select id="interferenceType">
-                <option value="none">없음</option>
-                <option value="previous">이전 자극</option>
-                <option value="cyclic">순환 간섭</option>
-                <option value="next">다음 자극</option>
-                <option value="random" selected>무작위</option>
-            </select><br>
-            <label>순환 간섭 N-Back 레벨:</label>
-            <input type="number" id="cyclicInterferenceNBackLevel" min="1" max="5" value="2"><br>
-            <label>간섭 확률 (0-1):</label>
-            <input type="number" id="interferenceProbability" min="0" max="1" step="0.1" value="0.9"><br>
-            <label>목표 타겟 갯수 (장면):</label>
-            <input type="number" id="sceneTargetGoal" min="0" value="12"><br>
-            <label>목표 타겟 갯수 (위치):</label>
-            <input type="number" id="locationTargetGoal" min="0" value="12"><br>
-            <label>목표 타겟 갯수 (소리):</label>
-            <input type="number" id="soundTargetGoal" min="0" value="6"><br>
-            <label>목표 타겟 갯수 (색상):</label>
-            <input type="number" id="colorTargetGoal" min="0" value="12"><br>
-            <label>자극 랜덤성 (0-1):</label>
-            <input type="number" id="stimulusRandomness" min="0" max="1" step="0.1" value="0.5"><br>
-            <label>사운드 볼륨 (0-1):</label>
-            <input type="number" id="soundVolume" min="0" max="1" step="0.1" value="0.5"><br>
-            <label>이미지 밝기 (0-2):</label>
-            <input type="number" id="imageBrightness" min="0" max="2" step="0.1" value="1.0"><br>
-            <label>이미지 대비 (0-2):</label>
-            <input type="number" id="imageContrast" min="0" max="2" step="0.1" value="1.0"><br>
+<div id="advancedSettings" style="display: none;">
+
+    <h3>패턴방지 설정</h3>
+    <label>패턴방지 강도 (0-10):</label>
+    <input type="number" id="patternPreventionStrength" min="0" max="10" value="5"><br>
+    <label>타겟 자극 최소 간격:</label>
+    <input type="number" id="minTargetInterval" min="1" max="20" value="2"><br>
+    <label>타겟 자극 최대 간격:</label>
+    <input type="number" id="maxTargetInterval" min="5" max="50" value="10"><br>
+
+    <h3>자극 생성 설정</h3>
+    <label>장면 자극 랜덤성 (0-1):</label>
+    <input type="number" id="sceneRandomness" min="0" max="1" step="0.1" value="0.5"><br>
+    <label>위치 자극 랜덤성 (0-1):</label>
+    <input type="number" id="locationRandomness" min="0" max="1" step="0.1" value="0.5"><br>
+    <label>소리 자극 랜덤성 (0-1):</label>
+    <input type="number" id="soundRandomness" min="0" max="1" step="0.1" value="0.5"><br>
+    <label>색상 자극 랜덤성 (0-1):</label>
+    <input type="number" id="colorRandomness" min="0" max="1" step="0.1" value="0.5"><br>
+    <label>장면 타겟 빈도 (0-1):</label>
+    <input type="number" id="targetFrequencyScene" min="0" max="1" step="0.1" value="0.4"><br>
+    <label>위치 타겟 빈도 (0-1):</label>
+    <input type="number" id="targetFrequencyLocation" min="0" max="1" step="0.1" value="0.4"><br>
+    <label>소리 타겟 빈도 (0-1):</label>
+    <input type="number" id="targetFrequencySound" min="0" max="1" step="0.1" value="0.2"><br>
+    <label>색상 타겟 빈도 (0-1):</label>
+    <input type="number" id="targetFrequencyColor" min="0" max="1" step="0.1" value="0.4"><br>
+
+    <h3>간섭 설정</h3>
+    <label>간섭 유형:</label>
+    <select id="interferenceType">
+        <option value="none">없음</option>
+        <option value="previous">이전 자극</option>
+        <option value="cyclic">순환 간섭</option>
+        <option value="next">다음 자극</option>
+        <option value="random" selected>무작위</option>
+    </select><br>
+    <label>순환 간섭 N-Back 레벨:</label>
+    <input type="number" id="cyclicInterferenceNBackLevel" min="1" max="5" value="2"><br>
+    <label>간섭 확률 (0-1):</label>
+    <input type="number" id="interferenceProbability" min="0" max="1" step="0.1" value="0.9"><br>
+    <label>간섭 강도 (0-1):</label>
+    <input type="number" id="interferenceStrength" min="0" max="1" step="0.1" value="0.5"><br>
+
+    <h3>기타 설정</h3>
+    <label>사운드 볼륨 (0-1):</label>
+    <input type="number" id="soundVolume" min="0" max="1" step="0.1" value="0.5"><br>
+    <label>이미지 밝기 (0-2):</label>
+    <input type="number" id="imageBrightness" min="0" max="2" step="0.1" value="1.0"><br>
+    <label>이미지 대비 (0-2):</label>
+    <input type="number" id="imageContrast" min="0" max="2" step="0.1" value="1.0"><br>
             <label>이미지 소스 URL (폴더 경로):</label>
             <input type="text" id="imageSourceUrl" value="images/" placeholder="예: images/"><br>
             <label>결과 배경 이미지 URL:</label>
@@ -143,7 +171,27 @@
             </select><br>
             <label>사운드 URL (폴더 경로):</label>
             <input type="text" id="soundSourceUrl" value="sounds/" placeholder="예: sounds/">
+
+    <!-- 설명서 추가 -->
+    <details id="manualSection">
+        <summary>설명서 보기</summary>
+        <div style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #ccc;">
+            <h4>고급 설정 설명서</h4>
+            <p><strong>최대 A-B-A 패턴 횟수:</strong> A-B-A 패턴(예: 장면-위치-장면)이 허용되는 최대 횟수. 0~10 사이 설정. 낮을수록 패턴 반복 줄임.</p>
+            <p><strong>최대 A-B-A-B 패턴 횟수:</strong> A-B-A-B 패턴이 허용되는 최대 횟수. 0~5 사이 설정.</p>
+            <p><strong>타겟 간 최소 간격:</strong> 타겟 자극 간 최소 거리(자극 수). 1~20 사이 설정.</p>
+            <p><strong>타겟 간 최대 간격:</strong> 타겟 자극 간 최대 거리. 5~50 사이 설정. 자극 수보다 커질 수 없음.</p>
+            <p><strong>장면/위치/소리/색상 자극 랜덤성:</strong> 자극 선택 시 무작위성 정도. 0(순차적) ~ 1(완전 무작위).</p>
+            <p><strong>장면/위치/소리/색상 타겟 빈도:</strong> 각 유형 타겟의 생성 확률. 0~1 사이 설정.</p>
+            <p><strong>간섭 유형:</strong> 간섭 적용 방식. 없음, 이전, 순환, 다음, 무작위 중 선택.</p>
+            <p><strong>순환 간섭 N-Back 레벨:</strong> 순환 간섭 적용 시 참조할 N-Back 레벨. 1~5 사이.</p>
+            <p><strong>간섭 확률:</strong> 간섭 발생 확률. 0~1 사이.</p>
+            <p><strong>간섭 강도:</strong> 간섭이 자극에 미치는 영향 정도. 0~1 사이.</p>
+            <p><strong>사운드 볼륨:</strong> 소리 크기. 0(무음) ~ 1(최대).</p>
+            <p><strong>이미지 밝기/대비:</strong> 이미지 렌더링 시 밝기와 대비 조정. 0~2 사이.</p>
         </div>
+    </details>
+</div>
         <button id="toggleButtonSettingsBtn">버튼 설정</button>
         <div id="buttonSettings" style="display: none;">
             <label>버튼 자극 할당:</label>
