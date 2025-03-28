@@ -45,15 +45,6 @@ accuracyHistory: [], // 정확도 기록 배열 추가
     currentIsColorTarget: false,
     inResponseWindow: false,
     canRespond: true,
-    presentedStimulusHistory: [],
-    interferenceType: "none",
-    randomInterferenceProbabilities: {
-        "previous": 0.33,
-        "cyclic": 0.33,
-        "next": 0.34
-    },
-    cyclicInterferenceNBackLevel: 2,
-    nextStimulusInfo: null,
     consecutiveGames: 0,
     totalGamesToday: 0,
     stimulusTypes: [],
@@ -294,16 +285,16 @@ const imageLoader = new THREE.TextureLoader();
 const imageTextures = [];
 //랜덤 색상 종류표
 const distinctColors = [
-new THREE.Color(0xFF8C00), // 선명한 주황 (Vivid Orange)
-new THREE.Color(0x00008B), // 짙은 파랑 (Deep Blue)
-new THREE.Color(0xFFD700), // 황금색 (Gold)
-new THREE.Color(0x8B008B), // 진한 자주색 (Dark Magenta)
-new THREE.Color(0xFF69B4), // 핫핑크 (Hot Pink)
-new THREE.Color(0x008080), // 청록색 (Teal)
-new THREE.Color(0xFF7F50), // 코랄 (Coral)
-new THREE.Color(0x32CD32), // 연두색 (Lime Green)
-new THREE.Color(0x87CEEB), // 하늘색 (Sky Blue)
-new THREE.Color(0xFFFFFF), // 흰색 (White)
+ new THREE.Color(0xFF8C00), // 선명한 주황 (Vivid Orange)
+ new THREE.Color(0x00008B), // 짙은 파랑 (Deep Blue)
+ new THREE.Color(0xFFD700), // 황금색 (Gold)
+ new THREE.Color(0x8B008B), // 진한 자주색 (Dark Magenta)
+ new THREE.Color(0xFF69B4), // 핫핑크 (Hot Pink)
+ new THREE.Color(0x008080), // 청록색 (Teal)
+ new THREE.Color(0xFF7F50), // 코랄 (Coral)
+ new THREE.Color(0x32CD32), // 연두색 (Lime Green)
+ new THREE.Color(0x87CEEB), // 하늘색 (Sky Blue)
+ new THREE.Color(0xFFFFFF), // 흰색 (White)
 ];
 
 function getRandomColor() {
@@ -468,76 +459,6 @@ function showMissedTargetFeedback(indicatorId) {
         return;
     }
     indicator.classList.add('missed');
-}
-
-function introduceInterference(currentImageIndex, currentPanelIndex, currentSoundIndex, currentColorIndex) {
-    console.log("introduceInterference() - 간섭 로직 시작:", { // 디버깅: 입력값 확인
-        currentImageIndex, currentPanelIndex, currentSoundIndex, currentColorIndex,
-        currentStimulus: gameState.currentStimulus
-    });
-
-    let currentInterferenceType = gameState.interferenceType;
-    if (currentInterferenceType === "none") {
-        console.log("introduceInterference() - 간섭 적용 안 함: 타입이 'none'");
-        return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex, soundIndex: currentSoundIndex, colorIndex: currentColorIndex };
-    }
-
-    if (currentInterferenceType === "random") {
-        const rand = Math.random();
-        let cumulativeProbability = 0;
-        for (const type in gameState.randomInterferenceProbabilities) {
-            cumulativeProbability += gameState.randomInterferenceProbabilities[type];
-            if (rand < cumulativeProbability) {
-                currentInterferenceType = type;
-                break;
-            }
-        }
-        console.log("introduceInterference() - 무작위 간섭 타입 선택:", currentInterferenceType, "rand:", rand);
-    }
-
-    const interferenceChance = 0.0; // 간섭 발생 확률 조정 (기존 0.0에서 테스트용으로 변경)
-    if (Math.random() < interferenceChance) {
-        let interferedImageIndex = currentImageIndex;
-        let interferedPanelIndex = currentPanelIndex;
-        let interferedSoundIndex = currentSoundIndex;
-        let interferedColorIndex = currentColorIndex;
-
-        if (currentInterferenceType === "previous" && gameState.currentStimulus > 0) {
-            const previous = gameState.presentedStimulusHistory[gameState.currentStimulus - 1];
-            const type = Math.random();
-            if (type < 0.25) interferedImageIndex = previous.imageIndex;
-            else if (type < 0.5) interferedPanelIndex = previous.panelIndex;
-            else if (type < 0.75) interferedSoundIndex = previous.soundIndex;
-            else interferedColorIndex = previous.colorIndex;
-            console.log("introduceInterference() - 이전 자극 간섭 적용:", { type });
-        } else if (currentInterferenceType === "cyclic" && gameState.currentStimulus >= gameState.cyclicInterferenceNBackLevel) {
-            const cyclic = gameState.presentedStimulusHistory[gameState.currentStimulus - gameState.cyclicInterferenceNBackLevel];
-            const type = Math.random();
-            if (type < 0.25) interferedImageIndex = cyclic.imageIndex;
-            else if (type < 0.5) interferedPanelIndex = cyclic.panelIndex;
-            else if (type < 0.75) interferedSoundIndex = cyclic.soundIndex;
-            else interferedColorIndex = cyclic.colorIndex;
-            console.log("introduceInterference() - 주기적 간섭 적용:", { type });
-        } else if (currentInterferenceType === "next" && gameState.nextStimulusInfo) {
-            const type = Math.random();
-            if (type < 0.25) interferedImageIndex = gameState.nextStimulusInfo.imageIndex;
-            else if (type < 0.5) interferedPanelIndex = gameState.nextStimulusInfo.panelIndex;
-            else if (type < 0.75) interferedSoundIndex = gameState.nextStimulusInfo.soundIndex;
-            else interferedColorIndex = gameState.nextStimulusInfo.colorIndex;
-            console.log("introduceInterference() - 다음 자극 간섭 적용:", { type });
-        }
-
-        console.log("introduceInterference() - 간섭 적용 결과:", { // 디버깅: 간섭 결과
-            imageIndex: interferedImageIndex,
-            panelIndex: interferedPanelIndex,
-            soundIndex: interferedSoundIndex,
-            colorIndex: interferedColorIndex
-        });
-        return { imageIndex: interferedImageIndex, panelIndex: interferedPanelIndex, soundIndex: interferedSoundIndex, colorIndex: interferedColorIndex };
-    }
-
-    console.log("introduceInterference() - 간섭 미적용: 확률 조건 미충족");
-    return { imageIndex: currentImageIndex, panelIndex: currentPanelIndex, soundIndex: currentSoundIndex, colorIndex: currentColorIndex };
 }
 
 
@@ -921,7 +842,6 @@ function generateNextStimulus() {
 
     console.log("generateNextStimulus() - Stimulus data:", { imageIndex, panelIndex, soundIndex, colorIndex, targetType });
 
-    gameState.nextStimulusInfo = { imageIndex, panelIndex, soundIndex, colorIndex, targetType };
     updateStimulusCounter();
     showStimulus(imageIndex, panelIndex, soundIndex, colorIndex);
 }
@@ -1604,10 +1524,11 @@ function analyzePatterns(sequence) {
         }
     }
 
+    // 미친 학자: 빨간색 디버깅 로그 추가
+    console.log(`%canalyzePatterns() - 패턴 분석 결과: A-B-A: ${patternCounts["A-B-A"]}, A-B-A-B: ${patternCounts["A-B-A-B"]}`, 'color: red');
     console.log(`analyzePatterns() - 패턴 분석 완료:`, patternCounts);
     return { patternCounts };
 }
-
 
 function findProblematicPositions(sequence) {
     const problematicPositions = [];
@@ -2005,8 +1926,6 @@ function applySettings() {
     gameState.stimulusInterval = parseInt(document.getElementById('stimulusInterval').value) || 2500;
 
     // 고급 설정 적용
-    gameState.interferenceType = document.getElementById('interferenceType').value;
-    gameState.cyclicInterferenceNBackLevel = parseInt(document.getElementById('cyclicInterferenceNBackLevel').value) || 2;
     gameState.imageSourceUrl = document.getElementById('imageSourceUrl').value;
     gameState.resultImageUrl = document.getElementById('resultImageUrl').value;
     gameState.soundSource = document.getElementById('soundSourceSelect').value;
@@ -2057,8 +1976,6 @@ function applySettings() {
     localStorage.setItem('stimuliPerBlock', gameState.stimuliPerBlock);
     localStorage.setItem('stimulusDuration', gameState.stimulusDuration);
     localStorage.setItem('stimulusInterval', gameState.stimulusInterval);
-    localStorage.setItem('interferenceType', gameState.interferenceType);
-    localStorage.setItem('cyclicInterferenceNBackLevel', gameState.cyclicInterferenceNBackLevel);
     localStorage.setItem('patternPreventionStrength', gameState.patternPreventionStrength);
     localStorage.setItem('minTargetInterval', gameState.minTargetInterval);
     localStorage.setItem('maxTargetInterval', gameState.maxTargetInterval);
@@ -2139,8 +2056,7 @@ function loadSettings() {
     gameState.stimuliPerBlock = parseInt(localStorage.getItem('stimuliPerBlock')) || 30;
     gameState.stimulusDuration = parseInt(localStorage.getItem('stimulusDuration')) || 1000;
     gameState.stimulusInterval = parseInt(localStorage.getItem('stimulusInterval')) || 2500;
-    gameState.interferenceType = localStorage.getItem('interferenceType') || 'random';
-    gameState.cyclicInterferenceNBackLevel = parseInt(localStorage.getItem('cyclicInterferenceNBackLevel')) || 2;
+
     // 패턴 방지 설정 불러오기 추가
     gameState.patternPreventionStrength = parseInt(localStorage.getItem('patternPreventionStrength')) || 5;
     gameState.minTargetInterval = parseInt(localStorage.getItem('minTargetInterval')) || 2;
