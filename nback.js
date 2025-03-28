@@ -1333,20 +1333,6 @@ function handleColorResponse() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function setTargetGoal(type, baseValue) {
     if (!Number.isInteger(baseValue) || baseValue < 0) {
         console.error(`setTargetGoal() - 잘못된 타겟 목표 값: ${type}=${baseValue}`);
@@ -2111,7 +2097,7 @@ function populateSettings() {
     document.getElementById('buttonWidth').value = gameState.buttonStyles.width;
     document.getElementById('buttonHeight').value = gameState.buttonStyles.height;
 
-    // 인디케이터 위치 초기화
+    // 인디케이터 위치 초기화 (현재 UI 상태 반영)
     document.getElementById('button1Left').value = parseInt(sceneIndicator.style.left) || 20;
     document.getElementById('button1Bottom').value = parseInt(sceneIndicator.style.bottom) || 20;
     document.getElementById('button2Left').value = parseInt(soundIndicator.style.left) || 120;
@@ -2120,6 +2106,15 @@ function populateSettings() {
     document.getElementById('button3Bottom').value = parseInt(locationIndicator.style.bottom) || 20;
     document.getElementById('button4Right').value = parseInt(colorIndicator.style.right) || 20;
     document.getElementById('button4Bottom').value = parseInt(colorIndicator.style.bottom) || 20;
+
+    // 디버깅: 설정 패널에 반영된 인디케이터 위치 확인
+    console.log("populateSettings() - 설정 패널에 인디케이터 위치 반영:", {
+        scene: { left: document.getElementById('button1Left').value, bottom: document.getElementById('button1Bottom').value },
+        sound: { left: document.getElementById('button2Left').value, bottom: document.getElementById('button2Bottom').value },
+        location: { right: document.getElementById('button3Right').value, bottom: document.getElementById('button3Bottom').value },
+        color: { right: document.getElementById('button4Right').value, bottom: document.getElementById('button4Bottom').value },
+        timestamp: Date.now()
+    });
 
     // 설정값이 UI에 반영되었는지 로그로 확인
     console.log("populateSettings() - UI에 설정값 반영 완료", { 
@@ -2143,8 +2138,6 @@ function populateSettings() {
         timestamp: Date.now()
     });
 }
-
-
 
 
 
@@ -2262,13 +2255,49 @@ function applySettings() {
 
     // 인디케이터 위치 및 스타일 적용
     const indicators = [sceneIndicator, soundIndicator, locationIndicator, colorIndicator];
+    const indicatorPositions = [
+        { left: parseInt(document.getElementById('button1Left').value) || 20, bottom: parseInt(document.getElementById('button1Bottom').value) || 20 },
+        { left: parseInt(document.getElementById('button2Left').value) || 120, bottom: parseInt(document.getElementById('button2Bottom').value) || 20 },
+        { right: parseInt(document.getElementById('button3Right').value) || 120, bottom: parseInt(document.getElementById('button3Bottom').value) || 20 },
+        { right: parseInt(document.getElementById('button4Right').value) || 20, bottom: parseInt(document.getElementById('button4Bottom').value) || 20 }
+    ];
+
     indicators.forEach((indicator, i) => {
-        indicator.style.left = i < 2 ? `${document.getElementById(`button${i + 1}Left`).value}px` : null;
-        indicator.style.right = i >= 2 ? `${document.getElementById(`button${i + 1}Right`).value}px` : null;
-        indicator.style.bottom = `${document.getElementById(`button${i + 1}Bottom`).value}px`;
+        if (i < 2) {
+            indicator.style.left = `${indicatorPositions[i].left}px`;
+            indicator.style.right = ''; // 오른쪽 위치 초기화
+        } else {
+            indicator.style.right = `${indicatorPositions[i].right}px`;
+            indicator.style.left = ''; // 왼쪽 위치 초기화
+        }
+        indicator.style.bottom = `${indicatorPositions[i].bottom}px`;
+
+        // 디버깅: 인디케이터 위치가 UI에 반영되었는지 확인
+        console.log(`applySettings() - 인디케이터 ${i + 1} 위치 적용:`, {
+            id: indicator.id,
+            left: indicator.style.left,
+            right: indicator.style.right,
+            bottom: indicator.style.bottom,
+            timestamp: Date.now()
+        });
     });
 
     applyIndicatorStyles(indicators, gameState.buttonStyles);
+
+    // 인디케이터 위치를 로컬 스토리지에 저장
+    localStorage.setItem('sceneIndicatorPos', JSON.stringify({ left: indicatorPositions[0].left, bottom: indicatorPositions[0].bottom }));
+    localStorage.setItem('soundIndicatorPos', JSON.stringify({ left: indicatorPositions[1].left, bottom: indicatorPositions[1].bottom }));
+    localStorage.setItem('locationIndicatorPos', JSON.stringify({ right: indicatorPositions[2].right, bottom: indicatorPositions[2].bottom }));
+    localStorage.setItem('colorIndicatorPos', JSON.stringify({ right: indicatorPositions[3].right, bottom: indicatorPositions[3].bottom }));
+
+    // 디버깅: 저장된 위치 값 확인
+    console.log("applySettings() - 인디케이터 위치 로컬 스토리지 저장 완료:", {
+        scene: JSON.parse(localStorage.getItem('sceneIndicatorPos')),
+        sound: JSON.parse(localStorage.getItem('soundIndicatorPos')),
+        location: JSON.parse(localStorage.getItem('locationIndicatorPos')),
+        color: JSON.parse(localStorage.getItem('colorIndicatorPos')),
+        timestamp: Date.now()
+    });
 
     // 로컬 스토리지 저장
     localStorage.setItem('stimulusTypes', JSON.stringify(gameState.stimulusTypes));
@@ -2293,7 +2322,6 @@ function applySettings() {
     document.getElementById('settingsError').style.display = 'none';
     loadImageTextures();
 }
-
 
 
 
@@ -2357,7 +2385,6 @@ function loadSettings() {
     const savedNearMissProbability = parseFloat(localStorage.getItem('nearMissProbability'));
     gameState.nearMissProbability = isNaN(savedNearMissProbability) ? 0.1 : Math.min(Math.max(savedNearMissProbability, 0), 1);
 
-    // 최대 간격이 최소 간격보다 작은 경우 조정
     if (gameState.maxTargetInterval < gameState.minTargetInterval) {
         gameState.maxTargetInterval = gameState.minTargetInterval + 1;
         console.log("loadSettings() - 경고: 최대 간격이 최소 간격보다 작아 조정됨", { maxTargetInterval: gameState.maxTargetInterval });
@@ -2372,18 +2399,33 @@ function loadSettings() {
     gameState.soundKey = localStorage.getItem('soundKey') || 'L';
     gameState.colorKey = localStorage.getItem('colorKey') || 'K';
 
-    const scenePos = JSON.parse(localStorage.getItem('sceneIndicatorPos')) || { left: '30px', bottom: '40px' };
-    const soundPos = JSON.parse(localStorage.getItem('soundIndicatorPos')) || { left: '130px', bottom: '40px' };
-    const locationPos = JSON.parse(localStorage.getItem('locationIndicatorPos')) || { right: '130px', bottom: '40px' };
-    const colorPos = JSON.parse(localStorage.getItem('colorIndicatorPos')) || { right: '30px', bottom: '40px' };
-    sceneIndicator.style.left = scenePos.left;
-    sceneIndicator.style.bottom = scenePos.bottom;
-    soundIndicator.style.left = soundPos.left;
-    soundIndicator.style.bottom = soundPos.bottom;
-    locationIndicator.style.right = locationPos.right;
-    locationIndicator.style.bottom = locationPos.bottom;
-    colorIndicator.style.right = colorPos.right;
-    colorIndicator.style.bottom = colorPos.bottom;
+    // 저장된 인디케이터 위치 로드 및 적용
+    const scenePos = JSON.parse(localStorage.getItem('sceneIndicatorPos')) || { left: 20, bottom: 20 };
+    const soundPos = JSON.parse(localStorage.getItem('soundIndicatorPos')) || { left: 120, bottom: 20 };
+    const locationPos = JSON.parse(localStorage.getItem('locationIndicatorPos')) || { right: 120, bottom: 20 };
+    const colorPos = JSON.parse(localStorage.getItem('colorIndicatorPos')) || { right: 20, bottom: 20 };
+
+    sceneIndicator.style.left = `${scenePos.left}px`;
+    sceneIndicator.style.bottom = `${scenePos.bottom}px`;
+    sceneIndicator.style.right = ''; // 초기화
+    soundIndicator.style.left = `${soundPos.left}px`;
+    soundIndicator.style.bottom = `${soundPos.bottom}px`;
+    soundIndicator.style.right = ''; // 초기화
+    locationIndicator.style.right = `${locationPos.right}px`;
+    locationIndicator.style.bottom = `${locationPos.bottom}px`;
+    locationIndicator.style.left = ''; // 초기화
+    colorIndicator.style.right = `${colorPos.right}px`;
+    colorIndicator.style.bottom = `${colorPos.bottom}px`;
+    colorIndicator.style.left = ''; // 초기화
+
+    // 디버깅: 로드된 위치 값이 UI에 반영되었는지 확인
+    console.log("loadSettings() - 인디케이터 위치 로드 및 UI 반영:", {
+        scene: { left: sceneIndicator.style.left, bottom: sceneIndicator.style.bottom },
+        sound: { left: soundIndicator.style.left, bottom: soundIndicator.style.bottom },
+        location: { right: locationIndicator.style.right, bottom: locationIndicator.style.bottom },
+        color: { right: colorIndicator.style.right, bottom: colorIndicator.style.bottom },
+        timestamp: Date.now()
+    });
 
     // 버튼 스타일 로드
     gameState.buttonStyles = JSON.parse(localStorage.getItem('buttonStyles')) || {
@@ -2414,7 +2456,6 @@ function loadSettings() {
         timestamp: Date.now()
     });
 }
-
 
 
 
