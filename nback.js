@@ -285,17 +285,15 @@ const imageLoader = new THREE.TextureLoader();
 const imageTextures = [];
 //랜덤 색상 종류표
 const distinctColors = [
- new THREE.Color(0xFF8C00), // 선명한 주황 (Vivid Orange)
- new THREE.Color(0x00008B), // 짙은 파랑 (Deep Blue)
- new THREE.Color(0xFFD700), // 황금색 (Gold)
- new THREE.Color(0x8B008B), // 진한 자주색 (Dark Magenta)
- new THREE.Color(0xFF69B4), // 핫핑크 (Hot Pink)
- new THREE.Color(0x008080), // 청록색 (Teal)
- new THREE.Color(0xFF7F50), // 코랄 (Coral)
- new THREE.Color(0x32CD32), // 연두색 (Lime Green)
- new THREE.Color(0x87CEEB), // 하늘색 (Sky Blue)
- new THREE.Color(0xFFFFFF), // 흰색 (White)
-];
+  new THREE.Color(0xFFFF00), // 밝은 노랑 (Bright Yellow) - 검은색과 대비가 매우 강하여 눈에 잘 띕니다.
+  new THREE.Color(0x00FFFF), // 시안 (Cyan) - 밝고 선명하며 노랑과 뚜렷하게 구분됩니다.
+  new THREE.Color(0xFF00FF), // 마젠타 (Magenta) - 강렬한 색상으로 시안, 노랑과 구별이 용이합니다.
+  new THREE.Color(0x00FF00), // 밝은 초록 (Bright Green) - 눈에 편안하면서도 검은색 배경에서 잘 보입니다.
+  new THREE.Color(0xFF0000), // 밝은 빨강 (Bright Red) - 주목성이 높고 다른 색상들과 명확히 대비됩니다.
+  new THREE.Color(0x0000FF), // 밝은 파랑 (Bright Blue) - 선명하며 다른 밝은 색상들과 구별됩니다.
+  new THREE.Color(0xFFA500), // 주황 (Orange) - 노랑과 빨강 사이의 색으로, 뚜렷한 존재감을 나타냅니다.
+  new THREE.Color(0x800080), // 보라 (Purple) - 파랑과 빨강의 조합으로 독특한 느낌을 주며 구분이 쉽습니다.
+  new THREE.Color(0xFFFFFF)  // 흰색 (White) - 가장 높은 대비를 제공하며 기준 색상으로 유용합니다.];
 
 function getRandomColor() {
     return distinctColors[Math.floor(Math.random() * distinctColors.length)];
