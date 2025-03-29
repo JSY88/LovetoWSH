@@ -1,46 +1,4 @@
  // Web Audio Context Initialization
-
-
-
-// 디바운스 함수 정의
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// 실시간 설정 적용 이벤트 리스너
-const settingsInputs = [
-    'sceneStimulus', 'locationStimulus', 'soundStimulus', 'colorStimulus',
-    'stimuliPerBlock', 'stimulusDuration', 'stimulusInterval',
-    'patternPreventionStrength', 'minTargetInterval', 'maxTargetInterval', 'nearMissProbability',
-    'randomIntervalEnabled', 'minRandomInterval', 'maxRandomInterval',
-    'intervalBarWidth', 'intervalBarHeight', 'intervalBarX', 'intervalBarY', 'intervalBarColor',
-    'imageSourceUrl', 'resultImageUrl', 'soundSourceSelect', 'soundSourceUrl',
-    'sceneKey', 'locationKey', 'soundKey', 'colorKey',
-    'buttonBgColor', 'buttonBgOpacity', 'buttonTextColor', 'buttonTextOpacity', 'buttonWidth', 'buttonHeight',
-    'button1Left', 'button1Bottom', 'button2Left', 'button2Bottom', 'button3Right', 'button3Bottom', 'button4Right', 'button4Bottom',
-    'useCeilingPanels', 'useFloorPanels',
-    'ceilingPanel1X', 'ceilingPanel1Y', 'ceilingPanel1Z', 'ceilingPanel1RotX', 'ceilingPanel1RotY', 'ceilingPanel1RotZ',
-    'ceilingPanel2X', 'ceilingPanel2Y', 'ceilingPanel2Z', 'ceilingPanel2RotX', 'ceilingPanel2RotY', 'ceilingPanel2RotZ',
-    'floorPanel1X', 'floorPanel1Y', 'floorPanel1Z', 'floorPanel1RotX', 'floorPanel1RotY', 'floorPanel1RotZ',
-    'floorPanel2X', 'floorPanel2Y', 'floorPanel2Z', 'floorPanel2RotX', 'floorPanel2RotY', 'floorPanel2RotZ'
-];
-
-// toggleSettings 호출을 기존 버튼에 연결 (예: settings 버튼)
-document.getElementById('openSettingsBtn').addEventListener('click', toggleSettings);
-
-
-
-
-
-
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 
@@ -86,27 +44,9 @@ const gameState = {
     locationHistory: [],
     soundHistory: [],
     colorHistory: [],
-intervalBarStyles: {
-        width: 200,       // 픽셀 단위
-        height: 10,       // 픽셀 단위
-        x: 50,            // 퍼센트 단위 (중앙 = 50%)
-        y: 10,            // 픽셀 단위 (상단으로부터)
-        backgroundColor: '#00b7eb' // 기본 파란색
-    },
-stimulusDuration: 1000,      // 자극 제시 지속시간 (ms)
-    stimulusInterval: 2500,      // 자극 간 간격 시간 (ms)
-    randomIntervalEnabled: false, // 자극 간 간격 무작위 기능 활성화 여부
-    minRandomInterval: 500,      // 최소 자극 간격 (ms)
-    maxRandomInterval: 4000,      // 최대 자극 간격 (ms)
-    currentRandomInterval: null,  // 현재 선택된 랜덤 간격 (디버깅용)
-    isStimulusShowing: false,     // 자극이 현재 표시 중인지 여부 (신규 추가)
-randomIntervalEnabled: false, // 자극 간 간격 무작위 기능 활성화 여부
-    minRandomInterval: 1000,      // 최소 자극 간격 (ms)
-    maxRandomInterval: 2500,      // 최대 자극 간격 (ms)
-    currentRandomInterval: null,  // 현재 선택된 랜덤 간격 (디버깅용)
 buttonStyles: null, // 버튼 스타일 저장용 속성 추가
 accuracyHistory: [], // 정확도 기록 배열 추가
-nearMissProbability: 0.0, // 니얼미스 발생 확률 (기본 10%)
+nearMissProbability: 0.3, // 니얼미스 발생 확률 (기본 10%)
     nearMissResponses: 0,     // 니얼미스에 반응한 횟수
     targetMissedErrors: { scene: 0, location: 0, sound: 0, color: 0 }, // 타겟인데 오답 처리된 횟수
     nonTargetFalseResponses: { scene: 0, location: 0, sound: 0, color: 0 }, // 논타겟을 정답으로 오판정한 횟수
@@ -734,36 +674,18 @@ function clearAllSounds() {
 
 
 function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
-    if (gameState.isPaused) {
-        console.log("showStimulus() - 게임이 일시정지 상태입니다. 자극 표시 중단.");
-        return;
-    }
-
-    if (gameState.isStimulusShowing) {
-        console.warn("showStimulus() - 자극이 이미 표시 중입니다. 중복 호출 방지.");
-        return;
-    }
-
-    console.log("showStimulus() - 자극 표시 시작: ", { imageIndex, panelIndex, soundIndex, colorIndex, currentStimulus: gameState.currentStimulus, timestamp: Date.now() });
-
+    if (gameState.isPaused) return;
+    console.log("showStimulus() - 시작: imageIndex:", imageIndex, "panelIndex:", panelIndex, "soundIndex:", soundIndex, "colorIndex:", colorIndex, "currentStimulus:", gameState.currentStimulus);
     resetIndicators();
+    const panel = panels[panelIndex];
 
-    if (gameState.currentTimer) {
-        clearTimeout(gameState.currentTimer);
-        console.log("showStimulus() - 이전 currentTimer 클리어됨: ", gameState.currentTimer);
-    }
-
-    const stimulusDuration = gameState.stimulusDuration;
-    const intervalToUse = gameState.currentRandomInterval || gameState.stimulusInterval; // 간격 값 가져오기
-    const totalDuration = stimulusDuration + intervalToUse + 40; // 전체 흐름 시간
-
-    // 타겟 여부 설정 (기존 로직 유지)
+    // 미리 설정된 타겟 여부 사용
     if (gameState.currentStimulus >= gameState.nBackLevel) {
         gameState.currentIsSceneTarget = gameState.stimulusSequence[gameState.currentStimulus].isSceneTarget;
         gameState.currentIsLocationTarget = gameState.stimulusSequence[gameState.currentStimulus].isLocationTarget;
         gameState.currentIsSoundTarget = gameState.stimulusSequence[gameState.currentStimulus].isSoundTarget;
         gameState.currentIsColorTarget = gameState.stimulusSequence[gameState.currentStimulus].isColorTarget;
-        console.log("showStimulus() - 시퀀스에서 정의된 타겟: ", {
+        console.log("showStimulus() - 시퀀스에서 정의된 타겟:", {
             scene: gameState.currentIsSceneTarget,
             location: gameState.currentIsLocationTarget,
             sound: gameState.currentIsSoundTarget,
@@ -777,143 +699,166 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
         console.log("showStimulus() - 초기 자극, 타겟 없음");
     }
 
+
     // 자극 제시
-    const panel = panels[panelIndex];
     createStimulusImage(imageIndex, panel, colorIndex);
     if (gameState.stimulusTypes.includes("sound")) {
         playSound(soundIndex);
     }
-    gameState.isStimulusShowing = true;
 
-    // 간격 막대 표시 시작 (자극 시작 시점)
-    const intervalBar = document.getElementById('intervalBar');
-    let responsiveWidth, responsiveHeight;
-    if (intervalBar) {
-        const baseWidth = gameState.intervalBarStyles.width;
-        const baseHeight = gameState.intervalBarStyles.height;
-        const screenWidth = window.innerWidth;
-        responsiveWidth = Math.min(baseWidth, screenWidth * 0.8);
-        responsiveHeight = baseHeight * (responsiveWidth / baseWidth);
-
-        intervalBar.style.width = `${responsiveWidth}px`;
-        intervalBar.style.height = `${responsiveHeight}px`;
-        intervalBar.style.left = `${gameState.intervalBarStyles.x}%`;
-        intervalBar.style.top = `${gameState.intervalBarStyles.y}px`;
-        intervalBar.style.backgroundColor = gameState.intervalBarStyles.backgroundColor;
-        intervalBar.style.transform = 'translateX(-50%)';
-        intervalBar.style.display = 'block';
-        intervalBar.style.maxWidth = '80vw';
-        intervalBar.style.transition = 'none'; // 자극 동안 고정 크기 유지
-
-        console.log("showStimulus() - 간격 막대 표시 시작 (자극 시점):", {
-            initialWidth: `${responsiveWidth}px`,
-            height: `${responsiveHeight}px`,
-            maxWidth: '80vw',
-            screenWidth: screenWidth,
-            transition: intervalBar.style.transition,
-            timestamp: Date.now()
-        });
-    }
-
-    console.log("showStimulus() - 자극 제시 완료: ", { imageIndex, panelIndex, soundIndex, colorIndex });
-
-    // 히스토리 업데이트 (기존 로직 유지)
+    console.log("showStimulus() - Presented stimulus:", imageIndex, panelIndex, soundIndex, colorIndex);
     gameState.sceneHistory.push(imageIndex);
     gameState.locationHistory.push(panelIndex);
     gameState.soundHistory.push(soundIndex);
     gameState.colorHistory.push(colorIndex);
-    gameState.presentedStimulusHistory.push({ imageIndex, panelIndex, soundIndex, colorIndex });
+
+    gameState.presentedStimulusHistory.push({
+        imageIndex,
+        panelIndex,
+        soundIndex,
+        colorIndex
+    });
 
     gameState.currentStimulus++;
 
-    // 자극 제거 및 간격 관리
-    const stimulusStartTime = Date.now();
-    gameState.currentTimer = setTimeout(() => {
-        const actualStimulusDuration = Date.now() - stimulusStartTime;
-        console.log(`showStimulus() - 자극 제거: 실제 지속 시간=${actualStimulusDuration}ms (설정값=${stimulusDuration}ms)`);
+    if (gameState.currentStimulus < gameState.stimuliPerBlock) {
+        gameState.currentTimer = setTimeout(() => {
+            console.log("Timer - Clearing stimuli and stopping sound, currentStimulus:", gameState.currentStimulus, "timestamp:", Date.now());
+            clearAllStimuli();
+            stopSound();
+            gameState.inResponseWindow = true;
+            gameState.canRespondScene = true;
+            gameState.canRespondLocation = true;
+            gameState.canRespondSound = true;
+            gameState.canRespondColor = true;
 
-        clearAllStimuli();
-        stopSound();
-        gameState.isStimulusShowing = false;
-        gameState.inResponseWindow = true;
-        gameState.canRespondScene = true;
-        gameState.canRespondLocation = true;
-        gameState.canRespondSound = true;
-        gameState.canRespondColor = true;
+            gameState.responseWindowTimer = setTimeout(() => {
+                console.log("Timer - Response window closed, currentStimulus:", gameState.currentStimulus, "stimulusInterval:", gameState.stimulusInterval, "timestamp:", Date.now());
+                gameState.inResponseWindow = false;
+                gameState.canRespondScene = false;
+                gameState.canRespondLocation = false;
+                gameState.canRespondSound = false;
+                gameState.canRespondColor = false;
 
-        // 간격 막대 애니메이션 시작 (자극 종료 후)
-        if (intervalBar) {
-            const animationDuration = Math.max(intervalToUse / 1000, 0.5); // 최소 0.5초 보장
-            intervalBar.style.transition = `width ${animationDuration}s linear`;
-            intervalBar.style.width = '0px';
-            console.log("showStimulus() - 간격 막대 애니메이션 시작: ", {
-                targetWidth: '0px',
-                duration: `${animationDuration}s`,
-                intervalToUse: `${intervalToUse}ms`,
-                timestamp: Date.now()
-            });
-        }
+                const lastPresented = gameState.presentedStimulusHistory[gameState.currentStimulus - 1];
+                if (gameState.stimulusTypes.includes("scene") && gameState.currentIsSceneTarget && !gameState.sceneTargetProcessed) {
+                    showMissedTargetFeedback('scene-indicator');
+                    gameState.sceneErrors++;
+                    console.log("Timer - Missed scene target:", {
+                        imageIndex: lastPresented.imageIndex,
+                        nBackIndex: gameState.sceneHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        sceneErrors: gameState.sceneErrors
+                    });
+                }
+                if (gameState.stimulusTypes.includes("location") && gameState.currentIsLocationTarget && !gameState.locationTargetProcessed) {
+                    showMissedTargetFeedback('location-indicator');
+                    gameState.locationErrors++;
+                    console.log("Timer - Missed location target:", {
+                        panelIndex: lastPresented.panelIndex,
+                        nBackIndex: gameState.locationHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        locationErrors: gameState.locationErrors
+                    });
+                }
+                if (gameState.stimulusTypes.includes("sound") && gameState.currentIsSoundTarget && !gameState.soundTargetProcessed) {
+                    showMissedTargetFeedback('sound-indicator');
+                    gameState.soundErrors++;
+                    console.log("Timer - Missed sound target:", {
+                        soundIndex: lastPresented.soundIndex,
+                        nBackIndex: gameState.soundHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        soundErrors: gameState.soundErrors
+                    });
+                }
+                if (gameState.stimulusTypes.includes("color") && gameState.currentIsColorTarget && !gameState.colorTargetProcessed) {
+                    showMissedTargetFeedback('color-indicator');
+                    gameState.colorErrors++;
+                    console.log("Timer - Missed color target:", {
+                        colorIndex: lastPresented.colorIndex,
+                        nBackIndex: gameState.colorHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        colorErrors: gameState.colorErrors
+                    });
+                }
 
-        // 응답 창 및 다음 자극 예약
-        gameState.responseWindowTimer = setTimeout(() => {
-            const elapsedSinceStimulusEnd = Date.now() - stimulusStartTime - stimulusDuration;
-            console.log(`showStimulus() - 응답 창 및 간격 종료: 설정값=${intervalToUse + 40}ms, 실제 경과=${elapsedSinceStimulusEnd}ms`);
-
-            gameState.inResponseWindow = false;
-            gameState.canRespondScene = false;
-            gameState.canRespondLocation = false;
-            gameState.canRespondSound = false;
-            gameState.canRespondColor = false;
-
-            // 타겟 미응답 체크 (기존 로직 유지)
-            const lastPresented = gameState.presentedStimulusHistory[gameState.currentStimulus - 1];
-            if (gameState.stimulusTypes.includes("scene") && gameState.currentIsSceneTarget && !gameState.sceneTargetProcessed) {
-                showMissedTargetFeedback('scene-indicator');
-                gameState.sceneErrors++;
-                console.log("showStimulus() - Scene 타겟 미응답: ", { imageIndex: lastPresented.imageIndex, sceneErrors: gameState.sceneErrors });
-            }
-            if (gameState.stimulusTypes.includes("location") && gameState.currentIsLocationTarget && !gameState.locationTargetProcessed) {
-                showMissedTargetFeedback('location-indicator');
-                gameState.locationErrors++;
-                console.log("showStimulus() - Location 타겟 미응답: ", { panelIndex: lastPresented.panelIndex, locationErrors: gameState.locationErrors });
-            }
-            if (gameState.stimulusTypes.includes("sound") && gameState.currentIsSoundTarget && !gameState.soundTargetProcessed) {
-                showMissedTargetFeedback('sound-indicator');
-                gameState.soundErrors++;
-                console.log("showStimulus() - Sound 타겟 미응답: ", { soundIndex: lastPresented.soundIndex, soundErrors: gameState.soundErrors });
-            }
-            if (gameState.stimulusTypes.includes("color") && gameState.currentIsColorTarget && !gameState.colorTargetProcessed) {
-                showMissedTargetFeedback('color-indicator');
-                gameState.colorErrors++;
-                console.log("showStimulus() - Color 타겟 미응답: ", { colorIndex: lastPresented.colorIndex, colorErrors: gameState.colorErrors });
-            }
-
-            // 간격 막대 숨김 및 다음 자극 호출
-            if (intervalBar) {
-                intervalBar.style.transition = 'none'; // 후속 충돌 방지
-                intervalBar.style.display = 'none';
-                console.log("showStimulus() - 간격 막대 숨김 완료: ", {
-                    finalWidth: intervalBar.style.width,
-                    timestamp: Date.now()
+                console.log("Timer - Error counts after response window:", {
+                    sceneErrors: gameState.sceneErrors,
+                    locationErrors: gameState.locationErrors,
+                    soundErrors: gameState.soundErrors,
+                    colorErrors: gameState.colorErrors
                 });
-            }
 
-            if (gameState.currentStimulus < gameState.stimuliPerBlock) {
-                console.log("showStimulus() - 다음 자극 호출 예약");
                 generateNextStimulus();
-            } else {
+            }, gameState.stimulusInterval);
+        }, gameState.stimulusDuration);
+    } else {
+        gameState.currentTimer = setTimeout(() => {
+            console.log("Timer - Final stimulus cleared, ending block, timestamp:", Date.now());
+            clearAllStimuli();
+            stopSound();
+            gameState.inResponseWindow = true;
+            gameState.canRespondScene = true;
+            gameState.canRespondLocation = true;
+            gameState.canRespondSound = true;
+            gameState.canRespondColor = true;
+
+            gameState.responseWindowTimer = setTimeout(() => {
+                console.log("Timer - Response window closed (final), currentStimulus:", gameState.currentStimulus, "stimulusInterval:", gameState.stimulusInterval, "timestamp:", Date.now());
+                gameState.inResponseWindow = false;
+                gameState.canRespondScene = false;
+                gameState.canRespondLocation = false;
+                gameState.canRespondSound = false;
+                gameState.canRespondColor = false;
+
+                const lastPresented = gameState.presentedStimulusHistory[gameState.currentStimulus - 1];
+                if (gameState.stimulusTypes.includes("scene") && gameState.currentIsSceneTarget && !gameState.sceneTargetProcessed) {
+                    showMissedTargetFeedback('scene-indicator');
+                    gameState.sceneErrors++;
+                    console.log("Timer - Missed scene target (final):", {
+                        imageIndex: lastPresented.imageIndex,
+                        nBackIndex: gameState.sceneHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        sceneErrors: gameState.sceneErrors
+                    });
+                }
+                if (gameState.stimulusTypes.includes("location") && gameState.currentIsLocationTarget && !gameState.locationTargetProcessed) {
+                    showMissedTargetFeedback('location-indicator');
+                    gameState.locationErrors++;
+                    console.log("Timer - Missed location target (final):", {
+                        panelIndex: lastPresented.panelIndex,
+                        nBackIndex: gameState.locationHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        locationErrors: gameState.locationErrors
+                    });
+                }
+                if (gameState.stimulusTypes.includes("sound") && gameState.currentIsSoundTarget && !gameState.soundTargetProcessed) {
+                    showMissedTargetFeedback('sound-indicator');
+                    gameState.soundErrors++;
+                    console.log("Timer - Missed sound target (final):", {
+                        soundIndex: lastPresented.soundIndex,
+                        nBackIndex: gameState.soundHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        soundErrors: gameState.soundErrors
+                    });
+                }
+                if (gameState.stimulusTypes.includes("color") && gameState.currentIsColorTarget && !gameState.colorTargetProcessed) {
+                    showMissedTargetFeedback('color-indicator');
+                    gameState.colorErrors++;
+                    console.log("Timer - Missed color target (final):", {
+                        colorIndex: lastPresented.colorIndex,
+                        nBackIndex: gameState.colorHistory[gameState.currentStimulus - 1 - gameState.nBackLevel],
+                        colorErrors: gameState.colorErrors
+                    });
+                }
+
+                console.log("Timer - Final error counts before ending block:", {
+                    sceneErrors: gameState.sceneErrors,
+                    locationErrors: gameState.locationErrors,
+                    soundErrors: gameState.soundErrors,
+                    colorErrors: gameState.colorErrors
+                });
+
                 setTimeout(() => {
-                    console.log("showStimulus() - 블록 종료 호출");
                     endBlock();
                 }, 500);
-            }
-        }, intervalToUse + 40); // 간격 + 40ms 후 응답 창 종료 및 다음 단계
-    }, stimulusDuration); // 자극 지속 시간 후 제거
+            }, gameState.stimulusInterval);
+        }, gameState.stimulusDuration);
+    }
 }
-
-
-
-
 
 
 
@@ -972,15 +917,11 @@ function updateRecentIndices(type, index, n) {
 }
 
 function generateNextStimulus() {
-    if (!gameState.isPlaying || gameState.isPaused) {
-        console.log("generateNextStimulus() - 게임이 실행 중이 아니거나 일시정지 상태, 중단됨");
-        return;
-    }
-    console.log("generateNextStimulus() - 시작, currentStimulus:", gameState.currentStimulus);
+    if (!gameState.isPlaying || gameState.isPaused) return;
+    console.log("generateNextStimulus() - Starting, currentStimulus:", gameState.currentStimulus);
 
-    // 시퀀스 유효성 검사
     if (!gameState.stimulusSequence || gameState.currentStimulus >= gameState.stimulusSequence.length) {
-        console.error("generateNextStimulus() - 시퀀스가 유효하지 않거나 인덱스 초과", {
+        console.error("generateNextStimulus() - Stimulus sequence is invalid or index out of bounds", {
             stimulusSequence: gameState.stimulusSequence,
             currentStimulus: gameState.currentStimulus
         });
@@ -990,11 +931,12 @@ function generateNextStimulus() {
 
     const stimulus = gameState.stimulusSequence[gameState.currentStimulus];
     if (!stimulus || typeof stimulus !== 'object') {
-        console.error("generateNextStimulus() - 현재 인덱스의 자극 객체가 유효하지 않음:", gameState.currentStimulus, "stimulus:", stimulus);
+        console.error("generateNextStimulus() - Invalid stimulus object at index:", gameState.currentStimulus, "stimulus:", stimulus);
         endBlock();
         return;
     }
 
+    // 속성 확인 및 기본값 설정
     const { 
         imageIndex = 0, 
         panelIndex = 0, 
@@ -1003,31 +945,11 @@ function generateNextStimulus() {
         targetType = "non-target" 
     } = stimulus;
 
-    console.log("generateNextStimulus() - 자극 데이터 준비됨:", { imageIndex, panelIndex, soundIndex, colorIndex, targetType });
+    console.log("generateNextStimulus() - Stimulus data:", { imageIndex, panelIndex, soundIndex, colorIndex, targetType });
 
-    // 자극 간 간격 계산 (즉시 showStimulus 호출로 타이밍 넘김)
-    let intervalToUse = gameState.stimulusInterval;
-    if (gameState.randomIntervalEnabled) {
-        intervalToUse = Math.floor(Math.random() * (gameState.maxRandomInterval - gameState.minRandomInterval + 1)) + gameState.minRandomInterval;
-        gameState.currentRandomInterval = intervalToUse;
-        console.log(`generateNextStimulus() - 무작위 간격 활성화: 최소=${gameState.minRandomInterval}ms, 최대=${gameState.maxRandomInterval}ms, 선택된 간격=${intervalToUse}ms`);
-    } else {
-        gameState.currentRandomInterval = null;
-        console.log(`generateNextStimulus() - 고정 간격 사용: ${intervalToUse}ms`);
-    }
-
-    // 카운터 업데이트
     updateStimulusCounter();
-
-    // 즉시 자극 표시 호출
     showStimulus(imageIndex, panelIndex, soundIndex, colorIndex);
 }
-
-
-
-
-
-
 
 
 
@@ -1664,9 +1586,7 @@ function generateStimulusSequence() {
     });
     allTargets.sort((a, b) => a.pos - b.pos);
 
-    // 니얼미스 유형 및 확률 정의
-    const nearMissTypes = ['N-1', 'N+1', '2N', 'N-2', 'N+2'];
-    const nearMissProbabilities = [0.2, 0.2, 0.2, 0.2, 0.2]; // 각 유형별 20% 확률
+    const nearMissTypes = ['N-1', 'N+1', '2N'];
     const n = gameState.nBackLevel; // N백 레벨
 
     let consecutiveNonTargets = 0; // 연속된 non-target 자극 수 추적
@@ -1675,7 +1595,7 @@ function generateStimulusSequence() {
     for (let i = 0; i < totalStimuli; i++) {
         const absoluteIndex = i + gameState.nBackLevel;
         const nBackIndex = absoluteIndex - gameState.nBackLevel;
-        const targetsAtPos = allTargets.filter(t => t.pos === absoluteIndex);
+        const targetsAtPos = allTargets.filter(t => t.pos === absoluteIndex); // 복구: absoluteIndex 사용
 
         // 타겟 플래그 설정 (원본 로직 유지)
         let isSceneTarget = targetsAtPos.some(t => t.type === 'scene');
@@ -1702,7 +1622,7 @@ function generateStimulusSequence() {
         let soundIndex = isSoundTarget ? sequence[nBackIndex].soundIndex : selectIndexAvoidingRecent(gameState.recentSoundIndices, gameState.pianoTones.length, recentLimit, 5);
         let colorIndex = isColorTarget ? sequence[nBackIndex].colorIndex : selectIndexAvoidingRecent(gameState.recentColorIndices, distinctColors.length, recentLimit, 5);
 
-        // 니얼미스 생성 로직 개선
+        // 니얼미스 생성 로직 (수정된 부분 제외하고 원본 유지)
         let isNearMiss = false;
         if (n > 1 && !isSceneTarget && !isLocationTarget && !isSoundTarget && !isColorTarget) { // N=1일 때 니얼미스 비활성화
             const previousStimulus = sequence[absoluteIndex - 1];
@@ -1710,50 +1630,45 @@ function generateStimulusSequence() {
             const distanceToNearestTarget = Math.min(
                 ...allTargets.map(t => Math.abs(t.pos - absoluteIndex))
             );
-            if (!isPreviousNearMiss && distanceToNearestTarget > 0 && Math.random() < gameState.nearMissProbability) {
+            if (!isPreviousNearMiss && distanceToNearestTarget > 1 && Math.random() < gameState.nearMissProbability) {
                 isNearMiss = true;
-                console.log(`generateStimulusSequence() - 니얼미스 생성 시도: 위치=${absoluteIndex}, 확률=${gameState.nearMissProbability}`);
+                const nearMissType = nearMissTypes[Math.floor(Math.random() * nearMissTypes.length)];
+                console.log(`generateStimulusSequence() - 니얼미스 생성 시도: 위치=${absoluteIndex}, 유형=${nearMissType}, 확률=${gameState.nearMissProbability}`);
 
-                // 니얼미스 속성 선택 (1~2개 속성만 변경)
-                const attributes = ['imageIndex', 'panelIndex', 'soundIndex', 'colorIndex'];
-                const numAttributesToChange = Math.floor(Math.random() * 2) + 1; // 1~2개 속성
-                const selectedAttributes = attributes.sort(() => 0.5 - Math.random()).slice(0, numAttributesToChange);
-                console.log(`generateStimulusSequence() - 니얼미스 속성 선택: ${selectedAttributes}`);
+                // 니얼미스 유형에 따른 인덱스 설정
+                if (nearMissType === 'N-1' && absoluteIndex - 1 >= 0) {
+                    imageIndex = sequence[absoluteIndex - 1].imageIndex;
+                    panelIndex = sequence[absoluteIndex - 1].panelIndex;
+                    soundIndex = sequence[absoluteIndex - 1].soundIndex;
+                    colorIndex = sequence[absoluteIndex - 1].colorIndex;
+                } else if (nearMissType === 'N+1' && absoluteIndex + 1 < gameState.stimuliPerBlock) {
+                    const nextStimulus = generateNextStimulusPreview(absoluteIndex + 1, sequence, allTargets);
+                    imageIndex = nextStimulus.imageIndex;
+                    panelIndex = nextStimulus.panelIndex;
+                    soundIndex = nextStimulus.soundIndex;
+                    colorIndex = nextStimulus.colorIndex;
+                } else if (nearMissType === '2N' && absoluteIndex - 2 * gameState.nBackLevel >= 0) {
+                    imageIndex = sequence[absoluteIndex - 2 * gameState.nBackLevel].imageIndex;
+                    panelIndex = sequence[absoluteIndex - 2 * gameState.nBackLevel].panelIndex;
+                    soundIndex = sequence[absoluteIndex - 2 * gameState.nBackLevel].soundIndex;
+                    colorIndex = sequence[absoluteIndex - 2 * gameState.nBackLevel].colorIndex;
+                }
 
-                // 속성별 니얼미스 유형 적용
-                selectedAttributes.forEach(attr => {
-                    const nearMissType = nearMissTypes[Math.floor(Math.random() * nearMissTypes.length)];
-                    console.log(`generateStimulusSequence() - 속성=${attr}, 니얼미스 유형=${nearMissType}`);
-
-                    if (nearMissType === 'N-1' && absoluteIndex - 1 >= 0) {
-                        this[attr] = sequence[absoluteIndex - 1][attr];
-                    } else if (nearMissType === 'N+1' && absoluteIndex + 1 < gameState.stimuliPerBlock) {
-                        const nextStimulus = generateNextStimulusPreview(absoluteIndex + 1, sequence, allTargets);
-                        this[attr] = nextStimulus[attr];
-                    } else if (nearMissType === '2N' && absoluteIndex - 2 * n >= 0) {
-                        this[attr] = sequence[absoluteIndex - 2 * n][attr];
-                    } else if (nearMissType === 'N-2' && absoluteIndex - 2 >= 0) {
-                        this[attr] = sequence[absoluteIndex - 2][attr];
-                    } else if (nearMissType === 'N+2' && absoluteIndex + 2 < gameState.stimuliPerBlock) {
-                        const nextStimulus = generateNextStimulusPreview(absoluteIndex + 2, sequence, allTargets);
-                        this[attr] = nextStimulus[attr];
-                    }
-                });
-
-                // 니얼미스가 N백 타겟과 동일하지 않도록 검증
+                // 니얼미스가 N백 자극과 동일하지 않도록 검증
                 const nBackStimulus = sequence[nBackIndex];
-                const isValidNearMiss = selectedAttributes.some(attr => this[attr] !== nBackStimulus[attr]);
+                const isValidNearMiss = !(
+                    imageIndex === nBackStimulus.imageIndex &&
+                    panelIndex === nBackStimulus.panelIndex &&
+                    soundIndex === nBackStimulus.soundIndex &&
+                    colorIndex === nBackStimulus.colorIndex
+                );
 
                 if (!isValidNearMiss) {
                     console.log(`%c[경고] 위치 ${absoluteIndex}: 니얼미스가 N백 타겟과 동일하여 생성 취소`, 'color: red');
                     isNearMiss = false;
                 } else {
-                    nearMissHistory.push({ 
-                        type: selectedAttributes.map(attr => `${attr}:${nearMissTypes[Math.floor(Math.random() * nearMissTypes.length)]}`).join(', '), 
-                        index: absoluteIndex, 
-                        attributes: selectedAttributes 
-                    });
-                    console.log(`generateStimulusSequence() - 니얼미스 생성 성공: 위치=${absoluteIndex}, 속성=${selectedAttributes}, nearMissHistory 길이=${nearMissHistory.length}`);
+                    nearMissHistory.push({ type: nearMissType, index: absoluteIndex });
+                    console.log(`generateStimulusSequence() - 니얼미스 생성 성공: 위치=${absoluteIndex}, 유형=${nearMissType}, nearMissHistory 길이=${nearMissHistory.length}`);
                 }
             }
         }
@@ -1794,8 +1709,7 @@ function generateStimulusSequence() {
         isSceneTarget: s.isSceneTarget,
         isLocationTarget: s.isLocationTarget,
         isSoundTarget: s.isSoundTarget,
-        isColorTarget: s.isColorTarget,
-        isNearMiss: s.isNearMiss
+        isColorTarget: s.isColorTarget
     })));
 
     // 속성값 빈도 분석
@@ -1830,6 +1744,7 @@ function generateStimulusSequence() {
 
     return sequence;
 }
+
 
 
 
@@ -2574,12 +2489,15 @@ document.getElementById('applySettingsBtn').addEventListener('click', () => {
 
 
 function populateSettings() {
-    console.log("populateSettings() - 설정 UI 반영 시작, 타임스탬프:", Date.now());
+    console.log("populateSettings() - 설정 UI 반영 시작, 타임스탬프:", Date.now()); // 디버깅: 시작 로그
 
+    // 자극 유형 체크박스 초기화
     document.getElementById('sceneStimulus').checked = gameState.stimulusTypes.includes('scene');
     document.getElementById('locationStimulus').checked = gameState.stimulusTypes.includes('location');
     document.getElementById('soundStimulus').checked = gameState.stimulusTypes.includes('sound');
     document.getElementById('colorStimulus').checked = gameState.stimulusTypes.includes('color');
+
+    // 숫자 및 텍스트 입력 필드 초기화
     document.getElementById('stimuliPerBlock').value = gameState.stimuliPerBlock;
     document.getElementById('stimulusDuration').value = gameState.stimulusDuration;
     document.getElementById('stimulusInterval').value = gameState.stimulusInterval;
@@ -2587,35 +2505,20 @@ function populateSettings() {
     document.getElementById('minTargetInterval').value = gameState.minTargetInterval;
     document.getElementById('maxTargetInterval').value = gameState.maxTargetInterval;
     document.getElementById('nearMissProbability').value = gameState.nearMissProbability;
-    document.getElementById('randomIntervalEnabled').checked = gameState.randomIntervalEnabled;
-    document.getElementById('minRandomInterval').value = gameState.minRandomInterval;
-    document.getElementById('maxRandomInterval').value = gameState.maxRandomInterval;
-    document.getElementById('intervalBarWidth').value = gameState.intervalBarStyles.width;
-    document.getElementById('intervalBarHeight').value = gameState.intervalBarStyles.height;
-    document.getElementById('intervalBarX').value = gameState.intervalBarStyles.x;
-    document.getElementById('intervalBarY').value = gameState.intervalBarStyles.y;
-    document.getElementById('intervalBarColor').value = gameState.intervalBarStyles.backgroundColor;
 
-    console.log("populateSettings() - 자극 및 막대 스타일 설정 UI에 반영됨:", {
-        stimulusTypes: gameState.stimulusTypes,
-        stimuliPerBlock: gameState.stimuliPerBlock,
-        stimulusDuration: gameState.stimulusDuration,
-        stimulusInterval: gameState.stimulusInterval,
-        randomIntervalEnabled: gameState.randomIntervalEnabled,
-        minRandomInterval: gameState.minRandomInterval,
-        maxRandomInterval: gameState.maxRandomInterval,
-        intervalBarStyles: gameState.intervalBarStyles
-    });
-
+    // URL 및 기타 설정 초기화
     document.getElementById('imageSourceUrl').value = gameState.imageSourceUrl;
     document.getElementById('resultImageUrl').value = gameState.resultImageUrl;
     document.getElementById('soundSourceSelect').value = gameState.soundSource;
     document.getElementById('soundSourceUrl').value = gameState.soundSourceUrl;
+
+    // 키 설정 초기화
     document.getElementById('sceneKey').value = gameState.sceneKey;
     document.getElementById('locationKey').value = gameState.locationKey;
     document.getElementById('soundKey').value = gameState.soundKey;
     document.getElementById('colorKey').value = gameState.colorKey;
 
+    // 버튼 스타일 초기화
     document.getElementById('buttonBgColor').value = gameState.buttonStyles.bgColor;
     document.getElementById('buttonBgOpacity').value = gameState.buttonStyles.bgOpacity;
     document.getElementById('buttonTextColor').value = gameState.buttonStyles.textColor;
@@ -2623,6 +2526,7 @@ function populateSettings() {
     document.getElementById('buttonWidth').value = gameState.buttonStyles.width;
     document.getElementById('buttonHeight').value = gameState.buttonStyles.height;
 
+    // 인디케이터 위치 초기화 (현재 UI 상태 반영)
     document.getElementById('button1Left').value = parseInt(sceneIndicator.style.left) || 20;
     document.getElementById('button1Bottom').value = parseInt(sceneIndicator.style.bottom) || 20;
     document.getElementById('button2Left').value = parseInt(soundIndicator.style.left) || 120;
@@ -2632,9 +2536,11 @@ function populateSettings() {
     document.getElementById('button4Right').value = parseInt(colorIndicator.style.right) || 20;
     document.getElementById('button4Bottom').value = parseInt(colorIndicator.style.bottom) || 20;
 
+    // 패널 설정 초기화
     document.getElementById('useCeilingPanels').checked = gameState.useCeilingPanels;
     document.getElementById('useFloorPanels').checked = gameState.useFloorPanels;
 
+    // 천장 패널 1 (인덱스 8)
     const ceilingPanel1 = gameState.panelPositionsCustom[8] || panelPositions[8] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('ceilingPanel1X').value = ceilingPanel1.x ?? 0;
     document.getElementById('ceilingPanel1Y').value = ceilingPanel1.y ?? 0;
@@ -2643,6 +2549,7 @@ function populateSettings() {
     document.getElementById('ceilingPanel1RotY').value = ((ceilingPanel1.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('ceilingPanel1RotZ').value = ((ceilingPanel1.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
+    // 천장 패널 2 (인덱스 9)
     const ceilingPanel2 = gameState.panelPositionsCustom[9] || panelPositions[9] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('ceilingPanel2X').value = ceilingPanel2.x ?? 0;
     document.getElementById('ceilingPanel2Y').value = ceilingPanel2.y ?? 0;
@@ -2651,6 +2558,7 @@ function populateSettings() {
     document.getElementById('ceilingPanel2RotY').value = ((ceilingPanel2.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('ceilingPanel2RotZ').value = ((ceilingPanel2.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
+    // 바닥 패널 1 (인덱스 10)
     const floorPanel1 = gameState.panelPositionsCustom[10] || panelPositions[10] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('floorPanel1X').value = floorPanel1.x ?? 0;
     document.getElementById('floorPanel1Y').value = floorPanel1.y ?? 0;
@@ -2659,6 +2567,7 @@ function populateSettings() {
     document.getElementById('floorPanel1RotY').value = ((floorPanel1.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('floorPanel1RotZ').value = ((floorPanel1.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
+    // 바닥 패널 2 (인덱스 11)
     const floorPanel2 = gameState.panelPositionsCustom[11] || panelPositions[11] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('floorPanel2X').value = floorPanel2.x ?? 0;
     document.getElementById('floorPanel2Y').value = floorPanel2.y ?? 0;
@@ -2667,6 +2576,7 @@ function populateSettings() {
     document.getElementById('floorPanel2RotY').value = ((floorPanel2.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('floorPanel2RotZ').value = ((floorPanel2.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
+    // 디버깅: 설정 패널에 반영된 인디케이터 위치 확인
     console.log("populateSettings() - 설정 패널에 인디케이터 위치 반영:", {
         scene: { left: document.getElementById('button1Left').value, bottom: document.getElementById('button1Bottom').value },
         sound: { left: document.getElementById('button2Left').value, bottom: document.getElementById('button2Bottom').value },
@@ -2675,6 +2585,7 @@ function populateSettings() {
         timestamp: Date.now()
     });
 
+    // 디버깅: 패널 설정이 UI에 반영되었는지 확인
     console.log("populateSettings() - 패널 설정 UI에 반영:", {
         useCeilingPanels: document.getElementById('useCeilingPanels').checked,
         useFloorPanels: document.getElementById('useFloorPanels').checked,
@@ -2713,6 +2624,7 @@ function populateSettings() {
         timestamp: Date.now()
     });
 
+    // 설정값이 UI에 반영되었는지 로그로 확인
     console.log("populateSettings() - panelPositionsCustom 상태:", gameState.panelPositionsCustom);
     console.log("populateSettings() - UI에 설정값 반영 완료", { 
         stimulusTypes: gameState.stimulusTypes,
@@ -2723,10 +2635,6 @@ function populateSettings() {
         minTargetInterval: gameState.minTargetInterval,
         maxTargetInterval: gameState.maxTargetInterval,
         nearMissProbability: gameState.nearMissProbability,
-        randomIntervalEnabled: gameState.randomIntervalEnabled,
-        minRandomInterval: gameState.minRandomInterval,
-        maxRandomInterval: gameState.maxRandomInterval,
-        intervalBarStyles: gameState.intervalBarStyles,
         imageSourceUrl: gameState.imageSourceUrl,
         resultImageUrl: gameState.resultImageUrl,
         soundSource: gameState.soundSource,
@@ -2739,6 +2647,7 @@ function populateSettings() {
         timestamp: Date.now()
     });
 
+    // 패널 상태와 설정값 동기화 확인
     let ceilingPanelsExist = false;
     let floorPanelsExist = false;
     panels.forEach(panel => {
@@ -2754,6 +2663,7 @@ function populateSettings() {
         expectedFloorPanels: gameState.useFloorPanels
     });
 
+    // 패널 상태와 설정값이 일치하지 않으면 동기화
     if (ceilingPanelsExist !== gameState.useCeilingPanels || floorPanelsExist !== gameState.useFloorPanels) {
         console.warn("populateSettings() - 패널 상태와 설정값 불일치, 패널 재생성으로 동기화");
         createPanels();
@@ -2765,8 +2675,9 @@ function populateSettings() {
         console.log("populateSettings() - 패널 상태와 설정값 일치, 동기화 불필요");
     }
 
-    console.log("populateSettings() - 설정 UI 반영 및 동기화 완료, 타임스탬프:", Date.now());
+    console.log("populateSettings() - 설정 UI 반영 및 동기화 완료, 타임스탬프:", Date.now()); // 디버깅: 완료 로그
 }
+
 
 
 
@@ -2816,7 +2727,7 @@ function applyIndicatorStyles(indicators, styles) {
 
 
 function applySettings() {
-    console.log("applySettings() - 설정 적용 시작, 타임스탬프:", Date.now());
+    console.log("applySettings() - 설정 적용 시작, 타임스탬프:", Date.now()); // 디버깅: 시작 로그
 
     const newStimulusTypes = [];
     if (document.getElementById('sceneStimulus').checked) newStimulusTypes.push('scene');
@@ -2827,10 +2738,11 @@ function applySettings() {
     if (newStimulusTypes.length < 2 || newStimulusTypes.length > 4) {
         document.getElementById('settingsError').textContent = '자극 유형은 최소 2개, 최대 4개 선택해야 합니다.';
         document.getElementById('settingsError').style.display = 'block';
-        console.log("applySettings() - 오류: 자극 유형 개수 부적합:", newStimulusTypes);
+        console.log("applySettings() - 오류: 자극 유형 개수 부적합:", newStimulusTypes); // 디버깅: 유형 오류
         return;
     }
 
+    // 입력값 파싱 및 유효성 검사
     const rawStimuliPerBlock = parseInt(document.getElementById('stimuliPerBlock').value, 10);
     const rawStimulusDuration = parseInt(document.getElementById('stimulusDuration').value, 10);
     const rawStimulusInterval = parseInt(document.getElementById('stimulusInterval').value, 10);
@@ -2838,50 +2750,27 @@ function applySettings() {
     const rawMinTargetInterval = parseInt(document.getElementById('minTargetInterval').value, 10);
     const rawMaxTargetInterval = parseInt(document.getElementById('maxTargetInterval').value, 10);
     const rawNearMissProbability = parseFloat(document.getElementById('nearMissProbability').value);
-    const randomIntervalEnabled = document.getElementById('randomIntervalEnabled').checked;
-    const rawMinRandomInterval = parseInt(document.getElementById('minRandomInterval').value, 10);
-    const rawMaxRandomInterval = parseInt(document.getElementById('maxRandomInterval').value, 10);
-    const rawIntervalBarWidth = parseInt(document.getElementById('intervalBarWidth').value, 10);
-    const rawIntervalBarHeight = parseInt(document.getElementById('intervalBarHeight').value, 10);
-    const rawIntervalBarX = parseInt(document.getElementById('intervalBarX').value, 10);
-    const rawIntervalBarY = parseInt(document.getElementById('intervalBarY').value, 10);
-    const intervalBarColor = document.getElementById('intervalBarColor').value;
 
-    console.log("applySettings() - UI에서 가져온 원시 값:", {
+    console.log("applySettings() - UI에서 가져온 원시 값:", { // 디버깅: 원시 값 확인
         rawStimuliPerBlock, rawStimulusDuration, rawStimulusInterval,
-        rawPatternPreventionStrength, rawMinTargetInterval, rawMaxTargetInterval, rawNearMissProbability,
-        randomIntervalEnabled, rawMinRandomInterval, rawMaxRandomInterval,
-        rawIntervalBarWidth, rawIntervalBarHeight, rawIntervalBarX, rawIntervalBarY, intervalBarColor
+        rawPatternPreventionStrength, rawMinTargetInterval, rawMaxTargetInterval, rawNearMissProbability
     });
 
     gameState.stimulusTypes = newStimulusTypes;
     gameState.stimuliPerBlock = isNaN(rawStimuliPerBlock) ? 30 : Math.min(Math.max(rawStimuliPerBlock, 10), 100);
     gameState.stimulusDuration = isNaN(rawStimulusDuration) ? 1000 : Math.min(Math.max(rawStimulusDuration, 500), 5000);
-    gameState.stimulusInterval = isNaN(rawStimulusInterval) ? 2500 : Math.min(Math.max(rawStimulusInterval, 500), 10000);
+    gameState.stimulusInterval = isNaN(rawStimulusInterval) ? 2500 : Math.min(Math.max(rawStimulusInterval, 1000), 10000);
     gameState.patternPreventionStrength = isNaN(rawPatternPreventionStrength) ? 5 : Math.min(Math.max(rawPatternPreventionStrength, 0), 10);
     gameState.minTargetInterval = isNaN(rawMinTargetInterval) ? 2 : Math.min(Math.max(rawMinTargetInterval, 1), 20);
     gameState.maxTargetInterval = isNaN(rawMaxTargetInterval) ? 10 : Math.min(Math.max(rawMaxTargetInterval, 5), 50);
     gameState.nearMissProbability = isNaN(rawNearMissProbability) ? 0.3 : Math.min(Math.max(rawNearMissProbability, 0), 1);
-    gameState.randomIntervalEnabled = randomIntervalEnabled;
-    gameState.minRandomInterval = isNaN(rawMinRandomInterval) ? 1000 : Math.min(Math.max(rawMinRandomInterval, 500), 10000);
-    gameState.maxRandomInterval = isNaN(rawMaxRandomInterval) ? 2500 : Math.min(Math.max(rawMaxRandomInterval, 500), 10000);
-    gameState.intervalBarStyles.width = isNaN(rawIntervalBarWidth) ? 200 : Math.min(Math.max(rawIntervalBarWidth, 50), 500);
-    gameState.intervalBarStyles.height = isNaN(rawIntervalBarHeight) ? 10 : Math.min(Math.max(rawIntervalBarHeight, 5), 50);
-    gameState.intervalBarStyles.x = isNaN(rawIntervalBarX) ? 50 : Math.min(Math.max(rawIntervalBarX, 0), 100);
-    gameState.intervalBarStyles.y = isNaN(rawIntervalBarY) ? 10 : Math.min(Math.max(rawIntervalBarY, 0), 500);
-    gameState.intervalBarStyles.backgroundColor = intervalBarColor || '#00b7eb';
 
     if (gameState.maxTargetInterval < gameState.minTargetInterval) {
         gameState.maxTargetInterval = gameState.minTargetInterval + 1;
-        console.log("applySettings() - 최대 간격 조정됨:", gameState.maxTargetInterval);
-    }
-    if (gameState.maxRandomInterval < gameState.minRandomInterval) {
-        gameState.maxRandomInterval = gameState.minRandomInterval + 100;
-        console.log("applySettings() - 랜덤 최대 간격 조정됨:", gameState.maxRandomInterval);
-        document.getElementById('settingsError').textContent = '최소 랜덤 간격이 최대 간격보다 클 수 없습니다. 최대값 조정됨.';
-        document.getElementById('settingsError').style.display = 'block';
+        console.log("applySettings() - 최대 간격 조정됨:", gameState.maxTargetInterval); // 디버깅: 간격 조정
     }
 
+    // URL 및 키 설정 적용
     gameState.imageSourceUrl = document.getElementById('imageSourceUrl').value || 'images/';
     gameState.resultImageUrl = document.getElementById('resultImageUrl').value || '';
     gameState.soundSource = document.getElementById('soundSourceSelect').value || 'pianoTones';
@@ -2891,6 +2780,7 @@ function applySettings() {
     gameState.soundKey = document.getElementById('soundKey').value.toUpperCase() || 'L';
     gameState.colorKey = document.getElementById('colorKey').value.toUpperCase() || 'K';
 
+    // 버튼 스타일 적용
     const bgColor = document.getElementById('buttonBgColor').value || '#ffffff';
     const bgOpacity = Math.min(Math.max(parseFloat(document.getElementById('buttonBgOpacity').value) || 0.1, 0), 1);
     const textColor = document.getElementById('buttonTextColor').value || '#ffffff';
@@ -2899,8 +2789,9 @@ function applySettings() {
     const height = Math.max(parseInt(document.getElementById('buttonHeight').value, 10) || 80, 20);
 
     gameState.buttonStyles = { bgColor, bgOpacity, textColor, textOpacity, width, height };
-    console.log("applySettings() - 버튼 스타일 적용됨:", gameState.buttonStyles);
+    console.log("applySettings() - 버튼 스타일 적용됨:", gameState.buttonStyles); // 디버깅: 버튼 스타일 확인
 
+    // 인디케이터 위치 및 스타일 적용
     const indicators = [sceneIndicator, soundIndicator, locationIndicator, colorIndicator];
     const indicatorPositions = [
         { left: parseInt(document.getElementById('button1Left').value) || 20, bottom: parseInt(document.getElementById('button1Bottom').value) || 20 },
@@ -2918,7 +2809,7 @@ function applySettings() {
             indicator.style.left = '';
         }
         indicator.style.bottom = `${indicatorPositions[i].bottom}px`;
-        console.log("applySettings() - 인디케이터 위치 적용:", {
+        console.log("applySettings() - 인디케이터 위치 적용:", { // 디버깅: 위치 적용 확인
             id: indicator.id,
             left: indicator.style.left,
             right: indicator.style.right,
@@ -2928,14 +2819,17 @@ function applySettings() {
 
     applyIndicatorStyles(indicators, gameState.buttonStyles);
 
+    // 패널 설정 적용
     const previousUseCeilingPanels = gameState.useCeilingPanels;
     const previousUseFloorPanels = gameState.useFloorPanels;
     gameState.useCeilingPanels = document.getElementById('useCeilingPanels').checked;
     gameState.useFloorPanels = document.getElementById('useFloorPanels').checked;
 
+    // 천장과 바닥 패널 위치 및 회전값 적용
     const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
     const degToRad = (deg) => deg * Math.PI / 180;
 
+    // 천장 패널 1 (인덱스 8)
     let ceilingPanel1X = parseFloat(document.getElementById('ceilingPanel1X').value);
     let ceilingPanel1Y = parseFloat(document.getElementById('ceilingPanel1Y').value);
     let ceilingPanel1Z = parseFloat(document.getElementById('ceilingPanel1Z').value);
@@ -2957,6 +2851,7 @@ function applySettings() {
         rotation: [degToRad(ceilingPanel1RotX), degToRad(ceilingPanel1RotY), degToRad(ceilingPanel1RotZ)]
     };
 
+    // 천장 패널 2 (인덱스 9)
     let ceilingPanel2X = parseFloat(document.getElementById('ceilingPanel2X').value);
     let ceilingPanel2Y = parseFloat(document.getElementById('ceilingPanel2Y').value);
     let ceilingPanel2Z = parseFloat(document.getElementById('ceilingPanel2Z').value);
@@ -2978,6 +2873,7 @@ function applySettings() {
         rotation: [degToRad(ceilingPanel2RotX), degToRad(ceilingPanel2RotY), degToRad(ceilingPanel2RotZ)]
     };
 
+    // 바닥 패널 1 (인덱스 10)
     let floorPanel1X = parseFloat(document.getElementById('floorPanel1X').value);
     let floorPanel1Y = parseFloat(document.getElementById('floorPanel1Y').value);
     let floorPanel1Z = parseFloat(document.getElementById('floorPanel1Z').value);
@@ -2999,6 +2895,7 @@ function applySettings() {
         rotation: [degToRad(floorPanel1RotX), degToRad(floorPanel1RotY), degToRad(floorPanel1RotZ)]
     };
 
+    // 바닥 패널 2 (인덱스 11)
     let floorPanel2X = parseFloat(document.getElementById('floorPanel2X').value);
     let floorPanel2Y = parseFloat(document.getElementById('floorPanel2Y').value);
     let floorPanel2Z = parseFloat(document.getElementById('floorPanel2Z').value);
@@ -3020,6 +2917,7 @@ function applySettings() {
         rotation: [degToRad(floorPanel2RotX), degToRad(floorPanel2RotY), degToRad(floorPanel2RotZ)]
     };
 
+    // 패널 상태와 설정값 비교
     let ceilingPanelsExist = false;
     let floorPanelsExist = false;
     panels.forEach(panel => {
@@ -3037,6 +2935,7 @@ function applySettings() {
         floorPanelsExist: floorPanelsExist
     });
 
+    // 패널 설정이 변경되었거나 현재 패널 상태와 설정값이 일치하지 않으면 패널 재생성
     const shouldRecreatePanels = 
         previousUseCeilingPanels !== gameState.useCeilingPanels ||
         previousUseFloorPanels !== gameState.useFloorPanels ||
@@ -3054,23 +2953,15 @@ function applySettings() {
         console.log("applySettings() - 패널 설정 변경 없음, 재생성 불필요");
     }
 
-    // 실시간 반영: 막대와 버튼 스타일 적용
-    const intervalBar = document.getElementById('intervalBar');
-    if (intervalBar) {
-        intervalBar.style.width = `${gameState.intervalBarStyles.width}px`;
-        intervalBar.style.height = `${gameState.intervalBarStyles.height}px`;
-        intervalBar.style.left = `${gameState.intervalBarStyles.x}%`;
-        intervalBar.style.top = `${gameState.intervalBarStyles.y}px`;
-        intervalBar.style.backgroundColor = gameState.intervalBarStyles.backgroundColor;
-        intervalBar.style.transform = 'translateX(-50%)';
-    }
-
-    indicators.forEach(indicator => {
-        indicator.style.width = `${gameState.buttonStyles.width}px`;
-        indicator.style.height = `${gameState.buttonStyles.height}px`;
-        indicator.style.backgroundColor = gameState.buttonStyles.bgColor;
-        indicator.style.opacity = gameState.buttonStyles.bgOpacity;
-        indicator.style.color = gameState.buttonStyles.textColor;
+    // 디버깅: 패널 설정 적용 확인
+    console.log("applySettings() - 패널 설정 적용됨:", {
+        useCeilingPanels: gameState.useCeilingPanels,
+        useFloorPanels: gameState.useFloorPanels,
+        ceilingPanel1: gameState.panelPositionsCustom[8],
+        ceilingPanel2: gameState.panelPositionsCustom[9],
+        floorPanel1: gameState.panelPositionsCustom[10],
+        floorPanel2: gameState.panelPositionsCustom[11],
+        timestamp: Date.now()
     });
 
     // 로컬 스토리지 저장
@@ -3082,10 +2973,6 @@ function applySettings() {
     localStorage.setItem('minTargetInterval', gameState.minTargetInterval);
     localStorage.setItem('maxTargetInterval', gameState.maxTargetInterval);
     localStorage.setItem('nearMissProbability', gameState.nearMissProbability);
-    localStorage.setItem('randomIntervalEnabled', gameState.randomIntervalEnabled);
-    localStorage.setItem('minRandomInterval', gameState.minRandomInterval);
-    localStorage.setItem('maxRandomInterval', gameState.maxRandomInterval);
-    localStorage.setItem('intervalBarStyles', JSON.stringify(gameState.intervalBarStyles));
     localStorage.setItem('imageSourceUrl', gameState.imageSourceUrl);
     localStorage.setItem('resultImageUrl', gameState.resultImageUrl);
     localStorage.setItem('soundSource', gameState.soundSource);
@@ -3103,16 +2990,20 @@ function applySettings() {
     localStorage.setItem('useFloorPanels', gameState.useFloorPanels);
     localStorage.setItem('panelPositionsCustom', JSON.stringify(gameState.panelPositionsCustom));
 
+    // 디버깅: 저장된 값 확인
+    console.log("applySettings() - 로컬 스토리지에 저장된 패널 설정:", {
+        useCeilingPanels: localStorage.getItem('useCeilingPanels'),
+        useFloorPanels: localStorage.getItem('useFloorPanels'),
+        panelPositionsCustom: JSON.parse(localStorage.getItem('panelPositionsCustom')),
+        timestamp: Date.now()
+    });
+
     console.log("applySettings() - 설정 적용 및 저장 완료:", {
         stimulusTypes: gameState.stimulusTypes,
         stimuliPerBlock: gameState.stimuliPerBlock,
         stimulusDuration: gameState.stimulusDuration,
         stimulusInterval: gameState.stimulusInterval,
         nearMissProbability: gameState.nearMissProbability,
-        randomIntervalEnabled: gameState.randomIntervalEnabled,
-        minRandomInterval: gameState.minRandomInterval,
-        maxRandomInterval: gameState.maxRandomInterval,
-        intervalBarStyles: gameState.intervalBarStyles,
         buttonStyles: gameState.buttonStyles,
         useCeilingPanels: gameState.useCeilingPanels,
         useFloorPanels: gameState.useFloorPanels,
@@ -3123,6 +3014,7 @@ function applySettings() {
     document.getElementById('settingsError').style.display = 'none';
     loadImageTextures();
 }
+
 
 
 
@@ -3142,8 +3034,9 @@ function hexToRgba(hex, opacity) {
 }
 
 function loadSettings() {
-    console.log("loadSettings() - 설정 로드 시작, 타임스탬프:", Date.now());
+    console.log("loadSettings() - 설정 로드 시작, 타임스탬프:", Date.now()); // 디버깅: 함수 시작 시간 기록
 
+    // 경고 메시지 요소 초기화
     const settingsWarning = document.getElementById('loadSettingsWarning');
     if (settingsWarning) {
         settingsWarning.style.display = 'none';
@@ -3152,33 +3045,37 @@ function loadSettings() {
         console.warn("loadSettings() - 경고 메시지 요소(loadSettingsWarning)가 DOM에 존재하지 않음");
     }
 
+    // N백 레벨 로드
     const savedNBackLevel = localStorage.getItem('nBackLevel');
     if (savedNBackLevel) {
         gameState.nBackLevel = Math.min(Math.max(parseInt(savedNBackLevel), 1), 9);
         document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
         document.getElementById('customLevel').value = gameState.nBackLevel;
-        console.log("loadSettings() - N백 레벨 로드됨:", gameState.nBackLevel);
+        console.log("loadSettings() - N백 레벨 로드됨:", gameState.nBackLevel); // 디버깅: 로드된 N백 레벨 확인
     } else {
         console.log("loadSettings() - 저장된 N백 레벨 없음, 기본값 사용:", gameState.nBackLevel);
     }
 
+    // 오늘의 게임 횟수 로드 및 날짜 확인
     const lastGameDate = localStorage.getItem('lastGameDate');
     const today = new Date().toDateString();
     if (lastGameDate !== today) {
         gameState.totalGamesToday = 0;
         localStorage.setItem('lastGameDate', today);
-        console.log("loadSettings() - 날짜 변경 감지, 오늘 게임 횟수 초기화:", today);
+        console.log("loadSettings() - 날짜 변경 감지, 오늘 게임 횟수 초기화:", today); // 디버깅: 날짜 변경으로 초기화
     } else {
         const savedTotalGames = localStorage.getItem('totalGamesToday');
         gameState.totalGamesToday = savedTotalGames ? parseInt(savedTotalGames) : 0;
-        console.log("loadSettings() - 오늘 게임 횟수 로드됨:", gameState.totalGamesToday);
+        console.log("loadSettings() - 오늘 게임 횟수 로드됨:", gameState.totalGamesToday); // 디버깅: 게임 횟수 로드
     }
     document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
 
+    // 자극 유형 로드
     const savedStimulusTypes = JSON.parse(localStorage.getItem('stimulusTypes'));
     gameState.stimulusTypes = (savedStimulusTypes && savedStimulusTypes.length >= 2 && savedStimulusTypes.length <= 4) ? savedStimulusTypes : ['scene', 'location'];
-    console.log("loadSettings() - 자극 유형 로드됨:", gameState.stimulusTypes);
+    console.log("loadSettings() - 자극 유형 로드됨:", gameState.stimulusTypes); // 디버깅: 자극 유형 확인
 
+    // 숫자 설정 로드 및 유효성 검사
     const savedStimuliPerBlock = parseInt(localStorage.getItem('stimuliPerBlock'));
     gameState.stimuliPerBlock = isNaN(savedStimuliPerBlock) ? 30 : Math.min(Math.max(savedStimuliPerBlock, 10), 100);
     console.log("loadSettings() - 블록당 자극 수 로드됨:", gameState.stimuliPerBlock);
@@ -3207,80 +3104,63 @@ function loadSettings() {
     gameState.nearMissProbability = isNaN(savedNearMissProbability) ? 0.3 : Math.min(Math.max(savedNearMissProbability, 0), 1);
     console.log("loadSettings() - 근접 오차 확률 로드됨:", gameState.nearMissProbability);
 
-    const savedRandomIntervalEnabled = localStorage.getItem('randomIntervalEnabled');
-    gameState.randomIntervalEnabled = savedRandomIntervalEnabled === 'true';
-    console.log("loadSettings() - 랜덤 간격 활성화 여부 로드됨:", gameState.randomIntervalEnabled);
-
-    const savedMinRandomInterval = parseInt(localStorage.getItem('minRandomInterval'));
-    gameState.minRandomInterval = isNaN(savedMinRandomInterval) ? 1000 : Math.min(Math.max(savedMinRandomInterval, 500), 10000);
-    console.log("loadSettings() - 최소 랜덤 간격 로드됨:", gameState.minRandomInterval);
-
-    const savedMaxRandomInterval = parseInt(localStorage.getItem('maxRandomInterval'));
-    gameState.maxRandomInterval = isNaN(savedMaxRandomInterval) ? 2500 : Math.min(Math.max(savedMaxRandomInterval, 500), 10000);
-    console.log("loadSettings() - 최대 랜덤 간격 로드됨:", gameState.maxRandomInterval);
-
-    const savedIntervalBarStyles = JSON.parse(localStorage.getItem('intervalBarStyles'));
-    if (savedIntervalBarStyles) {
-        gameState.intervalBarStyles.width = savedIntervalBarStyles.width || 200;
-        gameState.intervalBarStyles.height = savedIntervalBarStyles.height || 10;
-        gameState.intervalBarStyles.x = savedIntervalBarStyles.x || 50;
-        gameState.intervalBarStyles.y = savedIntervalBarStyles.y || 10;
-        gameState.intervalBarStyles.backgroundColor = savedIntervalBarStyles.backgroundColor || '#00b7eb';
-    }
-    console.log("loadSettings() - 막대 스타일 로드됨:", gameState.intervalBarStyles);
-
+    // 타겟 간격 유효성 검사
     if (gameState.maxTargetInterval < gameState.minTargetInterval) {
         gameState.maxTargetInterval = gameState.minTargetInterval + 1;
-        console.log("loadSettings() - 경고: 최대 타겟 간격이 최소 간격보다 작아 조정됨:", gameState.maxTargetInterval);
-    }
-    if (gameState.maxRandomInterval < gameState.minRandomInterval) {
-        gameState.maxRandomInterval = gameState.minRandomInterval + 100;
-        console.log("loadSettings() - 경고: 최대 랜덤 간격이 최소 간격보다 작아 조정됨:", gameState.maxRandomInterval);
+        console.log("loadSettings() - 경고: 최대 타겟 간격이 최소 간격보다 작아 조정됨:", gameState.maxTargetInterval); // 디버깅: 간격 조정
     }
 
+    // 패널 설정 로드 및 유효성 검사 강화
     const rawUseCeilingPanels = localStorage.getItem('useCeilingPanels');
     const rawUseFloorPanels = localStorage.getItem('useFloorPanels');
 
+    // 로컬 스토리지에서 로드된 원시 값 디버깅
     console.log("loadSettings() - 로컬 스토리지에서 로드된 원시 패널 설정 값:", {
         rawUseCeilingPanels: rawUseCeilingPanels,
         rawUseFloorPanels: rawUseFloorPanels
     });
 
+    // 유효성 검사 및 변환
     gameState.useCeilingPanels = rawUseCeilingPanels === 'true' || rawUseCeilingPanels === true;
     gameState.useFloorPanels = rawUseFloorPanels === 'true' || rawUseFloorPanels === true;
 
+    // 값이 유효하지 않은 경우 기본값으로 초기화 및 사용자 경고
     let hasInvalidSettings = false;
     if (rawUseCeilingPanels !== 'true' && rawUseCeilingPanels !== 'false' && rawUseCeilingPanels !== null) {
         console.warn("loadSettings() - useCeilingPanels 값이 유효하지 않음, 기본값(false)으로 초기화:", rawUseCeilingPanels);
         gameState.useCeilingPanels = false;
-        localStorage.setItem('useCeilingPanels', 'false');
+        localStorage.setItem('useCeilingPanels', 'false'); // 손상된 값 수정
         hasInvalidSettings = true;
     }
     if (rawUseFloorPanels !== 'true' && rawUseFloorPanels !== 'false' && rawUseFloorPanels !== null) {
         console.warn("loadSettings() - useFloorPanels 값이 유효하지 않음, 기본값(false)으로 초기화:", rawUseFloorPanels);
         gameState.useFloorPanels = false;
-        localStorage.setItem('useFloorPanels', 'false');
+        localStorage.setItem('useFloorPanels', 'false'); // 손상된 값 수정
         hasInvalidSettings = true;
     }
 
+    // 유효하지 않은 설정이 있을 경우 사용자에게 경고 표시
     if (hasInvalidSettings && settingsWarning) {
         settingsWarning.textContent = '일부 설정값이 손상되어 기본값으로 초기화되었습니다.';
         settingsWarning.style.display = 'block';
         console.log("loadSettings() - 사용자에게 설정 손상 경고 표시");
     }
 
+    // 로드된 패널 설정값 확인
     console.log("loadSettings() - 패널 설정 로드 후 상태:", {
         useCeilingPanels: gameState.useCeilingPanels,
         useFloorPanels: gameState.useFloorPanels
     });
 
+    // panelPositionsCustom 로드 및 유효성 검사
     gameState.panelPositionsCustom = JSON.parse(localStorage.getItem('panelPositionsCustom')) || panelPositions.map(pos => ({
         x: pos.x,
         y: pos.y,
         z: pos.z,
-        rotation: pos.rotation || [0, 0, 0]
+        rotation: pos.rotation || [0, 0, 0] // 기본값 추가
     }));
 
+    // panelPositionsCustom 유효성 검사
     if (!Array.isArray(gameState.panelPositionsCustom) || gameState.panelPositionsCustom.length !== panelPositions.length) {
         console.warn("loadSettings() - panelPositionsCustom이 유효하지 않음, 기본값으로 초기화");
         gameState.panelPositionsCustom = panelPositions.map(pos => ({
@@ -3292,6 +3172,7 @@ function loadSettings() {
         hasInvalidSettings = true;
     }
 
+    // 각 객체에 rotation 속성이 있는지 확인
     gameState.panelPositionsCustom = gameState.panelPositionsCustom.map((pos, index) => ({
         x: pos.x,
         y: pos.y,
@@ -3299,6 +3180,7 @@ function loadSettings() {
         rotation: pos.rotation || panelPositions[index]?.rotation || [0, 0, 0]
     }));
 
+    // URL 및 키 설정 로드
     gameState.imageSourceUrl = localStorage.getItem('imageSourceUrl') || 'images/';
     gameState.resultImageUrl = localStorage.getItem('resultImageUrl') || '';
     gameState.soundSource = localStorage.getItem('soundSource') || 'pianoTones';
@@ -3318,6 +3200,7 @@ function loadSettings() {
         colorKey: gameState.colorKey
     });
 
+    // 인디케이터 위치 로드 및 적용
     const scenePos = JSON.parse(localStorage.getItem('sceneIndicatorPos')) || { left: 20, bottom: 20 };
     const soundPos = JSON.parse(localStorage.getItem('soundIndicatorPos')) || { left: 120, bottom: 20 };
     const locationPos = JSON.parse(localStorage.getItem('locationIndicatorPos')) || { right: 120, bottom: 20 };
@@ -3336,13 +3219,14 @@ function loadSettings() {
     colorIndicator.style.bottom = `${colorPos.bottom}px`;
     colorIndicator.style.left = '';
 
-    console.log("loadSettings() - 인디케이터 위치 로드 및 적용:", {
+    console.log("loadSettings() - 인디케이터 위치 로드 및 적용:", { // 디버깅: 위치 적용 확인
         scene: { left: sceneIndicator.style.left, bottom: sceneIndicator.style.bottom },
         sound: { left: soundIndicator.style.left, bottom: soundIndicator.style.bottom },
         location: { right: locationIndicator.style.right, bottom: locationIndicator.style.bottom },
         color: { right: colorIndicator.style.right, bottom: colorIndicator.style.bottom }
     });
 
+    // 버튼 스타일 로드
     gameState.buttonStyles = JSON.parse(localStorage.getItem('buttonStyles')) || {
         bgColor: '#ffffff',
         bgOpacity: 0.1,
@@ -3351,11 +3235,12 @@ function loadSettings() {
         width: 80,
         height: 80
     };
-    console.log("loadSettings() - 버튼 스타일 로드됨:", gameState.buttonStyles);
+    console.log("loadSettings() - 버튼 스타일 로드됨:", gameState.buttonStyles); // 디버깅: 버튼 스타일 확인
 
     const indicators = [sceneIndicator, soundIndicator, locationIndicator, colorIndicator];
     applyIndicatorStyles(indicators, gameState.buttonStyles);
 
+    // 최종 로드된 설정값 디버깅
     console.log("loadSettings() - 모든 설정 로드 완료:", {
         stimulusTypes: gameState.stimulusTypes,
         stimuliPerBlock: gameState.stimuliPerBlock,
@@ -3365,67 +3250,16 @@ function loadSettings() {
         minTargetInterval: gameState.minTargetInterval,
         maxTargetInterval: gameState.maxTargetInterval,
         nearMissProbability: gameState.nearMissProbability,
-        randomIntervalEnabled: gameState.randomIntervalEnabled,
-        minRandomInterval: gameState.minRandomInterval,
-        maxRandomInterval: gameState.maxRandomInterval,
-        intervalBarStyles: gameState.intervalBarStyles,
         useCeilingPanels: gameState.useCeilingPanels,
         useFloorPanels: gameState.useFloorPanels,
         panelPositionsCustom: gameState.panelPositionsCustom,
         timestamp: Date.now()
     });
 
+    // UI에 설정 반영
     populateSettings();
-    console.log("loadSettings() - 설정 로드 및 UI 반영 완료, 타임스탬프:", Date.now());
+    console.log("loadSettings() - 설정 로드 및 UI 반영 완료, 타임스탬프:", Date.now()); // 디버깅: 함수 종료 시간 기록
 }
-
-
-
-
-
-
-
-
-
-
-
-const debouncedApplySettings = debounce(() => {
-    applySettings();
-    console.log("debouncedApplySettings() - 설정 변경 완료 및 적용, 타임스탬프:", Date.now());
-}, 300);
-
-settingsInputs.forEach(id => {
-    const element = document.getElementById(id);
-    if (element) {
-        element.addEventListener('input', debouncedApplySettings);
-        element.addEventListener('change', debouncedApplySettings); // 체크박스 등 즉시 반영
-    } else {
-        console.warn(`설정 요소 ${id}가 DOM에 존재하지 않음`);
-    }
-});
-
-// 설정창 열기/닫기 시 클릭 방지 제어
-function toggleSettings() {
-    const settingsPanel = document.getElementById('settingsPanel');
-    const gameScreen = document.getElementById('gameScreen');
-    const indicators = [sceneIndicator, soundIndicator, locationIndicator, colorIndicator];
-    const intervalBar = document.getElementById('intervalBar');
-
-    if (settingsPanel.style.display === 'block') {
-        settingsPanel.style.display = 'none';
-        gameScreen.style.pointerEvents = 'auto';
-        indicators.forEach(ind => ind.style.pointerEvents = 'auto');
-        if (intervalBar) intervalBar.style.pointerEvents = 'auto';
-        console.log("toggleSettings() - 설정창 닫힘, 게임 요소 클릭 가능으로 복구, 타임스탬프:", Date.now());
-    } else {
-        settingsPanel.style.display = 'block';
-        gameScreen.style.pointerEvents = 'none';
-        indicators.forEach(ind => ind.style.pointerEvents = 'none');
-        if (intervalBar) intervalBar.style.pointerEvents = 'none';
-        console.log("toggleSettings() - 설정창 열림, 게임 요소 클릭 불가로 설정, 타임스탬프:", Date.now());
-    }
-}
-
 
 
 
@@ -3451,12 +3285,6 @@ function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
 }
-
-
-
-
-
-
 
 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     document.getElementById('fullscreenGuide').style.display = 'block';
