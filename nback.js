@@ -46,7 +46,7 @@ const gameState = {
     colorHistory: [],
 buttonStyles: null, // 버튼 스타일 저장용 속성 추가
 accuracyHistory: [], // 정확도 기록 배열 추가
-nearMissProbability: 0.3, // 니얼미스 발생 확률 (기본 10%)
+nearMissProbability: 0.0, // 니얼미스 발생 확률 (기본 10%)
     nearMissResponses: 0,     // 니얼미스에 반응한 횟수
     targetMissedErrors: { scene: 0, location: 0, sound: 0, color: 0 }, // 타겟인데 오답 처리된 횟수
     nonTargetFalseResponses: { scene: 0, location: 0, sound: 0, color: 0 }, // 논타겟을 정답으로 오판정한 횟수
