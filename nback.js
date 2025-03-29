@@ -2,7 +2,7 @@
 
 
 
-// 디바운스 함수 정의
+// 디바운스 함수 정의 
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
