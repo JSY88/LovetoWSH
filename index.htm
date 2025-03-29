@@ -50,25 +50,25 @@
         <div id="stimulus-counter" style="display: none;">Stimulus: 0 / 30</div>
     </div>
 
-    <!-- 📊 결과 화면 -->
-    <div id="resultScreen">
-        <h1></h1>
-        <div id="resultBackgroundImage"></div>
-        <div id="stats">
-            <div>Scene Errors: <span id="sceneErrors">0</span></div>
-            <div>Location Errors: <span id="locationErrors">0</span></div>
-            <div>Sound Errors: <span id="soundErrors">0</span></div>
-            <div>Color Errors: <span id="colorErrors">0</span></div>
-            <div>N-Back Level: <span id="resultNLevel">1</span></div>
-<div id="nearMissStats">니얼미스 반응: 0/0 (0%)</div>
-            <div id="levelChange"></div>
-        </div>
-        <div id="pressSpaceResult">Press SPACE to continue</div>
-        <button id="mainMenuResultBtn">Main Menu</button>
-        <div id="consecutiveGamesCounter">
-            연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번
-        </div>
+ <!-- 📊 결과 화면 -->
+<div id="resultScreen">
+    <h1></h1>
+    <div id="resultBackgroundImage"></div>
+    <div id="stats">
+        <div>Scene Errors: <span id="sceneErrors">0</span></div>
+        <div>Location Errors: <span id="locationErrors">0</span></div>
+        <div>Sound Errors: <span id="soundErrors">0</span></div>
+        <div>Color Errors: <span id="colorErrors">0</span></div>
+        <div>N-Back Level: <span id="resultNLevel">1</span></div>
+        <div id="nearMissStats">니얼미스 반응: 0/0 (0%)</div>
+        <div id="levelChange"></div>
     </div>
+    <div id="pressSpaceResult">Press SPACE to continue</div>
+    <button id="mainMenuResultBtn">Main Menu</button>
+    <div id="consecutiveGamesCounter">
+        연속 게임 횟수 <span id="consecutiveGamesCount">0</span>번
+    </div>
+</div>
 
     <!-- ⏸️ 일시정지 화면 -->
     <div id="pauseScreen">
@@ -87,6 +87,7 @@
 
     <!-- ⚙️ 설정 패널 -->
     <div id="settingsPanel">
+<div id="loadSettingsWarning" style="display: none; color: red;"></div>
         <h2>설정</h2>
         <div class="settings-group">
             <label>자극 유형 선택 (최소 2개, 최대 4개):</label>
@@ -122,8 +123,42 @@
 
     <h3>간섭 설정</h3>
 <label>니얼미스 발생 확률 (0-1):</label>
-<input type="number" id="nearMissProbability" min="0" max="1" step="0.1" value="0.0"><br>
-
+<input type="number" id="nearMissProbability" min="0" max="1" step="0.1" value="0.3"><br>
+<h3>액자 설정</h3>
+    <input type="checkbox" id="useCeilingPanels"> <label for="useCeilingPanels">천장 액자 사용</label><br>
+    <input type="checkbox" id="useFloorPanels"> <label for="useFloorPanels">바닥 액자 사용</label><br>
+    <label>액자 위치 조정 (x, y, z 절대 좌표):</label><br>
+        <button id="togglePanelSettingsBtn">패널 위치 조정</button>
+        <div id="panelSettings">
+            <h3>천장 패널 1 (인덱스 8)</h3>
+            <label>X 좌표:</label><input type="number" id="ceilingPanel1X" step="0.1"><br>
+            <label>Y 좌표:</label><input type="number" id="ceilingPanel1Y" step="0.1"><br>
+            <label>Z 좌표:</label><input type="number" id="ceilingPanel1Z" step="0.1"><br>
+            <label>X 회전 (도):</label><input type="number" id="ceilingPanel1RotX" step="1"><br>
+            <label>Y 회전 (도):</label><input type="number" id="ceilingPanel1RotY" step="1"><br>
+            <label>Z 회전 (도):</label><input type="number" id="ceilingPanel1RotZ" step="1"><br>
+            <h3>천장 패널 2 (인덱스 9)</h3>
+            <label>X 좌표:</label><input type="number" id="ceilingPanel2X" step="0.1"><br>
+            <label>Y 좌표:</label><input type="number" id="ceilingPanel2Y" step="0.1"><br>
+            <label>Z 좌표:</label><input type="number" id="ceilingPanel2Z" step="0.1"><br>
+            <label>X 회전 (도):</label><input type="number" id="ceilingPanel2RotX" step="1"><br>
+            <label>Y 회전 (도):</label><input type="number" id="ceilingPanel2RotY" step="1"><br>
+            <label>Z 회전 (도):</label><input type="number" id="ceilingPanel2RotZ" step="1"><br>
+            <h3>바닥 패널 1 (인덱스 10)</h3>
+            <label>X 좌표:</label><input type="number" id="floorPanel1X" step="0.1"><br>
+            <label>Y 좌표:</label><input type="number" id="floorPanel1Y" step="0.1"><br>
+            <label>Z 좌표:</label><input type="number" id="floorPanel1Z" step="0.1"><br>
+            <label>X 회전 (도):</label><input type="number" id="floorPanel1RotX" step="1"><br>
+            <label>Y 회전 (도):</label><input type="number" id="floorPanel1RotY" step="1"><br>
+            <label>Z 회전 (도):</label><input type="number" id="floorPanel1RotZ" step="1"><br>
+            <h3>바닥 패널 2 (인덱스 11)</h3>
+            <label>X 좌표:</label><input type="number" id="floorPanel2X" step="0.1"><br>
+            <label>Y 좌표:</label><input type="number" id="floorPanel2Y" step="0.1"><br>
+            <label>Z 좌표:</label><input type="number" id="floorPanel2Z" step="0.1"><br>
+            <label>X 회전 (도):</label><input type="number" id="floorPanel2RotX" step="1"><br>
+            <label>Y 회전 (도):</label><input type="number" id="floorPanel2RotY" step="1"><br>
+            <label>Z 회전 (도):</label><input type="number" id="floorPanel2RotZ" step="1"><br>
+        </div>
     <h3>기타 설정</h3>
     <label>사운드 볼륨 (0-1):</label>
     <input type="number" id="soundVolume" min="0" max="1" step="0.1" value="0.5"><br>
