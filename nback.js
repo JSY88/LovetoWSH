@@ -1547,7 +1547,7 @@ function generateStimulusSequence() {
     console.log("generateStimulusSequence() - nearMissHistory 초기화 상태 확인, 길이:", nearMissHistory.length);
     const sequence = [];
     const recentLimit = gameState.nBackLevel * 2;
-    const targetGoals = { scene: 4, location: 4, sound: 2, color: 4 };
+    const targetGoals = { scene: 3, location: 3, sound: 2, color: 3 };
     const targetPositions = {};
     const targetTypes = ['scene', 'location', 'sound', 'color'];
 
