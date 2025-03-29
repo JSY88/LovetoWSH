@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.json">
 </head>
 <body>
+<div id="settingsOverlay"></div>
     <canvas></canvas>
 
 <div id="fullscreenGuide" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px;">
@@ -42,6 +43,7 @@
 
     <!-- 🕹️ 게임 화면 -->
     <div id="gameScreen" style="display: none;">
+<div id="intervalBar" style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 200px; height: 10px; background: #00b7eb; transition: width 0.1s linear; display: none;"></div>
         <div id="blockCount">0</div>
         <div id="scene-indicator" class="indicator-box">S</div>
         <div id="sound-indicator" class="indicator-box">A</div>
@@ -121,9 +123,31 @@
     <label>타겟 자극 최대 간격:</label>
     <input type="number" id="maxTargetInterval" min="5" max="50" value="10"><br>
 
-    <h3>간섭 설정</h3>
+    <h3>난이도 조절</h3>
 <label>니얼미스 발생 확률 (0-1):</label>
 <input type="number" id="nearMissProbability" min="0" max="1" step="0.1" value="0.3"><br>
+<div class="settings-group">
+        <label>자극 간 간격 무작위 설정:</label>
+        <input type="checkbox" id="randomIntervalEnabled"> <label for="randomIntervalEnabled">활성화</label><br>
+        <label>최소 간격 (ms):</label>
+        <input type="number" id="minRandomInterval" min="500" max="10000" step="100" value="1000"><br>
+        <label>최대 간격 (ms):</label>
+        <input type="number" id="maxRandomInterval" min="500" max="10000" step="100" value="2500">
+<div class="settings-group">
+        <label>막대 설정:</label><br>
+        <label>너비 (px):</label>
+        <input type="number" id="intervalBarWidth" min="50" max="500" step="10" value="200"><br>
+        <label>높이 (px):</label>
+        <input type="number" id="intervalBarHeight" min="5" max="50" step="5" value="10"><br>
+        <label>수평 위치 (%):</label>
+        <input type="number" id="intervalBarX" min="0" max="100" step="1" value="50"><br>
+        <label>수직 위치 (px):</label>
+        <input type="number" id="intervalBarY" min="0" max="500" step="10" value="10"><br>
+        <label>배경색:</label>
+        <input type="color" id="intervalBarColor" value="#00b7eb">
+    </div>
+    </div>
+
 <h3>액자 설정</h3>
     <input type="checkbox" id="useCeilingPanels"> <label for="useCeilingPanels">천장 액자 사용</label><br>
     <input type="checkbox" id="useFloorPanels"> <label for="useFloorPanels">바닥 액자 사용</label><br>
