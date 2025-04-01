@@ -110,6 +110,12 @@
             <label>자극 카운터 표시:</label>
             <input type="checkbox" id="showStimulusCounter" value="showStimulusCounter">
         </div>
+    <h3>무작위 간격 설정</h3>
+    <input type="checkbox" id="randomizeInterval"> <label for="randomizeInterval">자극 간 간격 시간 무작위화</label><br>
+    <label>최소 간격 시간 (ms):</label>
+    <input type="number" id="minInterval" min="1000" max="10000" step="100" value="1500"><br>
+    <label>최대 간격 시간 (ms):</label>
+    <input type="number" id="maxInterval" min="1000" max="10000" step="100" value="2500"><br>
         <button id="toggleAdvancedSettingsBtn">고급 설정</button>
 <div id="advancedSettings" style="display: none;">
 
@@ -123,7 +129,7 @@
 
     <h3>간섭 설정</h3>
 <label>니얼미스 발생 확률 (0-1):</label>
-<input type="number" id="nearMissProbability" min="0" max="1" step="0.1" value="0"><br>
+<input type="number" id="nearMissProbability" min="0" max="1" step="0.1" value="0.3"><br>
 <h3>액자 설정</h3>
     <input type="checkbox" id="useCeilingPanels"> <label for="useCeilingPanels">천장 액자 사용</label><br>
     <input type="checkbox" id="useFloorPanels"> <label for="useFloorPanels">바닥 액자 사용</label><br>
