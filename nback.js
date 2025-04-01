@@ -2206,160 +2206,135 @@ function adjustTargetPositions(sequence, problematicPositions) {
 
 
 
-
-
-function updateGameCounters() {
-    console.log("updateGameCounters() - 게임 카운터 업데이트 시작: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
-    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
-    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
-    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
-    localStorage.setItem('consecutiveGames', gameState.consecutiveGames);
-    console.log("updateGameCounters() - UI 및 로컬 스토리지 업데이트 완료, timestamp=", Date.now());
-}
-
-
-
-
-
-
 function endBlock() {
-    console.log("endBlock() - 블록 종료 시작: currentBlock=", gameState.currentBlock, "maxBlocks=", gameState.maxBlocks, "timestamp=", Date.now());
+    console.log("endBlock() - 블록 종료 시작");
     gameState.isPlaying = false;
-    cancelAllTimers();
-    clearAllStimuli();
-    stopSound();
+    gameState.isPaused = false;
+    gameState.currentBlock++;
+    gameState.totalGamesToday++;
+    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
 
-    console.log("endBlock() - 타겟 및 에러 통계:", {
-        sceneTargets: gameState.sceneTargets,
+    // 오류 수 집계
+    const totalErrors = gameState.sceneErrors + gameState.locationErrors + gameState.soundErrors + gameState.colorErrors;
+    if (!gameState.errorHistory) gameState.errorHistory = [];
+    gameState.errorHistory.push(totalErrors);
+    if (gameState.errorHistory.length > 2) gameState.errorHistory.shift();
+
+    console.log("endBlock() - 오류 집계:", {
         sceneErrors: gameState.sceneErrors,
-        locationTargets: gameState.locationTargets,
         locationErrors: gameState.locationErrors,
-        soundTargets: gameState.soundTargets,
         soundErrors: gameState.soundErrors,
-        colorTargets: gameState.colorTargets,
         colorErrors: gameState.colorErrors,
-        nearMissResponses: gameState.nearMissResponses,
-        nearMissHistoryLength: nearMissHistory.length
+        totalErrors: totalErrors,
+        errorHistory: gameState.errorHistory
     });
 
-    const totalTargets = gameState.sceneTargets + gameState.locationTargets + gameState.soundTargets + gameState.colorTargets;
-    const totalErrors = gameState.sceneErrors + gameState.locationErrors + gameState.soundErrors + gameState.colorErrors;
-    const totalAccuracy = totalTargets > 0 ? (1 - totalErrors / totalTargets) * 100 : 100;
-    gameState.accuracyHistory.push(totalAccuracy);
+    // 니얼미스 통계 계산
+    const totalNearMisses = nearMissHistory.length;
+    const nearMissResponseRate = totalNearMisses > 0 ? (gameState.nearMissResponses / totalNearMisses) * 100 : 0;
+    console.log(`endBlock() - 니얼미스 통계: 반응 횟수=${gameState.nearMissResponses}, 총 니얼미스=${totalNearMisses}, 비율=${nearMissResponseRate.toFixed(2)}%`);
 
-    console.log("endBlock() - 정확도 계산: totalTargets=", totalTargets, "totalErrors=", totalErrors, "totalAccuracy=", totalAccuracy.toFixed(2) + "%");
+    // 분석 요약 출력
+    console.log("%c[분석 요약] 타겟 자극에 대한 오답 처리 횟수:", "color: red", gameState.targetMissedErrors);
+    console.log("%c[분석 요약] 논타겟 자극에 대한 오반응 횟수:", "color: red", gameState.nonTargetFalseResponses);
 
-    if (!gameState.isLevelLocked && gameState.currentBlock >= gameState.maxBlocks - 1) {
-        const recentAccuracy = gameState.accuracyHistory.slice(-3).reduce((a, b) => a + b, 0) / Math.min(gameState.accuracyHistory.length, 3);
-        console.log("endBlock() - 최근 3개 블록 평균 정확도:", recentAccuracy.toFixed(2) + "%");
-
-        let levelChangeText = '';
-        if (recentAccuracy > 90 && gameState.nBackLevel < 9) {
-            gameState.nBackLevel++;
-            levelChangeText = `레벨 업! ${gameState.nBackLevel}-Back으로 상승`;
-            console.log("endBlock() - 레벨 업 조건 충족, 새 레벨:", gameState.nBackLevel);
-        } else if (recentAccuracy < 70 && gameState.nBackLevel > 1) {
-            gameState.nBackLevel--;
-            levelChangeText = `레벨 다운... ${gameState.nBackLevel}-Back으로 하락`;
-            console.log("endBlock() - 레벨 다운 조건 충족, 새 레벨:", gameState.nBackLevel);
-        } else {
-            levelChangeText = `${gameState.nBackLevel}-Back 유지`;
-            console.log("endBlock() - 레벨 변경 조건 미충족, 현재 레벨 유지:", gameState.nBackLevel);
-        }
-        document.getElementById('levelChange').textContent = levelChangeText;
-        localStorage.setItem('nBackLevel', gameState.nBackLevel);
-    }
-
-    document.getElementById('resultNLevel').textContent = gameState.nBackLevel;
+    // DOM 업데이트
     document.getElementById('sceneErrors').textContent = gameState.sceneErrors;
     document.getElementById('locationErrors').textContent = gameState.locationErrors;
     document.getElementById('soundErrors').textContent = gameState.soundErrors;
     document.getElementById('colorErrors').textContent = gameState.colorErrors;
+    document.getElementById('resultNLevel').textContent = gameState.nBackLevel;
+    document.getElementById('nearMissStats').textContent = `니얼미스 반응: ${gameState.nearMissResponses}/${totalNearMisses} (${nearMissResponseRate.toFixed(2)}%)`;
 
-    const nearMissPercentage = nearMissHistory.length > 0 ? (gameState.nearMissResponses / nearMissHistory.length * 100).toFixed(2) : "0.00";
-    document.getElementById('nearMissStats').textContent = `니얼미스 반응: ${gameState.nearMissResponses}/${nearMissHistory.length} (${nearMissPercentage}%)`;
-    console.log("endBlock() - 니얼미스 통계 업데이트:", {
-        responses: gameState.nearMissResponses,
-        total: nearMissHistory.length,
-        percentage: nearMissPercentage + "%"
-    });
+    // 레벨 조정 로직
+    let levelChange = '';
+    let nextNBackLevel = gameState.nBackLevel;
+    if (!gameState.isLevelLocked) {
+        const lastTwo = gameState.errorHistory.slice(-2);
+        const lastErrors = lastTwo[lastTwo.length - 1] || 0;
+        const secondLastErrors = lastTwo.length > 1 ? lastTwo[0] : null;
 
-    const resultScreen = document.getElementById('resultScreen');
-    const resultBackgroundImage = document.getElementById('resultBackgroundImage');
-    if (gameState.resultImageUrl) {
-        resultBackgroundImage.style.backgroundImage = `url(${gameState.resultImageUrl})`;
-        resultBackgroundImage.style.backgroundSize = 'cover';
-        resultBackgroundImage.style.backgroundPosition = 'center';
-        console.log("endBlock() - 결과 배경 이미지 설정됨:", gameState.resultImageUrl);
+        if ((secondLastErrors !== null && secondLastErrors <= 4 && lastErrors <= 4) || lastErrors <= 3) {
+            nextNBackLevel = gameState.nBackLevel + 1;
+            levelChange = '⬆️ 최고야! 레벨업!!♥️🥰';
+            gameState.errorHistory = [];
+            console.log("endBlock() - 레벨업 조건 만족");
+        } else if ((secondLastErrors !== null && secondLastErrors >= 7 && lastErrors >= 7) || lastErrors >= 9) {
+            nextNBackLevel = Math.max(1, gameState.nBackLevel - 1);
+            levelChange = '⬇️ 괜찮아! 다시 해보자!😉♥️';
+            gameState.errorHistory = [];
+            console.log("endBlock() - 레벨다운 조건 만족");
+        } else {
+            levelChange = '➡️ 오 좋아! 킵고잉!👏♥️';
+            console.log("endBlock() - 레벨 유지");
+        }
+        gameState.nBackLevel = nextNBackLevel;
     } else {
-        resultBackgroundImage.style.backgroundImage = 'none';
-        console.log("endBlock() - 결과 배경 이미지 없음");
+        levelChange = '🔒 레벨 고정됨';
+        console.log("endBlock() - 레벨 고정 상태");
     }
 
-    if (resultScreen.style.display !== 'flex') {
-        resultScreen.style.display = 'flex';
-        console.log("endBlock() - 결과 화면 표시됨");
+    const pressSpaceResult = document.getElementById('pressSpaceResult');
+    if (pressSpaceResult) {
+        pressSpaceResult.textContent = `다음 라운드 ${gameState.nBackLevel}레벨`;
+        pressSpaceResult.style.fontWeight = 'bold';
+        pressSpaceResult.style.color = '#000';
+        console.log("endBlock() - 게임 계속 버튼 업데이트:", { text: pressSpaceResult.textContent });
     }
 
-    // 게임 종료 시 카운터 업데이트
-    gameState.totalGamesToday++;
-    gameState.consecutiveGames++;
-    localStorage.setItem('lastGameTimestamp', Date.now().toString());
-    updateGameCounters(); // 통합된 카운터 업데이트 함수 호출
-    console.log("endBlock() - 게임 종료 후 카운터 업데이트 완료: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
+    document.getElementById('levelChange').textContent = levelChange;
+    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    localStorage.setItem('nBackLevel', gameState.nBackLevel);
+    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
+    document.getElementById('resultScreen').style.display = 'flex';
+    setBackgroundImageToResultScreen();
 
-    gameState.currentBlock++;
-    if (gameState.currentBlock >= gameState.maxBlocks) {
-        gameState.currentBlock = 0;
-        console.log("endBlock() - 최대 블록 도달, currentBlock 초기화:", gameState.currentBlock);
-    }
+    // 니얼미스 기록 초기화
+    nearMissHistory = [];
+    gameState.nearMissResponses = 0;
+    // 분석 변수 초기화
+    gameState.targetMissedErrors = { scene: 0, location: 0, sound: 0, color: 0 };
+    gameState.nonTargetFalseResponses = { scene: 0, location: 0, sound: 0, color: 0 };
+    console.log("endBlock() - nearMissHistory 및 분석 변수 초기화 완료");
 
-    resetGameStateForNewBlock();
-    console.log("endBlock() - 블록 종료 완료, 상태 리셋 후 준비됨, timestamp=", Date.now());
+    console.log("endBlock() - 블록 종료 완료, 다음 N백 레벨:", nextNBackLevel);
 }
+
 
 
 
 
 
 function showTitleScreen() {
-    console.log("showTitleScreen() - 타이틀 화면 표시 시작, timestamp=", Date.now());
-    cancelAllTimers();
-    clearAllStimuli();
-    stopSound();
+    console.log("showTitleScreen() - 타이틀 화면 표시 시작"); // 디버깅: 함수 시작
     gameState.isPlaying = false;
     gameState.isPaused = false;
-    gameState.consecutiveGames = 0; // 타이틀 화면으로 돌아가면 연속 게임 횟수 리셋
-    updateGameCounters(); // 카운터 업데이트
-    console.log("showTitleScreen() - 연속 게임 횟수 리셋됨: consecutiveGames=", gameState.consecutiveGames);
+    cancelAllTimers();
+    clearAllStimuli();
+    clearAllSounds();
 
     const titleScreen = document.getElementById('titleScreen');
     const gameScreen = document.getElementById('gameScreen');
     const resultScreen = document.getElementById('resultScreen');
     const pauseScreen = document.getElementById('pauseScreen');
-    const settingsPanel = document.getElementById('settingsPanel');
 
-    if (titleScreen && gameScreen && resultScreen && pauseScreen && settingsPanel) {
-        titleScreen.style.display = 'block';
-        gameScreen.style.display = 'none';
-        resultScreen.style.display = 'none';
-        pauseScreen.style.display = 'none';
-        settingsPanel.style.display = 'none';
-        console.log("showTitleScreen() - 모든 화면 상태 업데이트됨");
-    } else {
-        console.error("showTitleScreen() - 일부 화면 요소를 찾을 수 없음", {
-            titleScreen: !!titleScreen,
-            gameScreen: !!gameScreen,
-            resultScreen: !!resultScreen,
-            pauseScreen: !!pauseScreen,
-            settingsPanel: !!settingsPanel
-        });
-    }
+    if (titleScreen) titleScreen.style.display = 'flex';
+    else console.error("showTitleScreen() - titleScreen 요소 없음");
+    if (gameScreen) gameScreen.style.display = 'none';
+    if (resultScreen) resultScreen.style.display = 'none';
+    if (pauseScreen) pauseScreen.style.display = 'none';
 
-    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
-    document.getElementById('customLevel').value = gameState.nBackLevel;
-    console.log("showTitleScreen() - 타이틀 화면 표시 완료: nBackLevel=", gameState.nBackLevel, "timestamp=", Date.now());
+    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+
+    const indicators = ['sceneIndicator', 'soundIndicator', 'locationIndicator', 'colorIndicator'];
+    indicators.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.style.display = 'none';
+    });
+
+    console.log("showTitleScreen() - 타이틀 화면 표시 완료"); // 디버깅: 완료 확인
 }
+
 
 function resetStimulusCounter() {
     const stimulusCounter = document.getElementById('stimulus-counter');
@@ -3101,25 +3076,18 @@ function loadSettings() {
         console.log("loadSettings() - 저장된 N백 레벨 없음, 기본값 사용:", gameState.nBackLevel);
     }
 
-    // UTC 기준으로 날짜 경계 확인
-    const now = Date.now();
-    const todayStart = new Date(new Date().setUTCHours(0, 0, 0, 0)).getTime();
-    const lastGameTimestamp = parseInt(localStorage.getItem('lastGameTimestamp')) || 0;
-    console.log("loadSettings() - 날짜 경계 비교: 오늘 시작=", todayStart, "마지막 게임 타임스탬프=", lastGameTimestamp);
-
-    if (lastGameTimestamp < todayStart) {
+    const lastGameDate = localStorage.getItem('lastGameDate');
+    const today = new Date().toDateString();
+    if (lastGameDate !== today) {
         gameState.totalGamesToday = 0;
-        gameState.consecutiveGames = 0;
-        localStorage.setItem('lastGameTimestamp', now.toString());
-        console.log("loadSettings() - 날짜 경계 넘어감, 카운터 초기화: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
+        localStorage.setItem('lastGameDate', today);
+        console.log("loadSettings() - 날짜 변경 감지, 오늘 게임 횟수 초기화:", today);
     } else {
         const savedTotalGames = localStorage.getItem('totalGamesToday');
-        const savedConsecutiveGames = localStorage.getItem('consecutiveGames');
         gameState.totalGamesToday = savedTotalGames ? parseInt(savedTotalGames) : 0;
-        gameState.consecutiveGames = savedConsecutiveGames ? parseInt(savedConsecutiveGames) : 0;
-        console.log("loadSettings() - 같은 날짜 내, 카운터 로드됨: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
+        console.log("loadSettings() - 오늘 게임 횟수 로드됨:", gameState.totalGamesToday);
     }
-    updateGameCounters(); // 통합된 카운터 업데이트 함수 호출
+    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
 
     const savedStimulusTypes = JSON.parse(localStorage.getItem('stimulusTypes'));
     gameState.stimulusTypes = (savedStimulusTypes && savedStimulusTypes.length >= 2 && savedStimulusTypes.length <= 4) ? savedStimulusTypes : ['scene', 'location'];
@@ -3153,6 +3121,7 @@ function loadSettings() {
     gameState.nearMissProbability = isNaN(savedNearMissProbability) ? 0.3 : Math.min(Math.max(savedNearMissProbability, 0), 1);
     console.log("loadSettings() - 근접 오차 확률 로드됨:", gameState.nearMissProbability);
 
+    // 새로 추가된 설정 로드
     const savedRandomizeInterval = localStorage.getItem('randomizeInterval');
     gameState.randomizeInterval = savedRandomizeInterval === 'true' || savedRandomizeInterval === true;
     const savedMinInterval = parseInt(localStorage.getItem('minInterval'));
@@ -3160,6 +3129,7 @@ function loadSettings() {
     const savedMaxInterval = parseInt(localStorage.getItem('maxInterval'));
     gameState.maxInterval = isNaN(savedMaxInterval) ? 2500 : Math.min(Math.max(savedMaxInterval, 1000), 10000);
 
+    // 최소값이 최대값보다 큰 경우 조정
     if (gameState.minInterval > gameState.maxInterval) {
         gameState.maxInterval = gameState.minInterval;
         console.log("loadSettings() - 최소 간격이 최대 간격보다 커 최대값 조정됨:", gameState.maxInterval);
@@ -3315,6 +3285,7 @@ function loadSettings() {
     populateSettings();
     console.log("loadSettings() - 설정 로드 및 UI 반영 완료, 타임스탬프:", Date.now());
 }
+
 
 
 
