@@ -46,7 +46,7 @@ const gameState = {
     colorHistory: [],
 buttonStyles: null, // 버튼 스타일 저장용 속성 추가
 accuracyHistory: [], // 정확도 기록 배열 추가
-nearMissProbability: 0.0, // 니얼미스 발생 확률 (기본 10%)
+nearMissProbability: 0.3, // 니얼미스 발생 확률 (기본 10%)
     nearMissResponses: 0,     // 니얼미스에 반응한 횟수
     targetMissedErrors: { scene: 0, location: 0, sound: 0, color: 0 }, // 타겟인데 오답 처리된 횟수
     nonTargetFalseResponses: { scene: 0, location: 0, sound: 0, color: 0 }, // 논타겟을 정답으로 오판정한 횟수
@@ -82,6 +82,10 @@ nearMissProbability: 0.0, // 니얼미스 발생 확률 (기본 10%)
     consecutiveGames: 0,
     totalGamesToday: 0,
     stimulusTypes: [],
+    randomizeInterval: false, // 무작위 간격 기능 활성화 여부
+    minInterval: 1500,       // 무작위 간격의 최소값 (ms)
+    maxInterval: 2500,       // 무작위 간격의 최대값 (ms)
+    previousInterval: null,  // 이전 간격 시간 저장
     soundSource: "pianoTones",
     soundFiles: ['sounds/sound001.wav', 'sounds/sound002.wav', 'sounds/sound003.wav', 'sounds/sound004.wav', 'sounds/sound005.wav', 'sounds/sound006.wav', 'sounds/sound007.wav', 'sounds/sound008.wav'],
     audioLoader: new THREE.AudioLoader(),
@@ -381,7 +385,7 @@ function loadImageTextures() {
     imageTextures.length = 0;
 
     // 하위 폴더 목록 정의 (사용자가 원하는 폴더명으로 변경 가능)
-    const subFolders = ['folder1', 'folder2', 'folder3'];
+    const subFolders = ['folder2', 'folder3'];
     console.log("loadImageTextures() - 사용 가능한 하위 폴더 목록:", subFolders);
 
     // 랜덤으로 하위 폴더 선택
@@ -679,7 +683,6 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
     resetIndicators();
     const panel = panels[panelIndex];
 
-    // 미리 설정된 타겟 여부 사용
     if (gameState.currentStimulus >= gameState.nBackLevel) {
         gameState.currentIsSceneTarget = gameState.stimulusSequence[gameState.currentStimulus].isSceneTarget;
         gameState.currentIsLocationTarget = gameState.stimulusSequence[gameState.currentStimulus].isLocationTarget;
@@ -699,8 +702,6 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
         console.log("showStimulus() - 초기 자극, 타겟 없음");
     }
 
-
-    // 자극 제시
     createStimulusImage(imageIndex, panel, colorIndex);
     if (gameState.stimulusTypes.includes("sound")) {
         playSound(soundIndex);
@@ -721,6 +722,37 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
 
     gameState.currentStimulus++;
 
+    // 자극 간 간격 시간 계산
+    let currentInterval;
+    if (gameState.randomizeInterval) {
+        const min = gameState.minInterval;
+        const max = gameState.maxInterval;
+        if (gameState.previousInterval === null) {
+            // 첫 번째 자극: 완전 무작위 선택
+            currentInterval = Math.floor(Math.random() * (max - min + 1)) + min;
+            console.log("showStimulus() - 첫 자극 간격 무작위 선택:", currentInterval, "ms");
+        } else {
+            // 이전 간격을 고려한 편향 계산 (0: min, 1: max)
+            const bias = (gameState.previousInterval - min) / (max - min);
+            const newBias = 1 - bias; // 반대 방향으로 치우침
+            // 70% 편향, 30% 무작위성
+            currentInterval = min + (newBias * 0.7 + Math.random() * 0.3) * (max - min);
+            currentInterval = Math.floor(Math.min(Math.max(currentInterval, min), max));
+            console.log("showStimulus() - 이전 간격 기반 새 간격 계산:", {
+                previous: gameState.previousInterval,
+                bias: bias.toFixed(2),
+                newBias: newBias.toFixed(2),
+                result: currentInterval,
+                min: min,
+                max: max
+            });
+        }
+        gameState.previousInterval = currentInterval;
+    } else {
+        currentInterval = gameState.stimulusInterval;
+        console.log("showStimulus() - 고정 간격 사용:", currentInterval, "ms");
+    }
+
     if (gameState.currentStimulus < gameState.stimuliPerBlock) {
         gameState.currentTimer = setTimeout(() => {
             console.log("Timer - Clearing stimuli and stopping sound, currentStimulus:", gameState.currentStimulus, "timestamp:", Date.now());
@@ -733,7 +765,7 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
             gameState.canRespondColor = true;
 
             gameState.responseWindowTimer = setTimeout(() => {
-                console.log("Timer - Response window closed, currentStimulus:", gameState.currentStimulus, "stimulusInterval:", gameState.stimulusInterval, "timestamp:", Date.now());
+                console.log("Timer - Response window closed, currentStimulus:", gameState.currentStimulus, "currentInterval:", currentInterval, "timestamp:", Date.now());
                 gameState.inResponseWindow = false;
                 gameState.canRespondScene = false;
                 gameState.canRespondLocation = false;
@@ -786,7 +818,7 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
                 });
 
                 generateNextStimulus();
-            }, gameState.stimulusInterval);
+            }, currentInterval);
         }, gameState.stimulusDuration);
     } else {
         gameState.currentTimer = setTimeout(() => {
@@ -800,7 +832,7 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
             gameState.canRespondColor = true;
 
             gameState.responseWindowTimer = setTimeout(() => {
-                console.log("Timer - Response window closed (final), currentStimulus:", gameState.currentStimulus, "stimulusInterval:", gameState.stimulusInterval, "timestamp:", Date.now());
+                console.log("Timer - Response window closed (final), currentStimulus:", gameState.currentStimulus, "currentInterval:", currentInterval, "timestamp:", Date.now());
                 gameState.inResponseWindow = false;
                 gameState.canRespondScene = false;
                 gameState.canRespondLocation = false;
@@ -855,11 +887,10 @@ function showStimulus(imageIndex, panelIndex, soundIndex, colorIndex) {
                 setTimeout(() => {
                     endBlock();
                 }, 500);
-            }, gameState.stimulusInterval);
+            }, currentInterval);
         }, gameState.stimulusDuration);
     }
 }
-
 
 
 
@@ -2175,135 +2206,160 @@ function adjustTargetPositions(sequence, problematicPositions) {
 
 
 
-function endBlock() {
-    console.log("endBlock() - 블록 종료 시작");
-    gameState.isPlaying = false;
-    gameState.isPaused = false;
-    gameState.currentBlock++;
-    gameState.totalGamesToday++;
+
+
+function updateGameCounters() {
+    console.log("updateGameCounters() - 게임 카운터 업데이트 시작: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
+    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
     localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
+    localStorage.setItem('consecutiveGames', gameState.consecutiveGames);
+    console.log("updateGameCounters() - UI 및 로컬 스토리지 업데이트 완료, timestamp=", Date.now());
+}
 
-    // 오류 수 집계
-    const totalErrors = gameState.sceneErrors + gameState.locationErrors + gameState.soundErrors + gameState.colorErrors;
-    if (!gameState.errorHistory) gameState.errorHistory = [];
-    gameState.errorHistory.push(totalErrors);
-    if (gameState.errorHistory.length > 2) gameState.errorHistory.shift();
 
-    console.log("endBlock() - 오류 집계:", {
+
+
+
+
+function endBlock() {
+    console.log("endBlock() - 블록 종료 시작: currentBlock=", gameState.currentBlock, "maxBlocks=", gameState.maxBlocks, "timestamp=", Date.now());
+    gameState.isPlaying = false;
+    cancelAllTimers();
+    clearAllStimuli();
+    stopSound();
+
+    console.log("endBlock() - 타겟 및 에러 통계:", {
+        sceneTargets: gameState.sceneTargets,
         sceneErrors: gameState.sceneErrors,
+        locationTargets: gameState.locationTargets,
         locationErrors: gameState.locationErrors,
+        soundTargets: gameState.soundTargets,
         soundErrors: gameState.soundErrors,
+        colorTargets: gameState.colorTargets,
         colorErrors: gameState.colorErrors,
-        totalErrors: totalErrors,
-        errorHistory: gameState.errorHistory
+        nearMissResponses: gameState.nearMissResponses,
+        nearMissHistoryLength: nearMissHistory.length
     });
 
-    // 니얼미스 통계 계산
-    const totalNearMisses = nearMissHistory.length;
-    const nearMissResponseRate = totalNearMisses > 0 ? (gameState.nearMissResponses / totalNearMisses) * 100 : 0;
-    console.log(`endBlock() - 니얼미스 통계: 반응 횟수=${gameState.nearMissResponses}, 총 니얼미스=${totalNearMisses}, 비율=${nearMissResponseRate.toFixed(2)}%`);
+    const totalTargets = gameState.sceneTargets + gameState.locationTargets + gameState.soundTargets + gameState.colorTargets;
+    const totalErrors = gameState.sceneErrors + gameState.locationErrors + gameState.soundErrors + gameState.colorErrors;
+    const totalAccuracy = totalTargets > 0 ? (1 - totalErrors / totalTargets) * 100 : 100;
+    gameState.accuracyHistory.push(totalAccuracy);
 
-    // 분석 요약 출력
-    console.log("%c[분석 요약] 타겟 자극에 대한 오답 처리 횟수:", "color: red", gameState.targetMissedErrors);
-    console.log("%c[분석 요약] 논타겟 자극에 대한 오반응 횟수:", "color: red", gameState.nonTargetFalseResponses);
+    console.log("endBlock() - 정확도 계산: totalTargets=", totalTargets, "totalErrors=", totalErrors, "totalAccuracy=", totalAccuracy.toFixed(2) + "%");
 
-    // DOM 업데이트
+    if (!gameState.isLevelLocked && gameState.currentBlock >= gameState.maxBlocks - 1) {
+        const recentAccuracy = gameState.accuracyHistory.slice(-3).reduce((a, b) => a + b, 0) / Math.min(gameState.accuracyHistory.length, 3);
+        console.log("endBlock() - 최근 3개 블록 평균 정확도:", recentAccuracy.toFixed(2) + "%");
+
+        let levelChangeText = '';
+        if (recentAccuracy > 90 && gameState.nBackLevel < 9) {
+            gameState.nBackLevel++;
+            levelChangeText = `레벨 업! ${gameState.nBackLevel}-Back으로 상승`;
+            console.log("endBlock() - 레벨 업 조건 충족, 새 레벨:", gameState.nBackLevel);
+        } else if (recentAccuracy < 70 && gameState.nBackLevel > 1) {
+            gameState.nBackLevel--;
+            levelChangeText = `레벨 다운... ${gameState.nBackLevel}-Back으로 하락`;
+            console.log("endBlock() - 레벨 다운 조건 충족, 새 레벨:", gameState.nBackLevel);
+        } else {
+            levelChangeText = `${gameState.nBackLevel}-Back 유지`;
+            console.log("endBlock() - 레벨 변경 조건 미충족, 현재 레벨 유지:", gameState.nBackLevel);
+        }
+        document.getElementById('levelChange').textContent = levelChangeText;
+        localStorage.setItem('nBackLevel', gameState.nBackLevel);
+    }
+
+    document.getElementById('resultNLevel').textContent = gameState.nBackLevel;
     document.getElementById('sceneErrors').textContent = gameState.sceneErrors;
     document.getElementById('locationErrors').textContent = gameState.locationErrors;
     document.getElementById('soundErrors').textContent = gameState.soundErrors;
     document.getElementById('colorErrors').textContent = gameState.colorErrors;
-    document.getElementById('resultNLevel').textContent = gameState.nBackLevel;
-    document.getElementById('nearMissStats').textContent = `니얼미스 반응: ${gameState.nearMissResponses}/${totalNearMisses} (${nearMissResponseRate.toFixed(2)}%)`;
 
-    // 레벨 조정 로직
-    let levelChange = '';
-    let nextNBackLevel = gameState.nBackLevel;
-    if (!gameState.isLevelLocked) {
-        const lastTwo = gameState.errorHistory.slice(-2);
-        const lastErrors = lastTwo[lastTwo.length - 1] || 0;
-        const secondLastErrors = lastTwo.length > 1 ? lastTwo[0] : null;
+    const nearMissPercentage = nearMissHistory.length > 0 ? (gameState.nearMissResponses / nearMissHistory.length * 100).toFixed(2) : "0.00";
+    document.getElementById('nearMissStats').textContent = `니얼미스 반응: ${gameState.nearMissResponses}/${nearMissHistory.length} (${nearMissPercentage}%)`;
+    console.log("endBlock() - 니얼미스 통계 업데이트:", {
+        responses: gameState.nearMissResponses,
+        total: nearMissHistory.length,
+        percentage: nearMissPercentage + "%"
+    });
 
-        if ((secondLastErrors !== null && secondLastErrors <= 4 && lastErrors <= 4) || lastErrors <= 3) {
-            nextNBackLevel = gameState.nBackLevel + 1;
-            levelChange = '⬆️ 최고야! 레벨업!!♥️🥰';
-            gameState.errorHistory = [];
-            console.log("endBlock() - 레벨업 조건 만족");
-        } else if ((secondLastErrors !== null && secondLastErrors >= 7 && lastErrors >= 7) || lastErrors >= 9) {
-            nextNBackLevel = Math.max(1, gameState.nBackLevel - 1);
-            levelChange = '⬇️ 괜찮아! 다시 해보자!😉♥️';
-            gameState.errorHistory = [];
-            console.log("endBlock() - 레벨다운 조건 만족");
-        } else {
-            levelChange = '➡️ 오 좋아! 킵고잉!👏♥️';
-            console.log("endBlock() - 레벨 유지");
-        }
-        gameState.nBackLevel = nextNBackLevel;
+    const resultScreen = document.getElementById('resultScreen');
+    const resultBackgroundImage = document.getElementById('resultBackgroundImage');
+    if (gameState.resultImageUrl) {
+        resultBackgroundImage.style.backgroundImage = `url(${gameState.resultImageUrl})`;
+        resultBackgroundImage.style.backgroundSize = 'cover';
+        resultBackgroundImage.style.backgroundPosition = 'center';
+        console.log("endBlock() - 결과 배경 이미지 설정됨:", gameState.resultImageUrl);
     } else {
-        levelChange = '🔒 레벨 고정됨';
-        console.log("endBlock() - 레벨 고정 상태");
+        resultBackgroundImage.style.backgroundImage = 'none';
+        console.log("endBlock() - 결과 배경 이미지 없음");
     }
 
-    const pressSpaceResult = document.getElementById('pressSpaceResult');
-    if (pressSpaceResult) {
-        pressSpaceResult.textContent = `다음 라운드 ${gameState.nBackLevel}레벨`;
-        pressSpaceResult.style.fontWeight = 'bold';
-        pressSpaceResult.style.color = '#000';
-        console.log("endBlock() - 게임 계속 버튼 업데이트:", { text: pressSpaceResult.textContent });
+    if (resultScreen.style.display !== 'flex') {
+        resultScreen.style.display = 'flex';
+        console.log("endBlock() - 결과 화면 표시됨");
     }
 
-    document.getElementById('levelChange').textContent = levelChange;
-    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
-    localStorage.setItem('nBackLevel', gameState.nBackLevel);
-    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
-    document.getElementById('resultScreen').style.display = 'flex';
-    setBackgroundImageToResultScreen();
+    // 게임 종료 시 카운터 업데이트
+    gameState.totalGamesToday++;
+    gameState.consecutiveGames++;
+    localStorage.setItem('lastGameTimestamp', Date.now().toString());
+    updateGameCounters(); // 통합된 카운터 업데이트 함수 호출
+    console.log("endBlock() - 게임 종료 후 카운터 업데이트 완료: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
 
-    // 니얼미스 기록 초기화
-    nearMissHistory = [];
-    gameState.nearMissResponses = 0;
-    // 분석 변수 초기화
-    gameState.targetMissedErrors = { scene: 0, location: 0, sound: 0, color: 0 };
-    gameState.nonTargetFalseResponses = { scene: 0, location: 0, sound: 0, color: 0 };
-    console.log("endBlock() - nearMissHistory 및 분석 변수 초기화 완료");
+    gameState.currentBlock++;
+    if (gameState.currentBlock >= gameState.maxBlocks) {
+        gameState.currentBlock = 0;
+        console.log("endBlock() - 최대 블록 도달, currentBlock 초기화:", gameState.currentBlock);
+    }
 
-    console.log("endBlock() - 블록 종료 완료, 다음 N백 레벨:", nextNBackLevel);
+    resetGameStateForNewBlock();
+    console.log("endBlock() - 블록 종료 완료, 상태 리셋 후 준비됨, timestamp=", Date.now());
 }
-
 
 
 
 
 
 function showTitleScreen() {
-    console.log("showTitleScreen() - 타이틀 화면 표시 시작"); // 디버깅: 함수 시작
-    gameState.isPlaying = false;
-    gameState.isPaused = false;
+    console.log("showTitleScreen() - 타이틀 화면 표시 시작, timestamp=", Date.now());
     cancelAllTimers();
     clearAllStimuli();
-    clearAllSounds();
+    stopSound();
+    gameState.isPlaying = false;
+    gameState.isPaused = false;
+    gameState.consecutiveGames = 0; // 타이틀 화면으로 돌아가면 연속 게임 횟수 리셋
+    updateGameCounters(); // 카운터 업데이트
+    console.log("showTitleScreen() - 연속 게임 횟수 리셋됨: consecutiveGames=", gameState.consecutiveGames);
 
     const titleScreen = document.getElementById('titleScreen');
     const gameScreen = document.getElementById('gameScreen');
     const resultScreen = document.getElementById('resultScreen');
     const pauseScreen = document.getElementById('pauseScreen');
+    const settingsPanel = document.getElementById('settingsPanel');
 
-    if (titleScreen) titleScreen.style.display = 'flex';
-    else console.error("showTitleScreen() - titleScreen 요소 없음");
-    if (gameScreen) gameScreen.style.display = 'none';
-    if (resultScreen) resultScreen.style.display = 'none';
-    if (pauseScreen) pauseScreen.style.display = 'none';
+    if (titleScreen && gameScreen && resultScreen && pauseScreen && settingsPanel) {
+        titleScreen.style.display = 'block';
+        gameScreen.style.display = 'none';
+        resultScreen.style.display = 'none';
+        pauseScreen.style.display = 'none';
+        settingsPanel.style.display = 'none';
+        console.log("showTitleScreen() - 모든 화면 상태 업데이트됨");
+    } else {
+        console.error("showTitleScreen() - 일부 화면 요소를 찾을 수 없음", {
+            titleScreen: !!titleScreen,
+            gameScreen: !!gameScreen,
+            resultScreen: !!resultScreen,
+            pauseScreen: !!pauseScreen,
+            settingsPanel: !!settingsPanel
+        });
+    }
 
-    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
-
-    const indicators = ['sceneIndicator', 'soundIndicator', 'locationIndicator', 'colorIndicator'];
-    indicators.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) element.style.display = 'none';
-    });
-
-    console.log("showTitleScreen() - 타이틀 화면 표시 완료"); // 디버깅: 완료 확인
+    document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
+    document.getElementById('customLevel').value = gameState.nBackLevel;
+    console.log("showTitleScreen() - 타이틀 화면 표시 완료: nBackLevel=", gameState.nBackLevel, "timestamp=", Date.now());
 }
-
 
 function resetStimulusCounter() {
     const stimulusCounter = document.getElementById('stimulus-counter');
@@ -2489,15 +2545,12 @@ document.getElementById('applySettingsBtn').addEventListener('click', () => {
 
 
 function populateSettings() {
-    console.log("populateSettings() - 설정 UI 반영 시작, 타임스탬프:", Date.now()); // 디버깅: 시작 로그
+    console.log("populateSettings() - 설정 패널 UI 반영 시작, 타임스탬프:", Date.now());
 
-    // 자극 유형 체크박스 초기화
     document.getElementById('sceneStimulus').checked = gameState.stimulusTypes.includes('scene');
     document.getElementById('locationStimulus').checked = gameState.stimulusTypes.includes('location');
     document.getElementById('soundStimulus').checked = gameState.stimulusTypes.includes('sound');
     document.getElementById('colorStimulus').checked = gameState.stimulusTypes.includes('color');
-
-    // 숫자 및 텍스트 입력 필드 초기화
     document.getElementById('stimuliPerBlock').value = gameState.stimuliPerBlock;
     document.getElementById('stimulusDuration').value = gameState.stimulusDuration;
     document.getElementById('stimulusInterval').value = gameState.stimulusInterval;
@@ -2505,20 +2558,14 @@ function populateSettings() {
     document.getElementById('minTargetInterval').value = gameState.minTargetInterval;
     document.getElementById('maxTargetInterval').value = gameState.maxTargetInterval;
     document.getElementById('nearMissProbability').value = gameState.nearMissProbability;
-
-    // URL 및 기타 설정 초기화
     document.getElementById('imageSourceUrl').value = gameState.imageSourceUrl;
     document.getElementById('resultImageUrl').value = gameState.resultImageUrl;
     document.getElementById('soundSourceSelect').value = gameState.soundSource;
     document.getElementById('soundSourceUrl').value = gameState.soundSourceUrl;
-
-    // 키 설정 초기화
     document.getElementById('sceneKey').value = gameState.sceneKey;
     document.getElementById('locationKey').value = gameState.locationKey;
     document.getElementById('soundKey').value = gameState.soundKey;
     document.getElementById('colorKey').value = gameState.colorKey;
-
-    // 버튼 스타일 초기화
     document.getElementById('buttonBgColor').value = gameState.buttonStyles.bgColor;
     document.getElementById('buttonBgOpacity').value = gameState.buttonStyles.bgOpacity;
     document.getElementById('buttonTextColor').value = gameState.buttonStyles.textColor;
@@ -2526,7 +2573,11 @@ function populateSettings() {
     document.getElementById('buttonWidth').value = gameState.buttonStyles.width;
     document.getElementById('buttonHeight').value = gameState.buttonStyles.height;
 
-    // 인디케이터 위치 초기화 (현재 UI 상태 반영)
+    // 새로 추가된 UI 반영
+    document.getElementById('randomizeInterval').checked = gameState.randomizeInterval;
+    document.getElementById('minInterval').value = gameState.minInterval;
+    document.getElementById('maxInterval').value = gameState.maxInterval;
+
     document.getElementById('button1Left').value = parseInt(sceneIndicator.style.left) || 20;
     document.getElementById('button1Bottom').value = parseInt(sceneIndicator.style.bottom) || 20;
     document.getElementById('button2Left').value = parseInt(soundIndicator.style.left) || 120;
@@ -2536,11 +2587,9 @@ function populateSettings() {
     document.getElementById('button4Right').value = parseInt(colorIndicator.style.right) || 20;
     document.getElementById('button4Bottom').value = parseInt(colorIndicator.style.bottom) || 20;
 
-    // 패널 설정 초기화
     document.getElementById('useCeilingPanels').checked = gameState.useCeilingPanels;
     document.getElementById('useFloorPanels').checked = gameState.useFloorPanels;
 
-    // 천장 패널 1 (인덱스 8)
     const ceilingPanel1 = gameState.panelPositionsCustom[8] || panelPositions[8] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('ceilingPanel1X').value = ceilingPanel1.x ?? 0;
     document.getElementById('ceilingPanel1Y').value = ceilingPanel1.y ?? 0;
@@ -2549,7 +2598,6 @@ function populateSettings() {
     document.getElementById('ceilingPanel1RotY').value = ((ceilingPanel1.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('ceilingPanel1RotZ').value = ((ceilingPanel1.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
-    // 천장 패널 2 (인덱스 9)
     const ceilingPanel2 = gameState.panelPositionsCustom[9] || panelPositions[9] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('ceilingPanel2X').value = ceilingPanel2.x ?? 0;
     document.getElementById('ceilingPanel2Y').value = ceilingPanel2.y ?? 0;
@@ -2558,7 +2606,6 @@ function populateSettings() {
     document.getElementById('ceilingPanel2RotY').value = ((ceilingPanel2.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('ceilingPanel2RotZ').value = ((ceilingPanel2.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
-    // 바닥 패널 1 (인덱스 10)
     const floorPanel1 = gameState.panelPositionsCustom[10] || panelPositions[10] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('floorPanel1X').value = floorPanel1.x ?? 0;
     document.getElementById('floorPanel1Y').value = floorPanel1.y ?? 0;
@@ -2567,7 +2614,6 @@ function populateSettings() {
     document.getElementById('floorPanel1RotY').value = ((floorPanel1.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('floorPanel1RotZ').value = ((floorPanel1.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
-    // 바닥 패널 2 (인덱스 11)
     const floorPanel2 = gameState.panelPositionsCustom[11] || panelPositions[11] || { x: 0, y: 0, z: 0, rotation: [0, 0, 0] };
     document.getElementById('floorPanel2X').value = floorPanel2.x ?? 0;
     document.getElementById('floorPanel2Y').value = floorPanel2.y ?? 0;
@@ -2576,7 +2622,6 @@ function populateSettings() {
     document.getElementById('floorPanel2RotY').value = ((floorPanel2.rotation?.[1] ?? 0) * 180 / Math.PI).toFixed(1);
     document.getElementById('floorPanel2RotZ').value = ((floorPanel2.rotation?.[2] ?? 0) * 180 / Math.PI).toFixed(1);
 
-    // 디버깅: 설정 패널에 반영된 인디케이터 위치 확인
     console.log("populateSettings() - 설정 패널에 인디케이터 위치 반영:", {
         scene: { left: document.getElementById('button1Left').value, bottom: document.getElementById('button1Bottom').value },
         sound: { left: document.getElementById('button2Left').value, bottom: document.getElementById('button2Bottom').value },
@@ -2585,7 +2630,6 @@ function populateSettings() {
         timestamp: Date.now()
     });
 
-    // 디버깅: 패널 설정이 UI에 반영되었는지 확인
     console.log("populateSettings() - 패널 설정 UI에 반영:", {
         useCeilingPanels: document.getElementById('useCeilingPanels').checked,
         useFloorPanels: document.getElementById('useFloorPanels').checked,
@@ -2624,9 +2668,8 @@ function populateSettings() {
         timestamp: Date.now()
     });
 
-    // 설정값이 UI에 반영되었는지 로그로 확인
     console.log("populateSettings() - panelPositionsCustom 상태:", gameState.panelPositionsCustom);
-    console.log("populateSettings() - UI에 설정값 반영 완료", { 
+    console.log("populateSettings() - UI에 설정값 반영 완료:", { 
         stimulusTypes: gameState.stimulusTypes,
         stimuliPerBlock: gameState.stimuliPerBlock,
         stimulusDuration: gameState.stimulusDuration,
@@ -2644,10 +2687,12 @@ function populateSettings() {
         soundKey: gameState.soundKey,
         colorKey: gameState.colorKey,
         buttonStyles: gameState.buttonStyles,
+        randomizeInterval: gameState.randomizeInterval,
+        minInterval: gameState.minInterval,
+        maxInterval: gameState.maxInterval,
         timestamp: Date.now()
     });
 
-    // 패널 상태와 설정값 동기화 확인
     let ceilingPanelsExist = false;
     let floorPanelsExist = false;
     panels.forEach(panel => {
@@ -2663,7 +2708,6 @@ function populateSettings() {
         expectedFloorPanels: gameState.useFloorPanels
     });
 
-    // 패널 상태와 설정값이 일치하지 않으면 동기화
     if (ceilingPanelsExist !== gameState.useCeilingPanels || floorPanelsExist !== gameState.useFloorPanels) {
         console.warn("populateSettings() - 패널 상태와 설정값 불일치, 패널 재생성으로 동기화");
         createPanels();
@@ -2675,9 +2719,8 @@ function populateSettings() {
         console.log("populateSettings() - 패널 상태와 설정값 일치, 동기화 불필요");
     }
 
-    console.log("populateSettings() - 설정 UI 반영 및 동기화 완료, 타임스탬프:", Date.now()); // 디버깅: 완료 로그
+    console.log("populateSettings() - 설정 UI 반영 및 동기화 완료, 타임스탬프:", Date.now());
 }
-
 
 
 
@@ -2727,7 +2770,7 @@ function applyIndicatorStyles(indicators, styles) {
 
 
 function applySettings() {
-    console.log("applySettings() - 설정 적용 시작, 타임스탬프:", Date.now()); // 디버깅: 시작 로그
+    console.log("applySettings() - 설정 적용 시작, 타임스탬프:", Date.now());
 
     const newStimulusTypes = [];
     if (document.getElementById('sceneStimulus').checked) newStimulusTypes.push('scene');
@@ -2738,11 +2781,10 @@ function applySettings() {
     if (newStimulusTypes.length < 2 || newStimulusTypes.length > 4) {
         document.getElementById('settingsError').textContent = '자극 유형은 최소 2개, 최대 4개 선택해야 합니다.';
         document.getElementById('settingsError').style.display = 'block';
-        console.log("applySettings() - 오류: 자극 유형 개수 부적합:", newStimulusTypes); // 디버깅: 유형 오류
+        console.log("applySettings() - 오류: 자극 유형 개수 부적합:", newStimulusTypes);
         return;
     }
 
-    // 입력값 파싱 및 유효성 검사
     const rawStimuliPerBlock = parseInt(document.getElementById('stimuliPerBlock').value, 10);
     const rawStimulusDuration = parseInt(document.getElementById('stimulusDuration').value, 10);
     const rawStimulusInterval = parseInt(document.getElementById('stimulusInterval').value, 10);
@@ -2750,10 +2792,15 @@ function applySettings() {
     const rawMinTargetInterval = parseInt(document.getElementById('minTargetInterval').value, 10);
     const rawMaxTargetInterval = parseInt(document.getElementById('maxTargetInterval').value, 10);
     const rawNearMissProbability = parseFloat(document.getElementById('nearMissProbability').value);
+    // 새로 추가된 값
+    const rawRandomizeInterval = document.getElementById('randomizeInterval').checked;
+    const rawMinInterval = parseInt(document.getElementById('minInterval').value, 10);
+    const rawMaxInterval = parseInt(document.getElementById('maxInterval').value, 10);
 
-    console.log("applySettings() - UI에서 가져온 원시 값:", { // 디버깅: 원시 값 확인
+    console.log("applySettings() - UI에서 가져온 원시 값:", {
         rawStimuliPerBlock, rawStimulusDuration, rawStimulusInterval,
-        rawPatternPreventionStrength, rawMinTargetInterval, rawMaxTargetInterval, rawNearMissProbability
+        rawPatternPreventionStrength, rawMinTargetInterval, rawMaxTargetInterval, rawNearMissProbability,
+        rawRandomizeInterval, rawMinInterval, rawMaxInterval
     });
 
     gameState.stimulusTypes = newStimulusTypes;
@@ -2764,13 +2811,22 @@ function applySettings() {
     gameState.minTargetInterval = isNaN(rawMinTargetInterval) ? 2 : Math.min(Math.max(rawMinTargetInterval, 1), 20);
     gameState.maxTargetInterval = isNaN(rawMaxTargetInterval) ? 10 : Math.min(Math.max(rawMaxTargetInterval, 5), 50);
     gameState.nearMissProbability = isNaN(rawNearMissProbability) ? 0.3 : Math.min(Math.max(rawNearMissProbability, 0), 1);
+    // 새로 추가된 설정 적용
+    gameState.randomizeInterval = rawRandomizeInterval;
+    gameState.minInterval = isNaN(rawMinInterval) ? 1000 : Math.min(Math.max(rawMinInterval, 1000), 10000);
+    gameState.maxInterval = isNaN(rawMaxInterval) ? 2500 : Math.min(Math.max(rawMaxInterval, 1000), 10000);
+
+    // 최소값이 최대값보다 큰 경우 조정
+    if (gameState.minInterval > gameState.maxInterval) {
+        gameState.maxInterval = gameState.minInterval;
+        console.log("applySettings() - 최소 간격이 최대 간격보다 커 최대값 조정됨:", gameState.maxInterval);
+    }
 
     if (gameState.maxTargetInterval < gameState.minTargetInterval) {
         gameState.maxTargetInterval = gameState.minTargetInterval + 1;
-        console.log("applySettings() - 최대 간격 조정됨:", gameState.maxTargetInterval); // 디버깅: 간격 조정
+        console.log("applySettings() - 최대 타겟 간격 조정됨:", gameState.maxTargetInterval);
     }
 
-    // URL 및 키 설정 적용
     gameState.imageSourceUrl = document.getElementById('imageSourceUrl').value || 'images/';
     gameState.resultImageUrl = document.getElementById('resultImageUrl').value || '';
     gameState.soundSource = document.getElementById('soundSourceSelect').value || 'pianoTones';
@@ -2780,7 +2836,6 @@ function applySettings() {
     gameState.soundKey = document.getElementById('soundKey').value.toUpperCase() || 'L';
     gameState.colorKey = document.getElementById('colorKey').value.toUpperCase() || 'K';
 
-    // 버튼 스타일 적용
     const bgColor = document.getElementById('buttonBgColor').value || '#ffffff';
     const bgOpacity = Math.min(Math.max(parseFloat(document.getElementById('buttonBgOpacity').value) || 0.1, 0), 1);
     const textColor = document.getElementById('buttonTextColor').value || '#ffffff';
@@ -2789,9 +2844,8 @@ function applySettings() {
     const height = Math.max(parseInt(document.getElementById('buttonHeight').value, 10) || 80, 20);
 
     gameState.buttonStyles = { bgColor, bgOpacity, textColor, textOpacity, width, height };
-    console.log("applySettings() - 버튼 스타일 적용됨:", gameState.buttonStyles); // 디버깅: 버튼 스타일 확인
+    console.log("applySettings() - 버튼 스타일 적용됨:", gameState.buttonStyles);
 
-    // 인디케이터 위치 및 스타일 적용
     const indicators = [sceneIndicator, soundIndicator, locationIndicator, colorIndicator];
     const indicatorPositions = [
         { left: parseInt(document.getElementById('button1Left').value) || 20, bottom: parseInt(document.getElementById('button1Bottom').value) || 20 },
@@ -2809,7 +2863,7 @@ function applySettings() {
             indicator.style.left = '';
         }
         indicator.style.bottom = `${indicatorPositions[i].bottom}px`;
-        console.log("applySettings() - 인디케이터 위치 적용:", { // 디버깅: 위치 적용 확인
+        console.log("applySettings() - 인디케이터 위치 적용:", {
             id: indicator.id,
             left: indicator.style.left,
             right: indicator.style.right,
@@ -2819,17 +2873,14 @@ function applySettings() {
 
     applyIndicatorStyles(indicators, gameState.buttonStyles);
 
-    // 패널 설정 적용
     const previousUseCeilingPanels = gameState.useCeilingPanels;
     const previousUseFloorPanels = gameState.useFloorPanels;
     gameState.useCeilingPanels = document.getElementById('useCeilingPanels').checked;
     gameState.useFloorPanels = document.getElementById('useFloorPanels').checked;
 
-    // 천장과 바닥 패널 위치 및 회전값 적용
     const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
     const degToRad = (deg) => deg * Math.PI / 180;
 
-    // 천장 패널 1 (인덱스 8)
     let ceilingPanel1X = parseFloat(document.getElementById('ceilingPanel1X').value);
     let ceilingPanel1Y = parseFloat(document.getElementById('ceilingPanel1Y').value);
     let ceilingPanel1Z = parseFloat(document.getElementById('ceilingPanel1Z').value);
@@ -2851,7 +2902,6 @@ function applySettings() {
         rotation: [degToRad(ceilingPanel1RotX), degToRad(ceilingPanel1RotY), degToRad(ceilingPanel1RotZ)]
     };
 
-    // 천장 패널 2 (인덱스 9)
     let ceilingPanel2X = parseFloat(document.getElementById('ceilingPanel2X').value);
     let ceilingPanel2Y = parseFloat(document.getElementById('ceilingPanel2Y').value);
     let ceilingPanel2Z = parseFloat(document.getElementById('ceilingPanel2Z').value);
@@ -2873,7 +2923,6 @@ function applySettings() {
         rotation: [degToRad(ceilingPanel2RotX), degToRad(ceilingPanel2RotY), degToRad(ceilingPanel2RotZ)]
     };
 
-    // 바닥 패널 1 (인덱스 10)
     let floorPanel1X = parseFloat(document.getElementById('floorPanel1X').value);
     let floorPanel1Y = parseFloat(document.getElementById('floorPanel1Y').value);
     let floorPanel1Z = parseFloat(document.getElementById('floorPanel1Z').value);
@@ -2895,7 +2944,6 @@ function applySettings() {
         rotation: [degToRad(floorPanel1RotX), degToRad(floorPanel1RotY), degToRad(floorPanel1RotZ)]
     };
 
-    // 바닥 패널 2 (인덱스 11)
     let floorPanel2X = parseFloat(document.getElementById('floorPanel2X').value);
     let floorPanel2Y = parseFloat(document.getElementById('floorPanel2Y').value);
     let floorPanel2Z = parseFloat(document.getElementById('floorPanel2Z').value);
@@ -2917,7 +2965,6 @@ function applySettings() {
         rotation: [degToRad(floorPanel2RotX), degToRad(floorPanel2RotY), degToRad(floorPanel2RotZ)]
     };
 
-    // 패널 상태와 설정값 비교
     let ceilingPanelsExist = false;
     let floorPanelsExist = false;
     panels.forEach(panel => {
@@ -2935,7 +2982,6 @@ function applySettings() {
         floorPanelsExist: floorPanelsExist
     });
 
-    // 패널 설정이 변경되었거나 현재 패널 상태와 설정값이 일치하지 않으면 패널 재생성
     const shouldRecreatePanels = 
         previousUseCeilingPanels !== gameState.useCeilingPanels ||
         previousUseFloorPanels !== gameState.useFloorPanels ||
@@ -2953,7 +2999,6 @@ function applySettings() {
         console.log("applySettings() - 패널 설정 변경 없음, 재생성 불필요");
     }
 
-    // 디버깅: 패널 설정 적용 확인
     console.log("applySettings() - 패널 설정 적용됨:", {
         useCeilingPanels: gameState.useCeilingPanels,
         useFloorPanels: gameState.useFloorPanels,
@@ -2989,12 +3034,15 @@ function applySettings() {
     localStorage.setItem('useCeilingPanels', gameState.useCeilingPanels);
     localStorage.setItem('useFloorPanels', gameState.useFloorPanels);
     localStorage.setItem('panelPositionsCustom', JSON.stringify(gameState.panelPositionsCustom));
+    // 새로 추가된 로컬 스토리지 저장
+    localStorage.setItem('randomizeInterval', gameState.randomizeInterval);
+    localStorage.setItem('minInterval', gameState.minInterval);
+    localStorage.setItem('maxInterval', gameState.maxInterval);
 
-    // 디버깅: 저장된 값 확인
-    console.log("applySettings() - 로컬 스토리지에 저장된 패널 설정:", {
-        useCeilingPanels: localStorage.getItem('useCeilingPanels'),
-        useFloorPanels: localStorage.getItem('useFloorPanels'),
-        panelPositionsCustom: JSON.parse(localStorage.getItem('panelPositionsCustom')),
+    console.log("applySettings() - 로컬 스토리지에 저장된 값:", {
+        randomizeInterval: localStorage.getItem('randomizeInterval'),
+        minInterval: localStorage.getItem('minInterval'),
+        maxInterval: localStorage.getItem('maxInterval'),
         timestamp: Date.now()
     });
 
@@ -3005,16 +3053,15 @@ function applySettings() {
         stimulusInterval: gameState.stimulusInterval,
         nearMissProbability: gameState.nearMissProbability,
         buttonStyles: gameState.buttonStyles,
-        useCeilingPanels: gameState.useCeilingPanels,
-        useFloorPanels: gameState.useFloorPanels,
-        panelPositionsCustom: gameState.panelPositionsCustom,
+        randomizeInterval: gameState.randomizeInterval,
+        minInterval: gameState.minInterval,
+        maxInterval: gameState.maxInterval,
         timestamp: Date.now()
     });
 
     document.getElementById('settingsError').style.display = 'none';
     loadImageTextures();
 }
-
 
 
 
@@ -3034,9 +3081,8 @@ function hexToRgba(hex, opacity) {
 }
 
 function loadSettings() {
-    console.log("loadSettings() - 설정 로드 시작, 타임스탬프:", Date.now()); // 디버깅: 함수 시작 시간 기록
+    console.log("loadSettings() - 설정 로드 시작, 타임스탬프:", Date.now());
 
-    // 경고 메시지 요소 초기화
     const settingsWarning = document.getElementById('loadSettingsWarning');
     if (settingsWarning) {
         settingsWarning.style.display = 'none';
@@ -3045,37 +3091,40 @@ function loadSettings() {
         console.warn("loadSettings() - 경고 메시지 요소(loadSettingsWarning)가 DOM에 존재하지 않음");
     }
 
-    // N백 레벨 로드
     const savedNBackLevel = localStorage.getItem('nBackLevel');
     if (savedNBackLevel) {
         gameState.nBackLevel = Math.min(Math.max(parseInt(savedNBackLevel), 1), 9);
         document.getElementById('nBackLevel').textContent = gameState.nBackLevel;
         document.getElementById('customLevel').value = gameState.nBackLevel;
-        console.log("loadSettings() - N백 레벨 로드됨:", gameState.nBackLevel); // 디버깅: 로드된 N백 레벨 확인
+        console.log("loadSettings() - N백 레벨 로드됨:", gameState.nBackLevel);
     } else {
         console.log("loadSettings() - 저장된 N백 레벨 없음, 기본값 사용:", gameState.nBackLevel);
     }
 
-    // 오늘의 게임 횟수 로드 및 날짜 확인
-    const lastGameDate = localStorage.getItem('lastGameDate');
-    const today = new Date().toDateString();
-    if (lastGameDate !== today) {
+    // UTC 기준으로 날짜 경계 확인
+    const now = Date.now();
+    const todayStart = new Date(new Date().setUTCHours(0, 0, 0, 0)).getTime();
+    const lastGameTimestamp = parseInt(localStorage.getItem('lastGameTimestamp')) || 0;
+    console.log("loadSettings() - 날짜 경계 비교: 오늘 시작=", todayStart, "마지막 게임 타임스탬프=", lastGameTimestamp);
+
+    if (lastGameTimestamp < todayStart) {
         gameState.totalGamesToday = 0;
-        localStorage.setItem('lastGameDate', today);
-        console.log("loadSettings() - 날짜 변경 감지, 오늘 게임 횟수 초기화:", today); // 디버깅: 날짜 변경으로 초기화
+        gameState.consecutiveGames = 0;
+        localStorage.setItem('lastGameTimestamp', now.toString());
+        console.log("loadSettings() - 날짜 경계 넘어감, 카운터 초기화: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
     } else {
         const savedTotalGames = localStorage.getItem('totalGamesToday');
+        const savedConsecutiveGames = localStorage.getItem('consecutiveGames');
         gameState.totalGamesToday = savedTotalGames ? parseInt(savedTotalGames) : 0;
-        console.log("loadSettings() - 오늘 게임 횟수 로드됨:", gameState.totalGamesToday); // 디버깅: 게임 횟수 로드
+        gameState.consecutiveGames = savedConsecutiveGames ? parseInt(savedConsecutiveGames) : 0;
+        console.log("loadSettings() - 같은 날짜 내, 카운터 로드됨: totalGamesToday=", gameState.totalGamesToday, "consecutiveGames=", gameState.consecutiveGames);
     }
-    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+    updateGameCounters(); // 통합된 카운터 업데이트 함수 호출
 
-    // 자극 유형 로드
     const savedStimulusTypes = JSON.parse(localStorage.getItem('stimulusTypes'));
     gameState.stimulusTypes = (savedStimulusTypes && savedStimulusTypes.length >= 2 && savedStimulusTypes.length <= 4) ? savedStimulusTypes : ['scene', 'location'];
-    console.log("loadSettings() - 자극 유형 로드됨:", gameState.stimulusTypes); // 디버깅: 자극 유형 확인
+    console.log("loadSettings() - 자극 유형 로드됨:", gameState.stimulusTypes);
 
-    // 숫자 설정 로드 및 유효성 검사
     const savedStimuliPerBlock = parseInt(localStorage.getItem('stimuliPerBlock'));
     gameState.stimuliPerBlock = isNaN(savedStimuliPerBlock) ? 30 : Math.min(Math.max(savedStimuliPerBlock, 10), 100);
     console.log("loadSettings() - 블록당 자극 수 로드됨:", gameState.stimuliPerBlock);
@@ -3104,63 +3153,72 @@ function loadSettings() {
     gameState.nearMissProbability = isNaN(savedNearMissProbability) ? 0.3 : Math.min(Math.max(savedNearMissProbability, 0), 1);
     console.log("loadSettings() - 근접 오차 확률 로드됨:", gameState.nearMissProbability);
 
-    // 타겟 간격 유효성 검사
-    if (gameState.maxTargetInterval < gameState.minTargetInterval) {
-        gameState.maxTargetInterval = gameState.minTargetInterval + 1;
-        console.log("loadSettings() - 경고: 최대 타겟 간격이 최소 간격보다 작아 조정됨:", gameState.maxTargetInterval); // 디버깅: 간격 조정
+    const savedRandomizeInterval = localStorage.getItem('randomizeInterval');
+    gameState.randomizeInterval = savedRandomizeInterval === 'true' || savedRandomizeInterval === true;
+    const savedMinInterval = parseInt(localStorage.getItem('minInterval'));
+    gameState.minInterval = isNaN(savedMinInterval) ? 2500 : Math.min(Math.max(savedMinInterval, 1000), 10000);
+    const savedMaxInterval = parseInt(localStorage.getItem('maxInterval'));
+    gameState.maxInterval = isNaN(savedMaxInterval) ? 2500 : Math.min(Math.max(savedMaxInterval, 1000), 10000);
+
+    if (gameState.minInterval > gameState.maxInterval) {
+        gameState.maxInterval = gameState.minInterval;
+        console.log("loadSettings() - 최소 간격이 최대 간격보다 커 최대값 조정됨:", gameState.maxInterval);
     }
 
-    // 패널 설정 로드 및 유효성 검사 강화
+    console.log("loadSettings() - 무작위 간격 설정 로드됨:", {
+        randomizeInterval: gameState.randomizeInterval,
+        minInterval: gameState.minInterval,
+        maxInterval: gameState.maxInterval
+    });
+
+    if (gameState.maxTargetInterval < gameState.minTargetInterval) {
+        gameState.maxTargetInterval = gameState.minTargetInterval + 1;
+        console.log("loadSettings() - 경고: 최대 타겟 간격이 최소 간격보다 작아 조정됨:", gameState.maxTargetInterval);
+    }
+
     const rawUseCeilingPanels = localStorage.getItem('useCeilingPanels');
     const rawUseFloorPanels = localStorage.getItem('useFloorPanels');
 
-    // 로컬 스토리지에서 로드된 원시 값 디버깅
     console.log("loadSettings() - 로컬 스토리지에서 로드된 원시 패널 설정 값:", {
         rawUseCeilingPanels: rawUseCeilingPanels,
         rawUseFloorPanels: rawUseFloorPanels
     });
 
-    // 유효성 검사 및 변환
     gameState.useCeilingPanels = rawUseCeilingPanels === 'true' || rawUseCeilingPanels === true;
     gameState.useFloorPanels = rawUseFloorPanels === 'true' || rawUseFloorPanels === true;
 
-    // 값이 유효하지 않은 경우 기본값으로 초기화 및 사용자 경고
     let hasInvalidSettings = false;
     if (rawUseCeilingPanels !== 'true' && rawUseCeilingPanels !== 'false' && rawUseCeilingPanels !== null) {
         console.warn("loadSettings() - useCeilingPanels 값이 유효하지 않음, 기본값(false)으로 초기화:", rawUseCeilingPanels);
         gameState.useCeilingPanels = false;
-        localStorage.setItem('useCeilingPanels', 'false'); // 손상된 값 수정
+        localStorage.setItem('useCeilingPanels', 'false');
         hasInvalidSettings = true;
     }
     if (rawUseFloorPanels !== 'true' && rawUseFloorPanels !== 'false' && rawUseFloorPanels !== null) {
         console.warn("loadSettings() - useFloorPanels 값이 유효하지 않음, 기본값(false)으로 초기화:", rawUseFloorPanels);
         gameState.useFloorPanels = false;
-        localStorage.setItem('useFloorPanels', 'false'); // 손상된 값 수정
+        localStorage.setItem('useFloorPanels', 'false');
         hasInvalidSettings = true;
     }
 
-    // 유효하지 않은 설정이 있을 경우 사용자에게 경고 표시
     if (hasInvalidSettings && settingsWarning) {
         settingsWarning.textContent = '일부 설정값이 손상되어 기본값으로 초기화되었습니다.';
         settingsWarning.style.display = 'block';
         console.log("loadSettings() - 사용자에게 설정 손상 경고 표시");
     }
 
-    // 로드된 패널 설정값 확인
     console.log("loadSettings() - 패널 설정 로드 후 상태:", {
         useCeilingPanels: gameState.useCeilingPanels,
         useFloorPanels: gameState.useFloorPanels
     });
 
-    // panelPositionsCustom 로드 및 유효성 검사
     gameState.panelPositionsCustom = JSON.parse(localStorage.getItem('panelPositionsCustom')) || panelPositions.map(pos => ({
         x: pos.x,
         y: pos.y,
         z: pos.z,
-        rotation: pos.rotation || [0, 0, 0] // 기본값 추가
+        rotation: pos.rotation || [0, 0, 0]
     }));
 
-    // panelPositionsCustom 유효성 검사
     if (!Array.isArray(gameState.panelPositionsCustom) || gameState.panelPositionsCustom.length !== panelPositions.length) {
         console.warn("loadSettings() - panelPositionsCustom이 유효하지 않음, 기본값으로 초기화");
         gameState.panelPositionsCustom = panelPositions.map(pos => ({
@@ -3172,7 +3230,6 @@ function loadSettings() {
         hasInvalidSettings = true;
     }
 
-    // 각 객체에 rotation 속성이 있는지 확인
     gameState.panelPositionsCustom = gameState.panelPositionsCustom.map((pos, index) => ({
         x: pos.x,
         y: pos.y,
@@ -3180,7 +3237,6 @@ function loadSettings() {
         rotation: pos.rotation || panelPositions[index]?.rotation || [0, 0, 0]
     }));
 
-    // URL 및 키 설정 로드
     gameState.imageSourceUrl = localStorage.getItem('imageSourceUrl') || 'images/';
     gameState.resultImageUrl = localStorage.getItem('resultImageUrl') || '';
     gameState.soundSource = localStorage.getItem('soundSource') || 'pianoTones';
@@ -3200,7 +3256,6 @@ function loadSettings() {
         colorKey: gameState.colorKey
     });
 
-    // 인디케이터 위치 로드 및 적용
     const scenePos = JSON.parse(localStorage.getItem('sceneIndicatorPos')) || { left: 20, bottom: 20 };
     const soundPos = JSON.parse(localStorage.getItem('soundIndicatorPos')) || { left: 120, bottom: 20 };
     const locationPos = JSON.parse(localStorage.getItem('locationIndicatorPos')) || { right: 120, bottom: 20 };
@@ -3219,14 +3274,13 @@ function loadSettings() {
     colorIndicator.style.bottom = `${colorPos.bottom}px`;
     colorIndicator.style.left = '';
 
-    console.log("loadSettings() - 인디케이터 위치 로드 및 적용:", { // 디버깅: 위치 적용 확인
+    console.log("loadSettings() - 인디케이터 위치 로드 및 적용:", {
         scene: { left: sceneIndicator.style.left, bottom: sceneIndicator.style.bottom },
         sound: { left: soundIndicator.style.left, bottom: soundIndicator.style.bottom },
         location: { right: locationIndicator.style.right, bottom: locationIndicator.style.bottom },
         color: { right: colorIndicator.style.right, bottom: colorIndicator.style.bottom }
     });
 
-    // 버튼 스타일 로드
     gameState.buttonStyles = JSON.parse(localStorage.getItem('buttonStyles')) || {
         bgColor: '#ffffff',
         bgOpacity: 0.1,
@@ -3235,12 +3289,11 @@ function loadSettings() {
         width: 80,
         height: 80
     };
-    console.log("loadSettings() - 버튼 스타일 로드됨:", gameState.buttonStyles); // 디버깅: 버튼 스타일 확인
+    console.log("loadSettings() - 버튼 스타일 로드됨:", gameState.buttonStyles);
 
     const indicators = [sceneIndicator, soundIndicator, locationIndicator, colorIndicator];
     applyIndicatorStyles(indicators, gameState.buttonStyles);
 
-    // 최종 로드된 설정값 디버깅
     console.log("loadSettings() - 모든 설정 로드 완료:", {
         stimulusTypes: gameState.stimulusTypes,
         stimuliPerBlock: gameState.stimuliPerBlock,
@@ -3253,16 +3306,15 @@ function loadSettings() {
         useCeilingPanels: gameState.useCeilingPanels,
         useFloorPanels: gameState.useFloorPanels,
         panelPositionsCustom: gameState.panelPositionsCustom,
+        randomizeInterval: gameState.randomizeInterval,
+        minInterval: gameState.minInterval,
+        maxInterval: gameState.maxInterval,
         timestamp: Date.now()
     });
 
-    // UI에 설정 반영
     populateSettings();
-    console.log("loadSettings() - 설정 로드 및 UI 반영 완료, 타임스탬프:", Date.now()); // 디버깅: 함수 종료 시간 기록
+    console.log("loadSettings() - 설정 로드 및 UI 반영 완료, 타임스탬프:", Date.now());
 }
-
-
-
 
 
 
