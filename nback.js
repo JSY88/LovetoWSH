@@ -1475,10 +1475,54 @@ function setTargetGoal(type, baseValue) {
     console.log(`setTargetGoal() - ${type} 타겟 목표 설정: 입력값=${baseValue}, 조정값=${adjustedValue}, 최대 가능=${maxTargets}`);
 }
 
+
+
+
+function resetTotalGamesIfNewDay() {
+    const lastGameDate = localStorage.getItem('lastGameDate');
+    const today = new Date().toDateString();
+    console.log(`resetTotalGamesIfNewDay() - 날짜 확인: 저장된 날짜=${lastGameDate}, 오늘=${today}, 타임스탬프: ${Date.now()}`);
+
+    if (lastGameDate !== today) {
+        gameState.totalGamesToday = 0;
+        localStorage.setItem('totalGamesToday', 0);
+        localStorage.setItem('lastGameDate', today);
+        document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+        console.log(`resetTotalGamesIfNewDay() - 날짜 변경 감지! 오늘 게임 횟수 리셋: ${gameState.totalGamesToday}, 새로운 날짜 저장: ${today}`);
+    } else {
+        console.log(`resetTotalGamesIfNewDay() - 날짜 동일, 리셋 불필요: 횟수=${gameState.totalGamesToday}`);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 function startBlock() {
     console.log("startBlock() - 새로운 블록 시작, 타임스탬프:", Date.now());
+    if (gameState.isPlaying) return; // 이미 게임 중이면 실행 중단
     gameState.isPlaying = true;
     gameState.isPaused = false;
+    
+    // 현재 블록 번호 증가
+    gameState.currentBlock++;
+    console.log("startBlock() - Current block incremented to:", gameState.currentBlock);
+
+
+    // 연속 게임 횟수 증가 및 UI 업데이트
+    gameState.consecutiveGames++;
+    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
+    console.log(`startBlock() - 연속 게임 횟수 증가: ${gameState.consecutiveGames}, 타임스탬프: ${Date.now()}`);
+
+
+
     gameState.currentStimulus = 0;
     gameState.sceneTargets = 0;
     gameState.locationTargets = 0;
@@ -1531,8 +1575,6 @@ function startBlock() {
     blockCount.textContent = gameState.currentBlock;
     blockCount.style.display = 'none';
 
-    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
-
     // 인디케이터 표시
     sceneIndicator.style.display = gameState.stimulusTypes.includes("scene") ? 'flex' : 'none';
     soundIndicator.style.display = gameState.stimulusTypes.includes("sound") ? 'flex' : 'none';
@@ -1551,7 +1593,6 @@ function startBlock() {
         }
     }, 1000);
 }
-
 
 
 
@@ -2229,6 +2270,14 @@ function endBlock() {
         errorHistory: gameState.errorHistory
     });
 
+
+// 오늘 게임 횟수 증가 및 UI 업데이트
+    gameState.totalGamesToday++;
+    localStorage.setItem('totalGamesToday', gameState.totalGamesToday);
+    localStorage.setItem('lastGameDate', new Date().toDateString());
+    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+    console.log(`endBlock() - 오늘 게임 횟수 증가: ${gameState.totalGamesToday}, 타임스탬프: ${Date.now()}`);
+
     // 니얼미스 통계 계산
     const totalNearMisses = nearMissHistory.length;
     const nearMissResponseRate = totalNearMisses > 0 ? (gameState.nearMissResponses / totalNearMisses) * 100 : 0;
@@ -2306,12 +2355,17 @@ function endBlock() {
 
 
 function showTitleScreen() {
-    console.log("showTitleScreen() - 타이틀 화면 표시 시작"); // 디버깅: 함수 시작
+    console.log("showTitleScreen() - 타이틀 화면 표시 시작");
     gameState.isPlaying = false;
     gameState.isPaused = false;
     cancelAllTimers();
     clearAllStimuli();
     clearAllSounds();
+
+    // 연속 게임 횟수 초기화 및 UI 업데이트
+    gameState.consecutiveGames = 0;
+    document.getElementById('consecutiveGamesCount').textContent = gameState.consecutiveGames;
+    console.log(`showTitleScreen() - 연속 게임 횟수 초기화: ${gameState.consecutiveGames}, 타임스탬프: ${Date.now()}`);
 
     const titleScreen = document.getElementById('titleScreen');
     const gameScreen = document.getElementById('gameScreen');
@@ -2332,9 +2386,8 @@ function showTitleScreen() {
         if (element) element.style.display = 'none';
     });
 
-    console.log("showTitleScreen() - 타이틀 화면 표시 완료"); // 디버깅: 완료 확인
+    console.log("showTitleScreen() - 타이틀 화면 표시 완료");
 }
-
 
 function resetStimulusCounter() {
     const stimulusCounter = document.getElementById('stimulus-counter');
@@ -3076,18 +3129,22 @@ function loadSettings() {
         console.log("loadSettings() - 저장된 N백 레벨 없음, 기본값 사용:", gameState.nBackLevel);
     }
 
-    const lastGameDate = localStorage.getItem('lastGameDate');
-    const today = new Date().toDateString();
-    if (lastGameDate !== today) {
-        gameState.totalGamesToday = 0;
-        localStorage.setItem('lastGameDate', today);
-        console.log("loadSettings() - 날짜 변경 감지, 오늘 게임 횟수 초기화:", today);
-    } else {
-        const savedTotalGames = localStorage.getItem('totalGamesToday');
-        gameState.totalGamesToday = savedTotalGames ? parseInt(savedTotalGames) : 0;
-        console.log("loadSettings() - 오늘 게임 횟수 로드됨:", gameState.totalGamesToday);
-    }
-    document.getElementById('totalGamesTodayCountValue').textContent = gameState.totalGamesToday;
+    // 날짜 체크 및 초기화
+    resetTotalGamesIfNewDay();
+
+    // 자정까지 남은 시간 계산 후 리셋 타이머 설정
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0); // 다음 자정 설정
+    const timeToMidnight = midnight - now;
+    console.log(`loadSettings() - 자정까지 남은 시간: ${timeToMidnight}ms`);
+
+    setTimeout(() => {
+        resetTotalGamesIfNewDay();
+        // 매일 자정마다 반복
+        setInterval(resetTotalGamesIfNewDay, 24 * 60 * 60 * 1000); // 24시간 간격
+        console.log(`loadSettings() - 자정 리셋 타이머 설정 완료, 다음 실행: ${new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleString()}`);
+    }, timeToMidnight);
 
     const savedStimulusTypes = JSON.parse(localStorage.getItem('stimulusTypes'));
     gameState.stimulusTypes = (savedStimulusTypes && savedStimulusTypes.length >= 2 && savedStimulusTypes.length <= 4) ? savedStimulusTypes : ['scene', 'location'];
@@ -3121,7 +3178,6 @@ function loadSettings() {
     gameState.nearMissProbability = isNaN(savedNearMissProbability) ? 0.3 : Math.min(Math.max(savedNearMissProbability, 0), 1);
     console.log("loadSettings() - 근접 오차 확률 로드됨:", gameState.nearMissProbability);
 
-    // 새로 추가된 설정 로드
     const savedRandomizeInterval = localStorage.getItem('randomizeInterval');
     gameState.randomizeInterval = savedRandomizeInterval === 'true' || savedRandomizeInterval === true;
     const savedMinInterval = parseInt(localStorage.getItem('minInterval'));
@@ -3129,7 +3185,6 @@ function loadSettings() {
     const savedMaxInterval = parseInt(localStorage.getItem('maxInterval'));
     gameState.maxInterval = isNaN(savedMaxInterval) ? 2500 : Math.min(Math.max(savedMaxInterval, 1000), 10000);
 
-    // 최소값이 최대값보다 큰 경우 조정
     if (gameState.minInterval > gameState.maxInterval) {
         gameState.maxInterval = gameState.minInterval;
         console.log("loadSettings() - 최소 간격이 최대 간격보다 커 최대값 조정됨:", gameState.maxInterval);
@@ -3295,7 +3350,6 @@ function loadSettings() {
 
 
 
-
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -3332,6 +3386,17 @@ window.onload = () => {
         createPanels(); // 설정 로드 후 패널 생성
         console.log("window.onload - 패널 생성 완료, 애니메이션 시작");
         animate();
+
+
+
+//오늘의 게임 횟수
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        console.log(`visibilitychange - 탭 활성화 감지, 날짜 체크 시작, 타임스탬프: ${Date.now()}`);
+        resetTotalGamesIfNewDay();
+    }
+});
+
 
         // 고급 설정 토글 버튼 이벤트 리스너
         const toggleAdvancedSettingsBtn = document.getElementById('toggleAdvancedSettingsBtn');
